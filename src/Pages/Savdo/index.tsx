@@ -525,8 +525,9 @@ export default function Savdo() {
                 </span>
               </div>
 
-              <div className="flex flex-col gap-4 px-5 py-5 sm:px-10 sm:py-6 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {/* Tor ekranda (yon panel ochiq) filtrlar keyingi qatorga o'tadi va qidiruv torayadi — sana filtri kesilib qolmaydi. */}
+              <div className="flex flex-col gap-4 px-5 py-5 sm:px-10 sm:py-6 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-1">
                   {yangiSotuvKorinsin && (
                     <button
                       onClick={() => {
@@ -540,7 +541,7 @@ export default function Savdo() {
                     </button>
                   )}
 
-                  <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-gray-200 bg-[#FAFAFA] px-3 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100 sm:w-[390px]">
+                  <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-gray-200 bg-[#FAFAFA] px-3 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100 sm:w-[390px] lg:w-auto lg:min-w-[220px] lg:max-w-[390px] lg:flex-1">
                     <input
                       value={qidiruv}
                       onChange={(event) => setQidiruv(event.target.value)}
@@ -551,7 +552,7 @@ export default function Savdo() {
                   </label>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:ml-auto lg:shrink-0">
                   {statusFilterKorinsin && (
                     <div className="w-full sm:w-[160px]">
                       <SavdoSelect

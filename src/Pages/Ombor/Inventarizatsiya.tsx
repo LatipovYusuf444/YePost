@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { createPortal } from "react-dom";
 import { AlertTriangle, Check, ClipboardList, FileText, Filter, Info, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, UserRound, Warehouse, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { variantniKorsatish } from "@/lib/variantniKorsatish";
 import AppModal from "@/Components/common/AppModal";
 import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
@@ -524,7 +525,7 @@ export default function Inventarizatsiya() {
       setMahsulotDropdownOchiq(true);
       setMahsulotFaolIndeks(keyingi);
       window.requestAnimationFrame(() => {
-        document.getElementById(`inventory-product-option-${keyingi}`)?.scrollIntoView({ block: "nearest" });
+        { const variant = document.getElementById(`inventory-product-option-${keyingi}`); variantniKorsatish(variant?.closest<HTMLElement>('[role="listbox"]'), variant); }
       });
       return;
     }
@@ -1010,7 +1011,7 @@ export default function Inventarizatsiya() {
         loadingText={t("inventarizatsiya.loadingDocuments")}
       />
 
-      <section className="grid gap-3 rounded-2xl border border-blue-100 bg-white p-3 shadow-[0_2px_8px_rgba(37,99,235,.05)] sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_minmax(260px,1.1fr)_minmax(150px,.55fr)_minmax(170px,.65fr)] lg:items-center">
+      <section className="grid gap-3 rounded-2xl border border-blue-100 bg-white p-3 shadow-[0_2px_8px_rgba(37,99,235,.05)] sm:grid-cols-2 @min-[890px]:grid-cols-[minmax(240px,1fr)_minmax(260px,1.1fr)_minmax(150px,.55fr)_minmax(170px,.65fr)] @min-[890px]:items-center">
         <label className="relative block min-w-0">
           <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-blue-700" />
           <input
@@ -1088,14 +1089,14 @@ export default function Inventarizatsiya() {
               <tr>
                 <td colSpan={faolUstunlar.length + 1} className="py-14 text-center text-gray-400">
                   <LoaderCircle size={22} className="mx-auto mb-2 animate-spin text-blue-600" />
-                  {t("inventarizatsiya.loadingDocuments")}
+                  <span className="block">{t("inventarizatsiya.loadingDocuments")}</span>
                 </td>
               </tr>
             )}
             {!store.yuklanmoqda && korinadiganHujjatlar.length === 0 && (
               <tr>
                 <td colSpan={faolUstunlar.length + 1} className="py-14 text-center text-gray-400">
-                  {qidiruv || sanaDan || sanaGacha || holatFiltri !== "ALL" || omborFiltri !== "ALL" ? t("inventarizatsiya.emptySearch") : t("inventarizatsiya.emptyList")}
+                  <p>{qidiruv || sanaDan || sanaGacha || holatFiltri !== "ALL" || omborFiltri !== "ALL" ? t("inventarizatsiya.emptySearch") : t("inventarizatsiya.emptyList")}</p>
                 </td>
               </tr>
             )}

@@ -394,7 +394,7 @@ export default function SavatchaJadvali({
                     disabled={!warehouseId || yuklanmoqda || kategoriyaYuklanmoqda}
                     options={mahsulotOptionlari}
                     buttonClassName={selectTugmasiKlassi}
-                    dropdownClassName="[&>div>div]:text-center min-w-[520px] max-w-[min(720px,calc(100vw-32px))]"
+                    dropdownClassName="[&>div>div]:text-center min-w-[600px] max-w-[min(720px,calc(100vw-32px))]"
                     portal
                   />
                   <p className="mt-1 flex items-center gap-1.5 truncate text-xs font-semibold text-slate-500">

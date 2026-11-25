@@ -261,6 +261,7 @@
   },
   "stockWarning": {
     "row": "Omborda {{available}} dona bor, {{requested}} dona so'ralgan. Qoralama saqlanadi, lekin ombordan chiqarish uchun tovar yetmaydi.",
+    "rowShort": "Omborda: {{available}}",
     "summary": "{{count}} ta tovarda qoldiq yetarli emas. Qoralama saqlanadi."
   },
   "generalDiscount": {

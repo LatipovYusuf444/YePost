@@ -378,6 +378,7 @@ export function MahsulotQidiruvi({ value, nom, onChange, disabled, ariaLabel }: 
       <Search size={17} className="pointer-events-none absolute left-4 top-[15px] text-slate-400" />
       <input
         value={soz ?? (value ? nom ?? "" : "")}
+        title={soz === null && value && nom ? nom : undefined}
         disabled={disabled}
         aria-label={ariaLabel ?? t("fields.product")}
         placeholder={t("fields.productSearch")}
@@ -386,7 +387,7 @@ export function MahsulotQidiruvi({ value, nom, onChange, disabled, ariaLabel }: 
         className={`${inputKlass} pl-11`}
       />
       {soz !== null && matn && (
-        <div className="absolute inset-x-0 top-full z-30 mt-2 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.18)]">
+        <div className="absolute inset-x-0 top-full z-30 mt-2 max-h-64 overflow-y-auto sm:right-auto sm:w-max sm:min-w-full sm:max-w-[min(480px,calc(100vw-160px))] rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.18)]">
           {yuklanmoqda ? (
             <p className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-slate-400"><LoaderCircle size={15} className="animate-spin" />{t("loading")}</p>
           ) : natijalar.length === 0 ? (
@@ -397,9 +398,9 @@ export function MahsulotQidiruvi({ value, nom, onChange, disabled, ariaLabel }: 
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => { onChange(mod.id, modifikatsiyaNomi(mod)); setSoz(null); }}
-              className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-orange-50"
+              className="flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-orange-50"
             >
-              <span className="min-w-0 truncate">{modifikatsiyaNomi(mod)}</span>
+              <span className="min-w-0 flex-1 whitespace-normal break-words">{modifikatsiyaNomi(mod)}</span>
               <span className="shrink-0 text-xs text-slate-400">{mod.barcode}</span>
             </button>
           ))}

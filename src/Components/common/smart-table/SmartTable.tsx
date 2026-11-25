@@ -66,6 +66,48 @@ export default function SmartTable({ tableId, children, presentationOnly = false
     return () => observer?.disconnect();
   }, [compatible, columns, visibleSignature, widthSignature]);
 
+  // Bo'sh / yuklanish qatori (butun qatorni egallagan markazlangan colspan katak) jadval konteynerdan keng bo'lsa ham
+  // ko'rinadigan qismning o'rtasida turadi: siljish (--smart-ortaga) aylantirish va o'lcham o'zgarganda qayta hisoblanadi.
+  useEffect(() => {
+    const table = tableRef.current;
+    const frame = table?.closest<HTMLElement>(".smart-table-frame");
+    const scroller = frame?.parentElement;
+    if (!table || !frame || !scroller) return;
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const box = scroller.getBoundingClientRect();
+      const rect = table.getBoundingClientRect();
+      // Rect'lar ota elementlardagi transformni (sahifa kirish animatsiyasi: scale) hisobga oladi, clientWidth/offsetWidth esa yo'q —
+      // masshtab bo'yicha qaytarib, siljish maket (layout) pikselida hisoblanadi; animatsiya tugagach ham to'g'ri qoladi.
+      const scale = table.offsetWidth > 0 && rect.width > 0 ? rect.width / table.offsetWidth : 1;
+      const visibleCenter = box.left + (scroller.clientLeft + scroller.clientWidth / 2) * scale;
+      const shift = rect.width > 0 ? Math.round((visibleCenter - (rect.left + rect.width / 2)) / scale) : 0;
+      const value = `${Math.abs(shift) < 1 ? 0 : shift}px`;
+      if (frame.style.getPropertyValue("--smart-ortaga") !== value) frame.style.setProperty("--smart-ortaga", value);
+    };
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(measure); };
+    measure();
+    scroller.addEventListener("scroll", schedule, { passive: true });
+    const observer = typeof window.ResizeObserver === "function" ? new window.ResizeObserver(schedule) : null;
+    observer?.observe(scroller);
+    observer?.observe(table);
+    observer?.observe(frame);
+    // <table> ning o'z o'lchami har doim ham xabar berilmaydi — qism (thead/tbody) lar ham kuzatiladi.
+    for (const section of [table.tHead, ...Array.from(table.tBodies)]) if (section) observer?.observe(section);
+    // Sahifa aylantirish chizig'i paydo bo'lishi konteyner o'lchamini o'zgartirmasdan joyini siljitadi — hujjat ham kuzatiladi.
+    observer?.observe(document.documentElement);
+    window.addEventListener("resize", schedule);
+    // Shrift yuklangach ustunlar kengayadi.
+    void document.fonts?.ready.then(schedule);
+    return () => {
+      cancelAnimationFrame(raf);
+      scroller.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      observer?.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     let active = true;
     void preferenceKey(owner, tableId).then(key => {

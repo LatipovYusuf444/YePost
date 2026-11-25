@@ -518,11 +518,11 @@ table:not(:where(.font-serif *)) {
   font-size: 14px;
   line-height: 20px;
   font-variant-numeric: tabular-nums;
-  background-color: #FFFFFF;
+  background-color: var(--color-white);
 }
 
 table:not(:where(.font-serif *)) :is(thead, thead tr, thead th:not([class*="bg-"])) {
-  background-color: #F8FAFC;
+  background-color: var(--color-slate-50);
 }
 
 table:not(:where(.font-serif *)) thead th {
@@ -1258,7 +1258,7 @@ html[data-theme="purple"] .app-main-surface {
   background-color: color-mix(in srgb, var(--theme-surface) 91%, var(--theme-primary-faint)) !important;
   border-color: color-mix(in srgb, var(--theme-border) 78%, var(--theme-primary)) !important;
 }
-html[data-theme="green"] [class~="bg-white"], html[data-theme="purple"] [class~="bg-white"],
+html[data-theme="green"] [class~="bg-white"]:not([style*="background"]), html[data-theme="purple"] [class~="bg-white"]:not([style*="background"]),
 html[data-theme="green"] [class~="bg-white/80"], html[data-theme="purple"] [class~="bg-white/80"],
 html[data-theme="green"] [class~="bg-white/90"], html[data-theme="purple"] [class~="bg-white/90"],
 html[data-theme="green"] [class~="bg-white/95"], html[data-theme="purple"] [class~="bg-white/95"],
@@ -1520,3 +1520,130 @@ html[data-theme="green"] [class~="shadow-[0_8px_18px_rgba(37,99,235,.20)]"],
 html[data-theme="purple"] [class~="shadow-[0_8px_18px_rgba(37,99,235,.20)]"] { box-shadow: 0 8px 18px color-mix(in srgb, var(--theme-primary) 20%, transparent) !important; }
 html[data-theme="green"] [class~="shadow-[-18px_0_50px_rgba(37,99,235,.06)]"],
 html[data-theme="purple"] [class~="shadow-[-18px_0_50px_rgba(37,99,235,.06)]"] { box-shadow: -18px 0 50px color-mix(in srgb, var(--theme-primary) 6%, transparent) !important; }
+
+/*
+ * 25.11 — "Sutli" fon: toza oq (#fff) va sovuq oq-ko'k (slate-50) ko'zni charchatardi. Butun ilovada kartalar, oynalar,
+ * jadvallar va sahifa orqa foni yumshoq sutli tusga o'tkaziladi (har bir mavzuga mos tus). Sahifalarga tegilmaydi:
+ * `bg-white`, `bg-slate-50`, `bg-gray-50`, `from-white`... Tailwind ranglari o'zgaruvchi orqali almashtiriladi, shuning uchun
+ * hover/fokus holatlari o'zgarmaydi. Oq matn (`text-white`) ham shu tusga o'tadi — rangli tugmalarda farqi sezilmaydi.
+ *   --yp-sut           kartalar, oynalar, maydonlar (oldin #FFFFFF)
+ *   --yp-sut-ichki     ichki bloklar, jadval sarlavhasi (oldin #F8FAFC)
+ *   --yp-sut-sarlavha  jadval sarlavhasi (SmartTable), bir pog'ona to'qroq
+ *   --yp-sut-fon       sahifa orqa foni
+ *   --yp-sut-tugma     tugmalar va maydonlar — kartadan bir pog'ona yorqin (karta bilan qo'shilib ketmasin)
+ *   --yp-chegara-och / --yp-chegara / --yp-chegara-toq — chegaralar (slate/gray-100, -200, kuchli): sovuq #E2E8F0 sutli fonda
+ *                      ko'rinmay qolardi, shuning uchun iliq va to'qroq
+ *   --yp-chegara-rang  asosiy rang tusidagi chegara (orange-100 — loyihadagi eng ko'p chegara)
+ */
+:root {
+  --yp-sut: #F6F5F1;
+  --yp-sut-ichki: #EFEDE8;
+  --yp-sut-sarlavha: #E8E5DF;
+  --yp-sut-fon: #E6E3DC;
+  --yp-sut-tugma: #FCFBF9;
+  --yp-chegara-och: #E4E0D8;
+  --yp-chegara: #D6D1C6;
+  --yp-chegara-toq: #C3BCAE;
+  --yp-chegara-rang: #CFD9E7;
+}
+html[data-theme="green"] {
+  --yp-sut: #F3F6F1;
+  --yp-sut-ichki: #ECF0E9;
+  --yp-sut-sarlavha: #E4EAE1;
+  --yp-sut-fon: #E1E7DE;
+  --yp-sut-tugma: #FBFCFA;
+  --yp-chegara-och: #DFE6DB;
+  --yp-chegara: #CCD8C8;
+  --yp-chegara-toq: #B5C6B0;
+  --yp-chegara-rang: #C4DCD0;
+}
+html[data-theme="purple"] {
+  --yp-sut: #F6F4F4;
+  --yp-sut-ichki: #EFECEE;
+  --yp-sut-sarlavha: #E8E3E7;
+  --yp-sut-fon: #E6E1E5;
+  --yp-sut-tugma: #FCFBFC;
+  --yp-chegara-och: #E5DFE4;
+  --yp-chegara: #D5CCD4;
+  --yp-chegara-toq: #C1B5BF;
+  --yp-chegara-rang: #D8CDEA;
+}
+:root,
+html[data-theme="green"],
+html[data-theme="purple"] {
+  --color-white: var(--yp-sut);
+  --color-slate-50: var(--yp-sut-ichki);
+  --color-gray-50: var(--yp-sut-ichki);
+  --color-cream-50: var(--yp-sut-fon);
+  --color-cream-100: var(--yp-sut-fon);
+  --color-cream-200: color-mix(in srgb, var(--yp-sut-fon) 88%, var(--yp-sut-sarlavha));
+  --background: var(--yp-sut-fon);
+  --card: var(--yp-sut);
+  --popover: var(--yp-sut);
+  --theme-background: var(--yp-sut-fon);
+  --theme-surface: var(--yp-sut);
+  --theme-surface-muted: var(--yp-sut-ichki);
+  --color-slate-100: var(--yp-chegara-och);
+  --color-gray-100: var(--yp-chegara-och);
+  --color-slate-200: var(--yp-chegara);
+  --color-gray-200: var(--yp-chegara);
+  --color-gold-100: var(--yp-chegara-och);
+  --color-gold-200: var(--yp-chegara);
+  --color-orange-100: var(--yp-chegara-rang);
+  --border: var(--yp-chegara);
+  --input: var(--yp-chegara);
+  --theme-border: var(--yp-chegara);
+  --theme-border-strong: var(--yp-chegara-toq);
+}
+body {
+  background-color: var(--yp-sut-fon);
+}
+/* Sahifalarda qo'lda yozilgan oq / oq-ko'k fonlar ham shu tusga (hover variantlari ustun qoladi — ularning aniqligi yuqori). */
+@layer utilities {
+  html [class~="bg-[#FFFFFF]"] { background-color: var(--yp-sut); }
+  html [class~="bg-[#F8FAFC]"],
+  html [class~="bg-[#FAFAFA]"] { background-color: var(--yp-sut-ichki); }
+  html [class~="group-hover:bg-[#F8FAFC]"]:is(:where(.group):hover *) { background-color: var(--yp-sut-ichki); }
+  /* Oq tugma va maydonlar kartadan biroz yorqin — fon bilan qo'shilib ketmaydi (hover:bg-* aniqligi yuqori — ustun qoladi). */
+  html button[class~="bg-white"],
+  html input[class~="bg-white"],
+  html textarea[class~="bg-white"],
+  html select[class~="bg-white"] { background-color: var(--yp-sut-tugma); }
+  /*
+   * gold/orange/cream ranglari `@theme inline` da (qiymat sinfga yozilgan, o'zgaruvchi emas) — chegara va halqa sinflari shu yerda
+   * sutli fonda ko'rinadigan tusga o'tkaziladi. Aniqlik (0,1,1): oddiy sinfdan ustun, hover:/focus: variantlaridan past.
+   */
+  html [class~="border-orange-50"],
+  html [class~="border-orange-100"],
+  html [class~="border-gold-100"],
+  html [class~="border-gold-200"] { border-color: var(--yp-chegara-rang); }
+  html [class~="border-orange-100/80"] { border-color: color-mix(in srgb, var(--yp-chegara-rang) 80%, transparent); }
+  html [class~="border-gold-200/60"] { border-color: color-mix(in srgb, var(--yp-chegara-rang) 70%, transparent); }
+  html [class~="divide-orange-50"] > :not(:last-child),
+  html [class~="divide-orange-100"] > :not(:last-child) { border-color: var(--yp-chegara-rang); }
+  html [class~="divide-orange-100/70"] > :not(:last-child) { border-color: color-mix(in srgb, var(--yp-chegara-rang) 70%, transparent); }
+  html [class~="ring-orange-50"],
+  html [class~="ring-orange-100"],
+  html [class~="ring-gold-100"] { --tw-ring-color: var(--yp-chegara-rang); }
+  html [class~="ring-orange-100/80"] { --tw-ring-color: color-mix(in srgb, var(--yp-chegara-rang) 80%, transparent); }
+  /* Tanlov paneli / chiplar foni (bg-gold-100, inline sovuq #E2E8F0) — sutli fonga mos iliq tus. */
+  html [class~="bg-gold-100"] { background-color: var(--yp-chegara-och); }
+  /* Ilova orqa foni (cream gradient ham inline) — sutli tus; yashil/binafsha mavzuda yuqoridagi mavzu qoidasi ustun. */
+  html .app-shell { background-image: linear-gradient(135deg, var(--yp-sut-fon), var(--yp-sut-ichki) 55%, var(--yp-sut-fon)); }
+}
+/* Yashil/binafsha mavzularda bg-white allaqachon !important bilan almashtirilgan (yuqorida) — tugma/maydon uchun ham shu tartibda.
+   Inline fon rangi bor element (masalan, tanlangan to'lov turi) bundan mustasno — !important inline rangni bosib ketmasin. */
+html[data-theme="green"] :is(button, input, textarea, select)[class~="bg-white"]:not([style*="background"]),
+html[data-theme="purple"] :is(button, input, textarea, select)[class~="bg-white"]:not([style*="background"]) { background-color: var(--yp-sut-tugma) !important; }
+/* Chop etishda qog'oz oq qoladi. */
+@media print {
+  :root,
+  html[data-theme="green"],
+  html[data-theme="purple"] {
+    --yp-sut: #FFFFFF;
+    --yp-sut-ichki: #F8FAFC;
+    --yp-sut-sarlavha: #F1F5F9;
+    --yp-sut-fon: #FFFFFF;
+    --yp-sut-tugma: #FFFFFF;
+  }
+}

@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { optionlarniCheklash } from "@/lib/optionlarniCheklash";
+import { variantniKorsatish } from "@/lib/variantniKorsatish";
 
 export type SavdoSelectOption = {
   value: string;
@@ -101,7 +102,7 @@ export default function SavdoSelect({
   const effectivePlaceholder = placeholder ?? t("savdoSelect.tanlang");
   const effectiveQidiruvPlaceholder = qidiruvPlaceholder ?? t("savdoSelect.qidirish");
   const [open, setOpen] = useState(false);
-  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({ position: "fixed", top: 0, left: 0, visibility: "hidden" });
   const [qidiruvMatni, setQidiruvMatni] = useState("");
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -127,6 +128,9 @@ export default function SavdoSelect({
     korinadiganOptions = optionlarniCheklash(korinadiganOptions);
   }
 
+  // `min-w-[520px]` kabi (prefikssiz) sinfdan ochiladigan ro'yxatning eng kichik kengligi (px).
+  const engKichikKenglik = Number(/(?:^|\s)min-w-\[(\d+)px\]/.exec(dropdownClassName)?.[1] ?? 0);
+
   const updateDropdownPosition = useCallback(() => {
     if (!portal || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
@@ -134,8 +138,11 @@ export default function SavdoSelect({
     const viewportPadding = 12;
     // Portal birinchi marta style'siz render bo'lganda uning auto-width'i butun
     // viewportgacha cho'zilishi mumkin. O'sha o'lchamni qayta ishlatish dropdownni
-    // ekran bo'ylab yoyib yuborardi. Menyu har doim trigger kengligida qoladi.
-    const dropdownWidth = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
+    // ekran bo'ylab yoyib yuborardi. Menyu trigger kengligida, lekin chaqiruvchi
+    // `dropdownClassName` da `min-w-[Npx]` bergan bo'lsa — kamida shuncha (tor maydonda
+    // uzun mahsulot nomlari kesilmasin); har doim ekranga sig'adi. Inline `minWidth: 0`
+    // sinfdagi min-w ni bekor qilardi, shuning uchun eng kichik kenglik shu yerda hisoblanadi.
+    const dropdownWidth = Math.min(Math.max(rect.width, engKichikKenglik), window.innerWidth - viewportPadding * 2);
     const belowSpace = window.innerHeight - rect.bottom - gap - viewportPadding;
     const aboveSpace = rect.top - gap - viewportPadding;
     const preferredHeight = Math.min(224, options.length * 40 + 8);
@@ -158,7 +165,7 @@ export default function SavdoSelect({
       maxWidth: `calc(100vw - ${viewportPadding * 2}px)`,
       maxHeight,
     });
-  }, [options.length, portal]);
+  }, [engKichikKenglik, options.length, portal]);
 
   useEffect(() => {
     function close(event: MouseEvent) {
@@ -199,6 +206,12 @@ export default function SavdoSelect({
 
   useEffect(() => {
     if (!klaviatura || !ochishSorovi) return;
+    // Maydon ekrandan tashqarida bo'lsa (oyna pastida) ro'yxat boshqa joyda "osilib" qolmasin: avval maydon o'rtaga aylantiriladi.
+    const tugma = buttonRef.current;
+    if (tugma) {
+      const rect = tugma.getBoundingClientRect();
+      if (rect.top < 80 || rect.bottom > window.innerHeight - 260) tugma.scrollIntoView({ block: "center" });
+    }
     setOpen(true);
     window.requestAnimationFrame(updateDropdownPosition);
   }, [klaviatura, ochishSorovi, updateDropdownPosition]);
@@ -226,7 +239,7 @@ export default function SavdoSelect({
             : faolIndeks - 1;
       setFaolIndeks(keyingi);
       window.requestAnimationFrame(() => {
-        document.getElementById(`${royxatId}-variant-${keyingi}`)?.scrollIntoView({ block: "nearest" });
+        variantniKorsatish(dropdownRef.current, document.getElementById(`${royxatId}-variant-${keyingi}`));
       });
     } else if (event.key === "Enter") {
       // Forma yuborilmasin va Enter faqat tanlangan variantni qo'shsin.
@@ -374,7 +387,11 @@ export default function SavdoSelect({
           buttonClassName
         )}
       >
-        <span className={`min-w-0 truncate ${selected ? "" : "text-slate-400"}`}>
+        <span
+          className={`min-w-0 truncate ${selected ? "" : "text-slate-400"}`}
+          // Tor maydonda kesilgan tanlangan nom sichqoncha ustida to'liq ko'rinadi.
+          title={(labelToText(selectedLabel) || selected?.searchLabel || labelToText(selected?.label)) || undefined}
+        >
           {selectedLabel ?? selected?.label ?? effectivePlaceholder}
         </span>
         {!hideChevron && (

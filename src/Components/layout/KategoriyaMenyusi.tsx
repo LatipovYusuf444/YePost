@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
 import { Check, ChevronDown, LayoutGrid, Search, SearchX, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { variantniKorsatish } from "@/lib/variantniKorsatish";
 import { Popover, PopoverContent, PopoverTrigger } from "@/Components/ui/popover";
 import { kategoriyalarniFiltrlash } from "@/lib/kategoriyaQidiruvi";
 import type { Kategoriya } from "@/types/catalog";
@@ -56,7 +57,7 @@ export default function KategoriyaMenyusi({ kategoriyalar, kategoriyaId, onTanla
   // Faol qator ko'rinib turishi uchun ro'yxat suriladi (↑/↓ bilan uzun ro'yxatda pastga tushganda).
   useEffect(() => {
     if (!ochiq) return;
-    royxatRef.current?.querySelector<HTMLElement>(`[data-variant="${faol}"]`)?.scrollIntoView({ block: "nearest" });
+    variantniKorsatish(royxatRef.current, royxatRef.current?.querySelector<HTMLElement>(`[data-variant="${faol}"]`));
   }, [faol, ochiq]);
 
   function taymerniTozalash() {

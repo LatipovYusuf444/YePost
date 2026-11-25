@@ -15,6 +15,7 @@ import {
   type SelectHTMLAttributes,
 } from "react";
 import { createPortal } from "react-dom";
+import { variantniKorsatish } from "@/lib/variantniKorsatish";
 import { Check, ChevronDown } from "lucide-react";
 import { harfBilanTopish, klaviaturaYonalishi } from "@/lib/royxatKlaviaturasi";
 
@@ -81,7 +82,7 @@ export default function AppSelect({
   const currentValue = controlled ? String(value ?? "") : internalValue;
   const selected = options.find((option) => option.value === currentValue);
   const [open, setOpen] = useState(false);
-  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({ position: "fixed", top: 0, left: 0, visibility: "hidden" });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   // Klaviatura: belgilangan variant (ochiq ro'yxatda ↑/↓ bilan yuriladi) va harf terib tez o'tish buferi.
@@ -204,7 +205,7 @@ export default function AppSelect({
   // Belgilangan variant ro'yxatda ko'rinib tursin.
   useEffect(() => {
     if (!open || faol < 0) return;
-    menuRef.current?.querySelector<HTMLElement>(`[data-app-select-indeks="${faol}"]`)?.scrollIntoView({ block: "nearest" });
+    variantniKorsatish(menuRef.current, menuRef.current?.querySelector<HTMLElement>(`[data-app-select-indeks="${faol}"]`));
   }, [open, faol]);
 
   return (

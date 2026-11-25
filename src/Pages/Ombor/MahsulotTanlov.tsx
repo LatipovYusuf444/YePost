@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { variantniKorsatish } from "@/lib/variantniKorsatish";
 import type { MahsulotModifikatsiyasi } from "@/types/ombor";
 import { modifikatsiyaQidiruvi, modificationNomi } from "./omborYordamchilari";
 
@@ -67,7 +68,7 @@ export default function MahsulotTanlov({
     const oraliq = 6;
     const chekka = 10;
     const kerakli = 256;
-    const kenglik = Math.min(Math.max(rect.width, 280), window.innerWidth - chekka * 2);
+    const kenglik = Math.min(Math.max(rect.width, 380), window.innerWidth - chekka * 2);
     const pastda = window.innerHeight - rect.bottom - oraliq - chekka;
     const tepada = rect.top - oraliq - chekka;
     const yuqoriga = pastda < Math.min(kerakli, 150) && tepada > pastda;
@@ -141,7 +142,7 @@ export default function MahsulotTanlov({
             : faol - 1;
       setFaol(keyingi);
       window.requestAnimationFrame(() => {
-        document.getElementById(`${royxatId}-variant-${keyingi}`)?.scrollIntoView({ block: "nearest" });
+        variantniKorsatish(document.getElementById(royxatId), document.getElementById(`${royxatId}-variant-${keyingi}`));
       });
     } else if (event.key === "Enter") {
       // Enter faqat belgilangan mahsulotni tanlaydi; hech narsa belgilanmagan bo'lsa hech narsa qilmaydi.
@@ -172,6 +173,7 @@ export default function MahsulotTanlov({
         ref={inputRef}
         size={ixcham ? 1 : undefined}
         value={qidiruv ?? tanlanganMatn}
+        title={qidiruv === null && tanlanganMatn ? tanlanganMatn : undefined}
         disabled={disabled}
         placeholder={placeholder}
         aria-label={ariaLabel}

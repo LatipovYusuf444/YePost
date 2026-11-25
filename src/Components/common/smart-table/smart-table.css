@@ -1,19 +1,23 @@
 .smart-table-frame {
-  --smart-cell-border: #d5dde8;
-  --smart-header-border: #b9c7d8;
-  --smart-outer-border: #c4d0df;
-  --smart-surface: #fff;
-  --smart-header: #f1f5f9;
+  --smart-cell-border: var(--yp-chegara, #d5dde8);
+  --smart-header-border: var(--yp-chegara-toq, #b9c7d8);
+  --smart-outer-border: var(--yp-chegara-toq, #c4d0df);
+  --smart-surface: var(--color-white, #fff);
+  --smart-header: var(--yp-sut-sarlavha, #f1f5f9);
   --smart-hover: #eff6ff;
   --smart-accent: var(--theme-primary, #2563eb);
-  width: 100%; min-width: 0; max-width: 100%;
+  /* Ramka jadval kengligida (kamida konteyner kengligida): "Ustunlar" tugmasi yonga aylantirishda o'ng chetda qotib turishi uchun
+     sticky uning ichida harakatlana olishi kerak. Aylantirish egasi — ota konteyner (pastdagi :has qoidasi). */
+  width: max-content; min-width: 100%; max-width: none;
   color: var(--foreground, #0f172a);
 }
 .dark .smart-table-frame, .dark .smart-table-settings {
   --smart-cell-border: #334155; --smart-header-border: #475569; --smart-outer-border: #475569;
   --smart-surface: #0f172a; --smart-header: #162338; --smart-hover: #1e293b;
 }
-.smart-table-toolbar { display: flex; justify-content: flex-end; align-items: center; height: 48px; padding: 6px 12px; position: sticky; left: 0; background: var(--smart-surface); }
+.smart-table-toolbar { display: flex; justify-content: flex-end; align-items: center; height: 48px; padding: 6px 12px; background: var(--smart-surface); }
+/* Jadval yonga aylantirilsa ham "Ustunlar" tugmasi ko'rinadigan oynaning o'ng chetida joyida turadi. */
+.smart-table-toolbar > .smart-settings-trigger { position: sticky; right: 12px; z-index: 2; }
 .smart-settings-trigger, .smart-reset { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 12px; border: 1px solid var(--smart-cell-border, #d5dde8); border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--smart-surface, var(--popover)); color: inherit; cursor: pointer; transition: background-color 150ms; }
 .smart-settings-trigger:hover, .smart-reset:hover { background: var(--smart-hover, var(--muted)); }
 .smart-table-settings { display: flex; flex-direction: column; gap: 0; box-sizing: border-box; width: min(336px, calc(100vw - 24px), var(--radix-popover-content-available-width, 336px)); max-height: min(460px, var(--radix-popover-content-available-height, 460px), calc(100dvh - 24px)); min-height: 0; overflow: hidden; padding: 0; border-radius: 14px; z-index: 200; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 12px 36px #0f172a24; }
@@ -62,6 +66,11 @@ table.smart-data-table > :is(thead, tbody, tfoot) > tr > :is(th, td):not([colspa
 table.smart-data-table > :is(thead, tbody, tfoot) > tr > :is(th, td):not([colspan]) :where(input, select, textarea) { box-sizing: border-box; min-inline-size: 0; max-inline-size: 100%; }
 table.smart-data-table > :is(thead, tbody, tfoot) > tr > :is(th, td) :where(.flex, .inline-flex) { flex-wrap: nowrap; }
 table.smart-data-table > tbody > tr > td[colspan] { white-space: normal; }
+/* Bo'sh holat va yuklanish qatori ko'rinadigan qism o'rtasida (jadval keng bo'lsa ham) — siljishni SmartTable o'lchaydi. */
+table.smart-data-table > tbody > tr > td[colspan]:only-child.text-center > *,
+table.smart-data-table > tbody > tr > td[colspan]:only-child > [role="status"] { translate: var(--smart-ortaga, 0px) 0; }
+/* Siljitilgan blok jadval chetidan chiqib aylantirish maydonini kengaytirmasin (faqat shu markazlangan kataklar). */
+table.smart-data-table > tbody > tr > td[colspan]:only-child:is(.text-center, :has(> [role="status"])) { overflow-x: clip; }
 /* Floating UI owns its own size. Restore its existing utility styles instead of
    making menus (or their options) inherit the width of a narrow data cell. */
 table.smart-data-table :is(.absolute, .fixed, [role="menu"], [role="listbox"], [role="dialog"], [data-slot$="-content"], [style*="position: absolute"], [style*="position:absolute"], [style*="position: fixed"], [style*="position:fixed"]),

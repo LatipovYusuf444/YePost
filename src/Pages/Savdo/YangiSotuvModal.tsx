@@ -1030,6 +1030,8 @@ export default function YangiSotuvModal({
   }, [qoldiqlar, warehouseId, omborlar, canSellNegative, sotuvVal, kurs, yagona, blokYagona, narxSozlamasi, t]);
   // Saqlangan (qoralama) qator mahsuloti ro'yxatda bormi — har renderda 6 000+ variantni ko'rib chiqmaslik uchun.
   const katalogQiymatlari = useMemo(() => new Set(katalogOptionlariRoyxati.map((option) => option.value)), [katalogOptionlariRoyxati]);
+  // Tanlangan mahsulot maydonida faqat nomi ko'rinadi (to'liq yorliq — ombor, qoldiq, narx — ro'yxatda).
+  const katalogNomlari = useMemo(() => new Map(katalogOptionlariRoyxati.map((option) => [option.value, option.searchLabel])), [katalogOptionlariRoyxati]);
   // Katalog oynasi uchun barqaror funksiyalar: oyna filtri ularga bog'liq, har renderda yangilansa butun ro'yxat qayta filtrlanardi.
   const katalogQoldiqSoni = useMemo(
     () => (kalit: string) => { const qoldiq = qoldiqIndeksi.aniq.get(kalit) ?? (tahrir && kalit.includes("::") ? qoldiqIndeksi.omborsiz.get(kalit.split("::")[0]) : undefined); return qoldiq ? qoldiqMiqdori(qoldiq) : 0; },
@@ -2260,7 +2262,7 @@ export default function YangiSotuvModal({
               </div>
 
               <div className="min-w-0 space-y-4">
-                <section ref={mahsulotKartasiRef} className={kartaKlassi}>
+                <section ref={mahsulotKartasiRef} className={cn(kartaKlassi, "@container")}>
                   <KartaBoshi
                     ikonka={Package}
                     sarlavha={t("sections.productList")}
@@ -2530,10 +2532,10 @@ export default function YangiSotuvModal({
                     )}
                   </div>
 
-                  <p className="mt-3 hidden text-xs font-medium leading-5 text-slate-400 lg:block">{t("products.keyboardHint")}</p>
+                  <p className="mt-3 hidden text-xs font-medium leading-5 text-slate-400 @min-[900px]:block">{t("products.keyboardHint")}</p>
 
                   <div className="mt-4">
-                    <div className={`hidden rounded-t-2xl border-2 border-slate-300 bg-slate-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-slate-500 lg:grid ${qatorUstunlari} lg:gap-3`}>
+                    <div className={`hidden rounded-t-2xl border-2 border-slate-300 bg-slate-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-slate-500 @min-[900px]:grid ${qatorUstunlari} @min-[900px]:gap-3`}>
                       <span>{t("table.number")}</span>
                       <span>{t("table.product")}</span>
                       <span>{t("table.catalogPrice")}</span>
@@ -2544,7 +2546,7 @@ export default function YangiSotuvModal({
                       <span />
                     </div>
 
-                    <div ref={qatorlarRef} className="space-y-3 lg:space-y-0 lg:rounded-b-2xl lg:border-2 lg:border-slate-300">
+                    <div ref={qatorlarRef} className="space-y-3 @min-[900px]:space-y-0 @min-[900px]:rounded-b-2xl @min-[900px]:border-2 @min-[900px]:border-slate-300">
                       {mahsulotlar.map((mahsulot, index) => {
                         const qoldiq = qatorQoldigi(mahsulot.qoldiqKaliti);
                         const miqdor = raqamgaAylantirish(mahsulot.quantity);
@@ -2574,30 +2576,30 @@ export default function YangiSotuvModal({
                         return (
                           <div
                             key={index}
-                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 lg:items-start lg:rounded-none lg:border-0 lg:border-b-2 lg:border-slate-200 lg:px-4 lg:py-3 lg:last:border-b-0 ${qatorUstunlari} ${qatorXatosi ? xatoRamkasi : ""}`}
+                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 @min-[900px]:items-start @min-[900px]:rounded-none @min-[900px]:border-0 @min-[900px]:border-b-2 @min-[900px]:border-slate-200 @min-[900px]:px-4 @min-[900px]:py-3 @min-[900px]:last:border-b-0 ${qatorUstunlari} ${qatorXatosi ? xatoRamkasi : ""}`}
                           >
-                            <div className="flex items-center justify-between sm:col-span-2 lg:col-span-1 lg:block lg:pt-3">
+                            <div className="flex items-center justify-between sm:col-span-2 @min-[900px]:col-span-1 @min-[900px]:block @min-[900px]:pt-3">
                               <span className="text-sm font-black text-slate-400">
-                                <span className="lg:hidden">#</span>
+                                <span className="@min-[900px]:hidden">#</span>
                                 {index + 1}
                               </span>
                               <button
                                 type="button"
                                 disabled={mahsulotlar.length === 1}
                                 onClick={() => qatorniOchirish(index)}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30 lg:hidden"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30 @min-[900px]:hidden"
                                 aria-label={t("products.removeRowAriaLabel")}
                               >
                                 <Trash2 size={15} />
                               </button>
                             </div>
 
-                            <div className="min-w-0 sm:col-span-2 lg:col-span-1">
+                            <div className="min-w-0 sm:col-span-2 @min-[900px]:col-span-1">
                               <p className={mobilYorliqKlassi}>{t("labels.product")}</p>
                               <div className="flex items-start gap-2">
                                 <button
                                   type="button"
-                                  className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#2563EB] hover:text-[#2563EB] sm:flex"
+                                  className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#2563EB] hover:text-[#2563EB] sm:flex @min-[900px]:hidden @min-[1100px]:flex"
                                   title={t("products.imageButtonTitle")}
                                   aria-label={t("labels.image")}
                                 >
@@ -2625,8 +2627,14 @@ export default function YangiSotuvModal({
                                     ochishSorovi={fokusSorovi?.maydon === "mahsulot" && fokusSorovi.qator === index ? fokusSorovi.n : 0}
                                     placeholder={t("placeholders.selectProduct")}
                                     options={mahsulotOptionlari(mahsulot)}
-                                    buttonClassName={`${selectTugmasiKlassi} ${tugmaXatosi(`items.${index}.modificationId`)}`}
-                                    dropdownClassName="[&>div>div]:text-center min-w-[520px] max-w-[min(720px,calc(100vw-32px))]"
+                                    selectedLabel={(() => {
+                                      const nom = katalogNomlari.get(mahsulot.qoldiqKaliti) ?? mahsulot.saqlanganNom;
+                                      return mahsulot.qoldiqKaliti && nom ? (
+                                        <span className="line-clamp-2 whitespace-normal break-words text-[13px] font-semibold leading-[1.2] text-slate-800">{nom}</span>
+                                      ) : undefined;
+                                    })()}
+                                    buttonClassName={`${selectTugmasiKlassi} h-auto min-h-11 py-1 ${tugmaXatosi(`items.${index}.modificationId`)}`}
+                                    dropdownClassName="[&>div>div]:text-center min-w-[600px] max-w-[min(720px,calc(100vw-32px))]"
                                     portal
                                   />
                                   </XatoliMaydon>
@@ -2735,10 +2743,16 @@ export default function YangiSotuvModal({
                               />
                               </XatoliMaydon>
                               {qoldiqOgohlantirishlari.has(index) && (
-                                <p data-qoldiq-ogohlantirish={index} className="mt-1 text-[11px] font-semibold leading-4 text-amber-700">
-                                  ⚠ {t("stockWarning.row", {
+                                <p
+                                  data-qoldiq-ogohlantirish={index}
+                                  className="mt-1 inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold leading-4 text-amber-700"
+                                  title={t("stockWarning.row", {
                                     available: qoldiqOgohlantirishlari.get(index)!.mavjud.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
                                     requested: qoldiqOgohlantirishlari.get(index)!.talab.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                                  })}
+                                >
+                                  ⚠ {t("stockWarning.rowShort", {
+                                    available: qoldiqOgohlantirishlari.get(index)!.mavjud.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
                                   })}
                                 </p>
                               )}
@@ -2819,14 +2833,14 @@ export default function YangiSotuvModal({
                               )}
                             </div>
 
-                            <div className="min-w-0 lg:pt-3 lg:text-right">
+                            <div className="min-w-0 @min-[900px]:pt-3 @min-[900px]:text-right">
                               <p className={mobilYorliqKlassi}>{t("labels.rowTotal")}</p>
-                              <p className="flex h-11 items-center rounded-xl bg-emerald-50 px-3.5 text-sm font-black text-emerald-600 ring-2 ring-emerald-200 lg:h-auto lg:justify-end lg:bg-transparent lg:p-0 lg:ring-0">
+                              <p className="flex h-11 items-center rounded-xl bg-emerald-50 px-3.5 text-sm font-black text-emerald-600 ring-2 ring-emerald-200 @min-[900px]:h-auto @min-[900px]:justify-end @min-[900px]:bg-transparent @min-[900px]:p-0 @min-[900px]:ring-0">
                                 <span className="truncate">{pulniFormatlash(qatorJami, sotuvVal)}</span>
                               </p>
                             </div>
 
-                            <div className="hidden lg:flex lg:justify-end lg:pt-1.5">
+                            <div className="hidden @min-[900px]:flex @min-[900px]:justify-end @min-[900px]:pt-1.5">
                               <button
                                 type="button"
                                 disabled={mahsulotlar.length === 1}
@@ -2839,7 +2853,7 @@ export default function YangiSotuvModal({
                             </div>
 
                             {ustama > 0 && miqdor > 0 && (
-                              <p className="rounded-xl bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-700 ring-2 ring-amber-100 lg:col-span-full">
+                              <p className="rounded-xl bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-700 ring-2 ring-amber-100 @min-[900px]:col-span-full">
                                 {t("products.autoMarkupHint", {
                                   katalog: pulniFormatlash(donaNarxi(katalogNarxi), sotuvVal),
                                   sotuv: pulniFormatlash(donaNarxi(narx), sotuvVal),
@@ -2850,7 +2864,7 @@ export default function YangiSotuvModal({
                             )}
 
                             {birDonaChegirma > 0 && miqdor > 0 && ustama <= 0 && (
-                              <p className="rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 ring-2 ring-emerald-200 lg:col-span-full">
+                              <p className="rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 ring-2 ring-emerald-200 @min-[900px]:col-span-full">
                                 {t("products.autoDiscountHint", {
                                   katalog: pulniFormatlash(donaNarxi(narx), sotuvVal),
                                   sotuv: pulniFormatlash(donaNarxi(sotuvNarxi), sotuvVal),
@@ -2861,7 +2875,7 @@ export default function YangiSotuvModal({
                             )}
 
                             {qatorXatosi && (
-                              <div className="sm:col-span-2 lg:col-span-full">
+                              <div className="sm:col-span-2 @min-[900px]:col-span-full">
                                 <MaydonXatosi matn={qatorXatosi} />
                               </div>
                             )}
@@ -2881,7 +2895,7 @@ export default function YangiSotuvModal({
                     )}
                   </div>
 
-                  <div ref={xulosaKartasiRef} className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+                  <div ref={xulosaKartasiRef} className="mt-4 grid grid-cols-2 gap-3 @min-[900px]:grid-cols-4">
                     <XulosaKarta ikonka={Package} nom={t("summary.productsCount")} qiymat={String(mahsulotlarSoni)} ton="kok" />
                     <MiqdorXulosaKarta nom={t("summary.totalQuantity")} guruhlar={birlikMiqdorlari} />
                     <XulosaKarta ikonka={Percent} nom={t("summary.discount")} qiymat={pulniFormatlash(umumiyChegirma, sotuvVal)} ton="yashil" />
@@ -3233,11 +3247,13 @@ function umumiyNarxTuri(qatorlar: MahsulotQatori[]): SotuvNarxTuri {
 
 const IZOH_MAKS_UZUNLIK = 500;
 // Mahsulot jadvali ustunlari (katta ekranda): №, mahsulot, katalog narxi, sotuv narxi, miqdor, chegirma, jami, o'chirish.
+// Mahsulot ustuni eng keng — uzun nomlar ("DANMI [G] Goldfish ...") tanlangach ham ko'rinsin. Jadval ko'rinishi ekran emas,
+// mahsulotlar kartasi (@container) kengligiga bog'liq: 900px dan tor bo'lsa (1280px da oyna ikki ustunli) qatorlar kartochka ko'rinishida.
 const qatorUstunlari =
-  "lg:grid-cols-[32px_minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1.45fr)_minmax(0,1.1fr)_40px]";
+  "@min-[900px]:grid-cols-[32px_minmax(0,2.4fr)_minmax(150px,1.2fr)_minmax(88px,1fr)_minmax(64px,0.7fr)_minmax(150px,1.25fr)_minmax(96px,0.9fr)_40px]";
 const kartaKlassi = "rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-2 ring-[#CBD5E1] sm:p-5";
 const yorliqKlassi = "text-sm font-semibold text-slate-600";
-const mobilYorliqKlassi = "mb-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 lg:hidden";
+const mobilYorliqKlassi = "mb-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 @min-[900px]:hidden";
 const maydonKlassi =
   "h-11 w-full min-w-0 rounded-xl border-2 border-slate-300 bg-white px-3.5 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 const selectTugmasiKlassi =

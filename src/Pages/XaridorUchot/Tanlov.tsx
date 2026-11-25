@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { variantniKorsatish } from "@/lib/variantniKorsatish";
 import { klaviaturaYonalishi } from "@/lib/royxatKlaviaturasi";
 
 export type TanlovVarianti = { value: string; label: string };
@@ -43,7 +44,7 @@ export default function Tanlov({
   // Belgilangan variant ko'rinib tursin (uzun ro'yxatda ↓ bosilganda pastga aylanadi).
   useEffect(() => {
     if (!ochiq || faol < 0) return;
-    royxatRef.current?.querySelector<HTMLElement>(`[data-tanlov-indeks="${faol}"]`)?.scrollIntoView({ block: "nearest" });
+    variantniKorsatish(royxatRef.current, royxatRef.current?.querySelector<HTMLElement>(`[data-tanlov-indeks="${faol}"]`));
   }, [ochiq, faol]);
 
   function ochish() {

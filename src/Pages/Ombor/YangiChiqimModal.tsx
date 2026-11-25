@@ -434,8 +434,8 @@ export default function YangiChiqimModal({ onClose }: Props) {
             <UmumiyBirlikPaneli className="mb-4" variantlar={umumiyVariantlar} tanlangan={umumiyBirlik} onTanlash={umumiyBirlikniTanlash} xabar={birlikXabari} />
 
             <div className="scrollbar-orange overflow-x-auto pb-2">
-              <div ref={qatorlarRef} className="min-w-[1560px] space-y-3">
-                <div className="grid grid-cols-[42px_76px_1.8fr_1fr_1fr_1.15fr_1.4fr_1.5fr_1fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
+              <div ref={qatorlarRef} className="min-w-[1680px] space-y-3">
+                <div className="grid grid-cols-[42px_76px_2.6fr_1fr_1fr_1.15fr_1.4fr_1.5fr_1fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
                   <span>{t("yangiChiqimModal.items.columns.number")}</span><span /><span>{t("yangiChiqimModal.items.columns.product")}</span><span>{t("yangiChiqimModal.items.columns.barcode")}</span><span>{t("yangiChiqimModal.items.columns.costPrice")}</span><span>{t("yangiChiqimModal.items.columns.quantity")}</span><span>{tb("hujjatBirligi.label")}</span><span>{t("yangiChiqimModal.items.columns.warehouse")}</span><span>{t("yangiChiqimModal.items.columns.stock")}</span><span>{t("yangiChiqimModal.items.columns.amount")}</span><span />
                 </div>
                 {qatorlar.map((row, index) => {
@@ -448,7 +448,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
                   // Tannarx tanlangan birlikda (1 korobka), summa — asosiy birlikdagi miqdor bo'yicha.
                   const narx = asosiyNarx * koeff;
                   return (
-                    <div key={row.id} className="grid grid-cols-[42px_76px_1.8fr_1fr_1fr_1.15fr_1.4fr_1.5fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3">
+                    <div key={row.id} className="grid grid-cols-[42px_76px_2.6fr_1fr_1fr_1.15fr_1.4fr_1.5fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3">
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
                       <div className="flex h-12 items-center justify-center rounded-xl border border-dashed border-orange-200 bg-white text-slate-300"><Image size={20} /></div>
                       <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}>

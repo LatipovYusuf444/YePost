@@ -866,7 +866,7 @@ export default function BoshSahifa() {
 
   return (
     <div className="grid min-h-[calc(100vh-214px)] w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_minmax(390px,24%)]">
-      <section className="flex min-h-[520px] min-w-0 flex-col rounded-[26px] border border-gold-200 bg-white/95 p-4 shadow-gold-soft sm:p-5 xl:p-6">
+      <section className="flex min-h-[520px] min-w-0 flex-col rounded-[26px] border-2 border-(--yp-chegara) bg-white/95 p-4 shadow-gold-soft sm:p-5 xl:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2.5">
@@ -1059,7 +1059,7 @@ export default function BoshSahifa() {
         </div>
       </section>
 
-      <aside className="flex flex-col rounded-[26px] border-2 border-gold-200 bg-white/86 p-4 shadow-gold-soft sm:p-5 xl:p-6">
+      <aside className="flex flex-col rounded-[26px] border-2 border-(--yp-chegara) bg-white/86 p-4 shadow-gold-soft sm:p-5 xl:p-6">
         <div className="mb-5 grid grid-cols-2 rounded-2xl bg-gold-100 p-1">
           {(
             [
@@ -1121,7 +1121,7 @@ export default function BoshSahifa() {
                 aria-controls="donalik-mijoz-takliflari"
                 aria-autocomplete="list"
                 placeholder={t("customer.namePlaceholder")}
-                className="h-10 w-full rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
+                className="h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm shadow-[inset_0_1px_2px_rgba(15,23,42,.04)] outline-none transition placeholder:text-slate-400 hover:border-gray-300 focus:border-gold-400 focus:ring-2 focus:ring-gold-200"
               />
               {nomTaklifiKorinadi && (
                 <div className="absolute left-0 right-0 top-full z-30 mt-1 flex max-h-72 flex-col overflow-hidden rounded-xl border border-gold-200 bg-white shadow-[0_18px_44px_rgba(15,23,42,.16)]">
@@ -1172,7 +1172,7 @@ export default function BoshSahifa() {
                 autoComplete="off"
                 placeholder={t("customer.phonePlaceholder")}
                 aria-label={t("customer.phonePlaceholder")}
-                className="mt-2 h-10 w-full rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
+                className="mt-2 h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm shadow-[inset_0_1px_2px_rgba(15,23,42,.04)] outline-none transition placeholder:text-slate-400 hover:border-gray-300 focus:border-gold-400 focus:ring-2 focus:ring-gold-200"
               />
             </div>
 
@@ -1195,7 +1195,7 @@ export default function BoshSahifa() {
                     }
                   }}
                   placeholder={chegirmaTuri === "foiz" ? t("customer.discountPercentPlaceholder") : t("customer.discountPlaceholder")}
-                  className="h-10 min-w-0 rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
+                  className="h-10 min-w-0 rounded-xl border border-gray-200 bg-white px-3 text-sm shadow-[inset_0_1px_2px_rgba(15,23,42,.04)] outline-none transition placeholder:text-slate-400 hover:border-gray-300 focus:border-gold-400 focus:ring-2 focus:ring-gold-200"
                 />
                 <div role="group" aria-label={t("customer.discountLabel")} className="grid grid-cols-2 rounded-xl bg-gold-100 p-0.5">
                   {(["sum", "foiz"] as const).map((turi) => (
@@ -1261,7 +1261,7 @@ export default function BoshSahifa() {
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder={t("customer.notePlaceholder")}
-                className="mb-4 h-20 w-full resize-none rounded-xl bg-gold-50 px-3 py-2 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
+                className="mb-4 h-20 w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-[inset_0_1px_2px_rgba(15,23,42,.04)] outline-none transition placeholder:text-slate-400 hover:border-gray-300 focus:border-gold-400 focus:ring-2 focus:ring-gold-200"
               />
             )}
 
@@ -1318,7 +1318,7 @@ export default function BoshSahifa() {
               ))}
             </div>
 
-            <div className="mt-auto rounded-xl bg-gold-50 p-3">
+            <div className="mt-auto rounded-xl border border-gray-200 bg-slate-50 p-3">
               <div className="mb-2 flex justify-between text-xs text-[#64748B]">
                 <span>{t("customer.subtotal")}</span>
                 <span>{formatSumma(total)}</span>
@@ -1361,7 +1361,7 @@ export default function BoshSahifa() {
 
               <button
                 onClick={() => (cart.length > 0 ? setKechiktirishOchiq(true) : clearCart())}
-                className="mt-2 h-10 w-full rounded-xl bg-white text-xs font-bold text-[#64748B] transition hover:text-gold-600"
+                className="mt-2 h-10 w-full rounded-xl border border-gray-200 bg-white text-xs font-bold text-[#475569] shadow-sm transition hover:border-gold-300 hover:text-gold-600"
               >
                 {t("customer.postpone")}
               </button>
