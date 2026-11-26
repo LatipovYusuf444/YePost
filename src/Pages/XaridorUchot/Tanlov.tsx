@@ -30,6 +30,7 @@ export default function Tanlov({
   const [ochiq, setOchiq] = useState(false);
   const [soz, setSoz] = useState("");
   const [faol, setFaol] = useState(-1);
+  const ildizRef = useRef<HTMLDivElement>(null);
   const tugmaRef = useRef<HTMLButtonElement>(null);
   const royxatRef = useRef<HTMLDivElement>(null);
   const royxatId = useId();
@@ -46,6 +47,21 @@ export default function Tanlov({
     if (!ochiq || faol < 0) return;
     variantniKorsatish(royxatRef.current, royxatRef.current?.querySelector<HTMLElement>(`[data-tanlov-indeks="${faol}"]`));
   }, [ochiq, faol]);
+
+  // Tashqariga bosilsa yopiladi. Butun ekranni yopuvchi ko'rinmas qatlam ishlatilmaydi: u bosishni "yutardi" — ro'yxat ochiq
+  // turganda boshqa maydon/tugma (masalan "Bank") birinchi bosishda ishlamasdi. Endi bosilgan joy ham darhol ishlaydi
+  // (kompyuter, planshet, telefon — pointerdown barmoq va sichqonchada bir xil).
+  useEffect(() => {
+    if (!ochiq) return;
+    const tashqari = (event: PointerEvent) => {
+      if (ildizRef.current?.contains(event.target as Node)) return;
+      setOchiq(false);
+      setSoz("");
+      setFaol(-1);
+    };
+    document.addEventListener("pointerdown", tashqari, true);
+    return () => document.removeEventListener("pointerdown", tashqari, true);
+  }, [ochiq]);
 
   function ochish() {
     setSoz("");
@@ -101,7 +117,7 @@ export default function Tanlov({
   const faolId = ochiq && faol >= 0 && korinadigan[faol] ? `${royxatId}-${faol}` : undefined;
 
   return (
-    <div className="relative">
+    <div ref={ildizRef} className="relative">
       <button
         ref={tugmaRef}
         type="button"
@@ -124,14 +140,7 @@ export default function Tanlov({
 
       {ochiq && (
         <>
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-label={t("actions.close")}
-            onClick={() => yopish()}
-            className="fixed inset-0 z-40 cursor-default"
-          />
-          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.16)]">
+          <div data-tanlov-royxati className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.16)]">
             {qidiruv && (
               <div className="mb-1 flex items-center gap-2 rounded-xl border border-slate-200 px-3">
                 <Search size={15} className="text-slate-400" />
