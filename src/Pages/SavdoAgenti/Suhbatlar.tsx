@@ -22,6 +22,7 @@ import { kunMatni, vaqtMatni } from "@/lib/hujjatSanasi";
 import { xatolikXabari } from "@/lib/toast";
 import {
   kanalTuri,
+  oynaniYangilash,
   suhbatBoshHarflari,
   suhbatNomi,
   xabarMuallifi,
@@ -31,7 +32,7 @@ import type { Attachment, ChatMessage, ChatThread, CursorJavobi, Lid } from "@/t
 import KanalBelgisi from "./KanalBelgisi";
 import MijozBiriktirish from "./MijozBiriktirish";
 import LidKartasi, { type LidXodimi } from "./LidKartasi";
-import { bosqichRangi } from "./lidYordamchilari";
+import { bosqichRangi, faolXodimlar } from "./lidYordamchilari";
 
 const XABAR_LIMIT = 30;
 // Yangi xabarlar uchun davriy tekshiruv (sahifa ko'rinib turganda).
@@ -75,6 +76,10 @@ export default function Suhbatlar() {
   // Ochiq suhbatning eng so'nggi lidi (undefined — yuklanmoqda, null — lid yo'q) va uning paneli.
   const [lid, setLid] = useState<Lid | null | undefined>(undefined);
   const [lidOchiq, setLidOchiq] = useState(false);
+  const lidOchiqRef = useRef(false);
+  lidOchiqRef.current = lidOchiq;
+  // Xabar ro'yxatiga yuborish/eski sahifa qo'shilganda oshadi: undan oldin yuborilgan davriy so'rov javobi xabar o'chirmaydi.
+  const yozuvRaqami = useRef(0);
   const [xodimlar, setXodimlar] = useState<LidXodimi[] | null>(null);
 
   const joriyId = useRef<string | null>(null);
@@ -131,29 +136,34 @@ export default function Suhbatlar() {
       });
   }, [tanlanganId]);
 
+  // Suhbatning eng so'nggi lidi: suhbat almashganda, davriy yangilashda (yangi lid ochilishi, cron CALL_BACK/LOST) va karta xatosidan keyin.
+  const lidniYuklash = useCallback(async (suhbatId: string, fon = false) => {
+    try {
+      const natija = await lidlarApi.royxat({ threadId: suhbatId, page: 1, pageSize: 1 }, fon);
+      if (joriyId.current !== suhbatId) return;
+      const yangi = natija.items[0] ?? null;
+      setLid((joriy) => {
+        if (joriy && yangi && joriy.id === yangi.id && joriy.stage === yangi.stage) return joriy;
+        // Panel ochiq — foydalanuvchi ko'rib/yozib turgan lid ostidan boshqa lidga almashtirilmaydi (izoh noto'g'ri lidga tushmasin).
+        if (lidOchiqRef.current && joriy && (!yangi || yangi.id !== joriy.id)) return joriy;
+        return yangi;
+      });
+    } catch {
+      if (!fon && joriyId.current === suhbatId) setLid(null);
+    }
+  }, []);
+
   useEffect(() => {
     setLid(undefined);
     setLidOchiq(false);
-    if (!tanlanganId) return;
-    let faol = true;
-    lidlarApi
-      .royxat({ threadId: tanlanganId, page: 1, pageSize: 1 })
-      .then((natija) => {
-        if (faol) setLid(natija.items[0] ?? null);
-      })
-      .catch(() => {
-        if (faol) setLid(null);
-      });
-    return () => {
-      faol = false;
-    };
-  }, [tanlanganId]);
+    if (tanlanganId) void lidniYuklash(tanlanganId);
+  }, [lidniYuklash, tanlanganId]);
 
   // Mas'ul tayinlash ro'yxati — panel birinchi ochilganda (kassirga backend bermaydi: bo'sh, "Menga" qoladi).
   useEffect(() => {
     if (!lidOchiq || xodimlar !== null) return;
     xodimlarniOlish()
-      .then((royxat) => setXodimlar(royxat.map((x) => ({ id: x.id, nom: x.fullName || x.name || x.username || x.id }))))
+      .then((royxat) => setXodimlar(faolXodimlar(royxat)))
       .catch(() => setXodimlar([]));
   }, [lidOchiq, xodimlar]);
 
@@ -164,22 +174,31 @@ export default function Suhbatlar() {
       void royxatniYuklash(true);
       const suhbatId = joriyId.current;
       if (!suhbatId) return;
+      void lidniYuklash(suhbatId, true);
+      const boshlanganda = yozuvRaqami.current;
       crmApi
         .chatThreadXabarlari(suhbatId, { limit: XABAR_LIMIT }, true)
         .then((javob) => {
           if (joriyId.current !== suhbatId) return;
+          // So'rov ketgandan keyin xabar yuborilgan/qo'shilgan bo'lsa — javob uni ko'rmagan: faqat qo'shiladi, hech narsa o'chirilmaydi.
+          const eskirgan = yozuvRaqami.current !== boshlanganda;
           const oyna = oynaRef.current;
           const pastda = !oyna || oyna.scrollHeight - oyna.scrollTop - oyna.clientHeight < 120;
+          const sahifa = sahifaniOqish(javob);
           setXabarlar((joriy) => {
-            const yangi = xabarlarniBirlashtirish(joriy, sahifaniOqish(javob).items);
-            if (yangi.length !== joriy.length && pastda) scrollAmali.current = { tur: "past" };
+            // Telegram'da o'chirilgan xabar ekrandan ham ketadi, tahrirlangani yangilanadi.
+            const yangi = eskirgan ? xabarlarniBirlashtirish(joriy, sahifa.items) : oynaniYangilash(joriy, sahifa.items, !sahifa.nextCursor);
+            const oxirgiEski = joriy[joriy.length - 1]?.id;
+            const oxirgiYangi = yangi[yangi.length - 1]?.id;
+            if (oxirgiEski !== oxirgiYangi && pastda) scrollAmali.current = { tur: "past" };
             return yangi;
           });
+          if (!sahifa.nextCursor && !eskirgan) setNextCursor(null);
         })
         .catch(() => {});
     }, YANGILASH_MS);
     return () => window.clearInterval(id);
-  }, [royxatniYuklash]);
+  }, [lidniYuklash, royxatniYuklash]);
 
   useLayoutEffect(() => {
     const oyna = oynaRef.current;
@@ -198,6 +217,7 @@ export default function Suhbatlar() {
       if (joriyId.current !== suhbatId) return;
       const oyna = oynaRef.current;
       if (oyna) scrollAmali.current = { tur: "saqla", qoldiq: oyna.scrollHeight - oyna.scrollTop };
+      yozuvRaqami.current += 1;
       setXabarlar((joriy) => xabarlarniBirlashtirish(sahifa.items, joriy));
       setNextCursor(sahifa.nextCursor);
     } catch (error) {
@@ -218,6 +238,7 @@ export default function Suhbatlar() {
       if (joriyId.current !== suhbatId) return;
       setMatn("");
       scrollAmali.current = { tur: "past" };
+      yozuvRaqami.current += 1;
       setXabarlar((joriy) => xabarlarniBirlashtirish(joriy, xabar && typeof xabar === "object" ? [xabar] : []));
       void royxatniYuklash(true);
     } catch (error) {
@@ -525,6 +546,9 @@ export default function Suhbatlar() {
           onYopish={() => setLidOchiq(false)}
           onSuhbat={() => setLidOchiq(false)}
           onYangilandi={(yangi) => setLid((joriy) => (joriy && joriy.id === yangi.id ? { ...joriy, ...yangi } : joriy))}
+          onQaytaYuklash={() => {
+            if (tanlanganId) void lidniYuklash(tanlanganId);
+          }}
         />
       )}
 

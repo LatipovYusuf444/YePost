@@ -192,13 +192,40 @@ export const crmApi = {
 };
 
 // Savdo agenti → Lidlar (backend /leads).
+function voronka(qiymat: unknown) {
+  const obj = (qiymat && typeof qiymat === "object" ? qiymat : {}) as Record<string, unknown>;
+  const son = (k: string) => {
+    const n = Number(obj[k]);
+    return Number.isFinite(n) ? n : 0;
+  };
+  return { total: son("total"), interested: son("interested"), ordered: son("ordered"), sold: son("sold"), lost: son("lost") };
+}
+
+export function lidStatistikasiniTozalash(xom: unknown): LidStatistikasi {
+  const obj = (xom && typeof xom === "object" && !Array.isArray(xom) ? xom : {}) as Record<string, unknown>;
+  const manbalar = Array.isArray(obj.bySource) ? obj.bySource : [];
+  return {
+    total: voronka(obj.total),
+    bySource: manbalar
+      .filter((m): m is Record<string, unknown> => Boolean(m) && typeof m === "object")
+      .map((m) => ({ source: String(m.source ?? ""), ...voronka(m) })),
+  };
+}
 export type LidFiltri = { stage?: string; source?: string; ownerId?: string; threadId?: string; dateFrom?: string; dateTo?: string; page?: number; pageSize?: number };
 
 export const lidlarApi = {
-  royxat: async (filtr: LidFiltri = {}) =>
-    sahifaJavobi<Lid>((await apiClient.get<unknown>("/leads", { params: tozaParams(filtr) })).data, filtr.page ?? 1, filtr.pageSize ?? 20),
-  statistika: async (params: { dateFrom?: string; dateTo?: string } = {}) =>
-    apiData((await apiClient.get<LidStatistikasi | ApiEnvelope<LidStatistikasi>>("/leads/stats", { params: tozaParams(params) })).data),
+  // `fon` — davriy yangilash (suhbatdagi lid belgisi): xato bo'lsa toast chiqmaydi.
+  royxat: async (filtr: LidFiltri = {}, fon = false) =>
+    sahifaJavobi<Lid>(
+      (await apiClient.get<unknown>("/leads", { params: tozaParams(filtr), xatoniYashirish: fon })).data,
+      filtr.page ?? 1,
+      filtr.pageSize ?? 20
+    ),
+  // Javob kutilgan shaklda bo'lmasa ham sahifa yiqilmasin: total va bySource doim to'ldiriladi.
+  statistika: async (params: { dateFrom?: string; dateTo?: string } = {}): Promise<LidStatistikasi> =>
+    lidStatistikasiniTozalash(
+      apiData((await apiClient.get<LidStatistikasi | ApiEnvelope<LidStatistikasi>>("/leads/stats", { params: tozaParams(params) })).data)
+    ),
   kartochka: async (id: string) =>
     apiData((await apiClient.get<LidKartochkasi | ApiEnvelope<LidKartochkasi>>(`/leads/${id}`)).data),
   // stage (LOST uchun lostReason majburiy), lostReason, ownerId (null — olib tashlash).

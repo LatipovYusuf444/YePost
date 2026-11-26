@@ -133,3 +133,22 @@ export function faolTezDavr(dateFrom: string, dateTo: string, bugun: string): Te
     return oraliq.dateFrom === dateFrom && oraliq.dateTo === dateTo;
   }) ?? null;
 }
+
+/**
+ * Davriy yangilash: eng yangi sahifa (`yangi`) bilan ekrandagi ro'yxatni moslaydi. Telegram'da o'chirilgan xabar backend tarixidan
+ * yo'qoladi — sahifa qamrab olgan vaqt oralig'ida (eng eski xabaridan qat'iy yangiroq) bo'lib, sahifada yo'q xabarlar olib tashlanadi;
+ * tahrirlangan matn id bo'yicha yangilanadi. `toliq` (nextCursor yo'q) — sahifa butun tarix: ro'yxat aynan shu bo'ladi.
+ */
+export function oynaniYangilash<T extends VaqtliXabar>(joriy: T[], yangi: T[], toliq: boolean): T[] {
+  if (toliq) return xabarlarniBirlashtirish(yangi);
+  const idlar = new Set(yangi.map((x) => x.id).filter(Boolean));
+  const vaqtlar = yangi.map((x) => (x.createdAt ? Date.parse(x.createdAt) : NaN)).filter(Number.isFinite);
+  if (!vaqtlar.length) return xabarlarniBirlashtirish(joriy, yangi);
+  const chegara = Math.min(...vaqtlar);
+  const qolgan = joriy.filter((x) => {
+    if (!x.id || idlar.has(x.id)) return true;
+    const ms = x.createdAt ? Date.parse(x.createdAt) : NaN;
+    return !Number.isFinite(ms) || ms <= chegara;
+  });
+  return xabarlarniBirlashtirish(qolgan, yangi);
+}

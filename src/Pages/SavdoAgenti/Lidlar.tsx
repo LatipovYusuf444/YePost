@@ -16,7 +16,7 @@ import { LID_BOSQICHLARI, type Lid, type LidStatistikasi, type LidVoronkasi } fr
 import KanalBelgisi from "./KanalBelgisi";
 import LidKartasi, { type LidXodimi } from "./LidKartasi";
 import LidlarKanban from "./LidlarKanban";
-import { bosqichRangi, davomiylikMatni, nisbiyVaqtMatni } from "./lidYordamchilari";
+import { bosqichRangi, davomiylikMatni, faolXodimlar, nisbiyVaqtMatni } from "./lidYordamchilari";
 
 const SAHIFA_HAJMI = 20;
 const KORINISH_KALITI = "yepost-lidlar-korinish";
@@ -55,10 +55,14 @@ export default function Lidlar() {
   const [javob, setJavob] = useState<SahifaliRoyxat<Lid> | null>(null);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [statistika, setStatistika] = useState<LidStatistikasi | null>(null);
-  const [xodimlar, setXodimlar] = useState<LidXodimi[]>([]);
+  // Mas'ul filtri — hamma xodim (nofaol xodimning lidlarini ham topib qayta tayinlash uchun); tayinlash — faqat faollar.
+  const [barchaXodimlar, setBarchaXodimlar] = useState<Array<LidXodimi & { faol: boolean }>>([]);
+  const xodimlar = useMemo(() => barchaXodimlar.filter((x) => x.faol).map(({ id, nom }) => ({ id, nom })), [barchaXodimlar]);
   const sorovRaqami = useRef(0);
   // Suhbatdan "Lid" bilan kelinganda eng so'nggi lid bir marta avtomatik ochiladi.
   const avtoOchilgan = useRef<string | null>(null);
+  // Suhbat filtri chipidagi nom (kanban ko'rinishida jadval ma'lumoti yo'q).
+  const [threadMalumot, setThreadMalumot] = useState<Lid["thread"]>(null);
 
   const ownerId = owner === "me" ? (menId ?? "") : owner;
   const asosiyFiltr = useMemo<Omit<LidFiltri, "stage" | "page" | "pageSize">>(
@@ -81,7 +85,13 @@ export default function Lidlar() {
     setYuklanmoqda(true);
     try {
       const natija = await lidlarApi.royxat({ ...asosiyFiltr, stage, page: sahifa, pageSize: SAHIFA_HAJMI });
-      if (raqam === sorovRaqami.current) setJavob(natija);
+      if (raqam !== sorovRaqami.current) return;
+      // Oxirgi sahifadagi yagona qator filtrdan chiqsa — bo'sh sahifada qolmasdan oxirgi mavjud sahifaga o'tiladi.
+      if (natija.items.length === 0 && sahifa > 1 && natija.totalPages >= 1 && sahifa > natija.totalPages) {
+        setSahifa(natija.totalPages);
+        return;
+      }
+      setJavob(natija);
     } catch {
       if (raqam === sorovRaqami.current) setJavob((joriy) => joriy ?? { items: [], total: 0, page: 1, pageSize: SAHIFA_HAJMI, totalPages: 1 });
     } finally {
@@ -111,10 +121,11 @@ export default function Lidlar() {
     xodimlarniOlish()
       .then((royxat) => {
         if (!faol) return;
-        setXodimlar(
+        const faollar = new Set(faolXodimlar(royxat).map((x) => x.id));
+        setBarchaXodimlar(
           royxat
-            .map((x) => ({ id: x.id, nom: x.fullName || x.name || x.username || x.id }))
             .filter((x) => Boolean(x.id))
+            .map((x) => ({ id: x.id, nom: x.fullName || x.name || x.username || x.id, faol: faollar.has(x.id) }))
         );
       })
       .catch(() => {});
@@ -145,6 +156,7 @@ export default function Lidlar() {
     lidlarApi
       .royxat({ threadId: threadFiltri, page: 1, pageSize: 1 })
       .then((natija) => {
+        setThreadMalumot(natija.items[0]?.thread ?? null);
         if (natija.items[0]) lidniOchish(natija.items[0].id);
       })
       .catch(() => {});
@@ -172,8 +184,10 @@ export default function Lidlar() {
   const faolDavr = faolTezDavr(dateFrom, dateTo, bugun);
   const items = javob?.items ?? [];
   const jami = statistika?.total;
-  const threadNomi = threadFiltri ? (items.find((lid) => lid.threadId === threadFiltri)?.thread ?? null) : null;
-  const boshqaXodimlar = xodimlar.filter((x) => x.id !== menId);
+  const threadNomi = threadFiltri
+    ? (items.find((lid) => lid.threadId === threadFiltri)?.thread ?? (threadMalumot?.id === threadFiltri ? threadMalumot : null))
+    : null;
+  const boshqaXodimlar = barchaXodimlar.filter((x) => x.id !== menId);
 
   return (
     <div className="space-y-4">
@@ -267,7 +281,7 @@ export default function Lidlar() {
           className="h-10 min-w-[160px] flex-1 rounded-xl sm:flex-none"
         >
           <option value="">{t("lid.filter.allSources")}</option>
-          <option value="TELEGRAM_BOT">{t("kanal.BOT")}</option>
+          {/* Lid faqat Telegram Business (do'kon akkaunti) chatida ochiladi — bot chatlari lid ochmaydi. */}
           <option value="TELEGRAM_BUSINESS">{t("kanal.BUSINESS")}</option>
         </AppSelect>
         <AppSelect
@@ -283,7 +297,7 @@ export default function Lidlar() {
           {menId && <option value="me">{t("lid.ownerFilter.mine")}</option>}
           {boshqaXodimlar.map((x) => (
             <option key={x.id} value={x.id}>
-              {x.nom}
+              {x.faol ? x.nom : `${x.nom} (${t("lid.ownerFilter.inactive")})`}
             </option>
           ))}
         </AppSelect>
@@ -466,6 +480,13 @@ export default function Lidlar() {
             setJavob((joriy) =>
               joriy ? { ...joriy, items: joriy.items.map((lid) => (lid.id === yangi.id ? { ...lid, ...yangi } : lid)) } : joriy
             );
+            // Filtr (masalan, bosqich) bo'yicha ro'yxat va jami sonlar serverdan qayta olinadi.
+            void yuklash();
+            setKanbanKaliti((k) => k + 1);
+            void statistikaniYuklash();
+          }}
+          onQaytaYuklash={() => {
+            void yuklash();
             setKanbanKaliti((k) => k + 1);
             void statistikaniYuklash();
           }}

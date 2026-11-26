@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import axios from "axios";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -22,6 +23,7 @@ export default function LidKartasi({
   onYopish,
   onYangilandi,
   onSuhbat,
+  onQaytaYuklash,
 }: {
   lidId: string;
   xodimlar?: LidXodimi[];
@@ -29,6 +31,8 @@ export default function LidKartasi({
   onYangilandi: (lid: Lid) => void;
   // Suhbat oynasi ichidan ochilganda: "Suhbatni ochish" boshqa sahifaga o'tmaydi, panelni yopadi.
   onSuhbat?: () => void;
+  // PATCH xatosidan keyin (lead_changed, lead_already_open, lead_not_found...): ota ro'yxat/kanban/belgi serverdan qayta o'qiladi.
+  onQaytaYuklash?: () => void;
 }) {
   const { t } = useTranslation("savdo_agenti");
   const navigate = useNavigate();
@@ -43,22 +47,28 @@ export default function LidKartasi({
   const [izoh, setIzoh] = useState("");
   const [izohQoshilmoqda, setIzohQoshilmoqda] = useState(false);
 
+  // Hozirgi lid: kechikib kelgan javob (boshqa lid uchun yuborilgan) kartani ustidan yozmasin.
+  const joriyLidId = useRef(lidId);
+  joriyLidId.current = lidId;
+
   const yuklash = useCallback(async () => {
     try {
       const karta = await lidlarApi.kartochka(lidId);
+      if (joriyLidId.current !== lidId) return;
       setLid(karta);
       setBosqich(String(karta.stage ?? ""));
       setSabab(String(karta.lostReason ?? ""));
       setSababXatosi(false);
       setXato(false);
     } catch {
-      setXato(true);
+      if (joriyLidId.current === lidId) setXato(true);
     }
   }, [lidId]);
 
   useEffect(() => {
     setLid(null);
     setXato(false);
+    setIzoh("");
     void yuklash();
   }, [yuklash]);
 
@@ -77,8 +87,12 @@ export default function LidKartasi({
       const yangi = await lidlarApi.yangilash(lid.id, malumot);
       if (yangi && typeof yangi === "object") onYangilandi(yangi);
       await yuklash();
-    } catch {
-      // Xato matni (masalan, lead_changed / lead_already_open) global toastda chiqadi.
+    } catch (error) {
+      // Xato matni (lead_changed / lead_already_open / lead_owner_invalid...) global toastda chiqadi. Backend hech narsani
+      // o'zgartirmagan — karta va ota ro'yxat serverdagi holatga qaytariladi (spec: "ro'yxatni yangilab qaytadan urinish").
+      onQaytaYuklash?.();
+      if (axios.isAxiosError(error) && error.response?.status === 404) onYopish();
+      else await yuklash();
     } finally {
       setSaqlanmoqda(false);
     }
@@ -330,6 +344,7 @@ export default function LidKartasi({
                   value={izoh}
                   onChange={(event) => setIzoh(event.target.value)}
                   rows={2}
+                  maxLength={2000}
                   placeholder={t("lid.card.notePlaceholder")}
                   className="min-w-0 flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-50"
                 />

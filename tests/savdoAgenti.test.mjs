@@ -142,5 +142,57 @@ test('lidlar: kanban asosiy ko\'rinish, LOST ga tashlansa sabab oynasi, mas\'ul 
   assert.match(kanban, /if \(ga === "LOST"\) setSababSorovi/);
   assert.match(kanban, /style=\{\{ touchAction: "none" \}\}/);
   assert.match(manba('src/Pages/SavdoAgenti/LidKartasi.tsx'), /void yangilash\(\{ ownerId: yangi \}\)/);
-  assert.match(manba('src/Pages/SavdoAgenti/Suhbatlar.tsx'), /lidlarApi\s*\.royxat\(\{ threadId: tanlanganId, page: 1, pageSize: 1 \}\)/);
+  assert.match(manba('src/Pages/SavdoAgenti/Suhbatlar.tsx'), /lidlarApi\.royxat\(\{ threadId: suhbatId, page: 1, pageSize: 1 \}, fon\)/);
+});
+
+test('davriy yangilash: Telegram\'da o\'chirilgan xabar ekrandan ketadi, tahrirlangani yangilanadi, eskilar saqlanadi', () => {
+  const x = (id, daq, text = id) => ({ id, createdAt: `2026-11-26T10:${String(daq).padStart(2, '0')}:00Z`, text });
+  const joriy = [x('a', 1), x('b', 2), x('c', 3), x('d', 4), x('e', 5)];
+  // Yangi sahifa (eng yangilari): c, e (d o'chirilgan, e tahrirlangan); a, b sahifadan eski — tegilmaydi.
+  const natija = lib.oynaniYangilash(joriy, [x('e', 5, 'e2'), x('c', 3)], false);
+  assert.deepEqual(natija.map((m) => m.id), ['a', 'b', 'c', 'e']);
+  assert.equal(natija.at(-1).text, 'e2');
+  // To'liq tarix (nextCursor yo'q) — ro'yxat aynan shu.
+  assert.deepEqual(lib.oynaniYangilash(joriy, [x('a', 1)], true).map((m) => m.id), ['a']);
+  // Yangi xabar qo'shiladi.
+  assert.deepEqual(lib.oynaniYangilash(joriy, [x('e', 5), x('f', 6)], false).map((m) => m.id), ['a', 'b', 'c', 'd', 'e', 'f']);
+});
+
+test('audit tuzatishlari: partner route matni, faol xodimlar, karta xatosida qayta yuklash, Bot manbasi yo\'q, lid belgisi yangilanadi', () => {
+  const kodlar = manba('src/api/xatoKodlari.ts');
+  assert.ok(kodlar.includes(String.raw`kod === "errors.crm.chat_thread_not_found" && /\/crm\/partners\/`), 'partner route override');
+  assert.match(kodlar, /Bu mijoz hali bot yoki do'kon Telegram akkauntiga yozmagan/);
+  assert.match(manba('src/Pages/SavdoAgenti/lidYordamchilari.ts'), /x\.isActive !== false/);
+  const karta = manba('src/Pages/SavdoAgenti/LidKartasi.tsx');
+  assert.match(karta, /onQaytaYuklash\?\.\(\);/);
+  assert.match(karta, /status === 404\) onYopish\(\)/);
+  assert.match(karta, /maxLength=\{2000\}/);
+  const lidlar = manba('src/Pages/SavdoAgenti/Lidlar.tsx');
+  assert.doesNotMatch(lidlar, /value="TELEGRAM_BOT"/);
+  assert.match(lidlar, /faolXodimlar\(royxat\)/);
+  const suhbat = manba('src/Pages/SavdoAgenti/Suhbatlar.tsx');
+  assert.match(suhbat, /void lidniYuklash\(suhbatId, true\);/);
+  assert.match(suhbat, /oynaniYangilash\(joriy, sahifa\.items, !sahifa\.nextCursor\)/);
+});
+
+test('voronka javobi normallashtiriladi: kutilmagan shakl sahifani yiqitmaydi', () => {
+  const api = manba('src/api/crmApi.ts');
+  assert.match(api, /export function lidStatistikasiniTozalash\(xom: unknown\): LidStatistikasi/);
+  assert.match(api, /const manbalar = Array\.isArray\(obj\.bySource\) \? obj\.bySource : \[\];/);
+  assert.match(api, /lidStatistikasiniTozalash\(\s*apiData\(/);
+});
+
+test('regressiya himoyasi: kechikkan javob yangi xabarni o\'chirmaydi, ochiq panel lidi almashmaydi, eski javob kartani yozmaydi', () => {
+  const suhbat = manba('src/Pages/SavdoAgenti/Suhbatlar.tsx');
+  assert.match(suhbat, /const eskirgan = yozuvRaqami\.current !== boshlanganda;/);
+  assert.match(suhbat, /eskirgan \? xabarlarniBirlashtirish\(joriy, sahifa\.items\) : oynaniYangilash/);
+  assert.equal((suhbat.match(/yozuvRaqami\.current \+= 1;/g) ?? []).length, 2, 'yuborish va eski sahifa');
+  assert.match(suhbat, /if \(lidOchiqRef\.current && joriy && \(!yangi \|\| yangi\.id !== joriy\.id\)\) return joriy;/);
+  const karta = manba('src/Pages/SavdoAgenti/LidKartasi.tsx');
+  assert.match(karta, /if \(joriyLidId\.current !== lidId\) return;/);
+  assert.match(karta, /setIzoh\(""\);\n    void yuklash\(\);/);
+  const lidlar = manba('src/Pages/SavdoAgenti/Lidlar.tsx');
+  assert.match(lidlar, /sahifa > natija\.totalPages\) \{\n\s+setSahifa\(natija\.totalPages\);/);
+  assert.match(lidlar, /const boshqaXodimlar = barchaXodimlar\.filter/);
+  assert.match(lidlar, /xodimlar = useMemo\(\(\) => barchaXodimlar\.filter\(\(x\) => x\.faol\)/);
 });

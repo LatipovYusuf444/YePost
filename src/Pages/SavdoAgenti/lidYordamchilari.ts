@@ -44,3 +44,13 @@ export const BOSQICH_NUQTALARI: Record<string, string> = {
   SALE: "bg-emerald-500",
   LOST: "bg-rose-500",
 };
+
+/**
+ * Mas'ul tayinlash ro'yxati: /accounts/users nofaol xodimlarni ham qaytaradi, backend esa ularni mas'ul qilmaydi
+ * (errors.crm.lead_owner_invalid) — shuning uchun faqat faollar.
+ */
+export function faolXodimlar(royxat: Array<{ id: string; fullName?: string; name?: string; username?: string; isActive?: boolean }>) {
+  return royxat
+    .filter((x) => Boolean(x.id) && x.isActive !== false)
+    .map((x) => ({ id: x.id, nom: x.fullName || x.name || x.username || x.id }));
+}

@@ -255,6 +255,11 @@ const KIRIM_BEKOR_SARFLANGAN: KodMatni = {
   ru: "Приход нельзя отменить: его товар уже использован в другом документе (например, возвращён поставщику или продан). Сначала отмените тот документ (возврат поставщику).",
 };
 
+const MIJOZ_HALI_YOZMAGAN: KodMatni = {
+  uz: "Bu mijoz hali bot yoki do'kon Telegram akkauntiga yozmagan — Telegram'da birinchi xabarni mijoz yozishi kerak.",
+  ru: "Клиент ещё не писал боту или в Telegram-аккаунт магазина — первым в Telegram должен написать клиент.",
+};
+
 const BEKOR_QILISH_MATNI: KodMatni = {
   uz: "Sotuvni bekor qilib bo'lmaydi: sotuvda hisobga yozilgan pul mijoz tomonidan allaqachon ishlatib bo'lingan.",
   ru: "Продажу нельзя отменить: деньги, записанные на счёт клиента по этой продаже, уже использованы.",
@@ -437,6 +442,10 @@ export function xatoKodiMatni(kod: unknown, url: string | undefined, til: string
   }
   if (kod === "errors.inventory.stock_already_consumed" && /\/inventory\/purchases\/[^/?]+\/cancel/.test(url ?? "")) {
     return KIRIM_BEKOR_SARFLANGAN[tilKodi];
+  }
+  // Mijoz kartasidan yozish (partner route): suhbat yo'q — mijoz hali bot yoki do'kon akkauntiga yozmagan, bot birinchi yoza olmaydi.
+  if (kod === "errors.crm.chat_thread_not_found" && /\/crm\/partners\/[^/?]+\/chat\/messages/.test(url ?? "")) {
+    return MIJOZ_HALI_YOZMAGAN[tilKodi];
   }
   if (NAKLADNOY_MATNLARI[kod] && /\/sales\/[^/?]+\/(?:notify|nakladnoy\.pdf)/.test(url ?? "")) {
     return NAKLADNOY_MATNLARI[kod][tilKodi];
