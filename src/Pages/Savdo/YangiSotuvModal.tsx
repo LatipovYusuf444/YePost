@@ -2347,140 +2347,6 @@ export default function YangiSotuvModal({
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
-                    <span className="text-sm font-bold text-slate-600">{t("priceTypes.label")}</span>
-                    <NarxTuriTanlovi
-                      qiymat={narxTuri}
-                      holat={(tur) => ({ ruxsat: turRuxsati(tur), narxBor: true })}
-                      onChange={narxTuriniTanlash}
-                    />
-                    <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("priceTypes.hint")}</p>
-                    {narxXabari && (
-                      <p role="status" className="basis-full text-xs font-bold text-amber-600">
-                        {narxXabari}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Umumiy birlik: faqat qo'shimcha birligi (korobka, qop...) bor tovarlar bo'lsa ko'rinadi. */}
-                  {umumiyBirlikVariantlari.length > 0 && (
-                    <div data-umumiy-birlik className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
-                      <span className="text-sm font-bold text-slate-600">{t("generalUnit.label")}</span>
-                      <div role="radiogroup" aria-label={t("generalUnit.label")} className="inline-flex flex-wrap gap-0.5 rounded-xl bg-slate-100 p-1">
-                        {[{ unitId: "", nom: t("generalUnit.base") }, ...umumiyBirlikVariantlari].map(({ unitId, nom }) => {
-                          const faol = umumiyBirlik === unitId;
-                          return (
-                            <button
-                              key={unitId || "asosiy"}
-                              type="button"
-                              role="radio"
-                              aria-checked={faol}
-                              data-umumiy-birlik-variant={unitId || "asosiy"}
-                              title={unitId ? t("generalUnit.optionTitle", { unit: nom }) : t("generalUnit.baseTitle")}
-                              onClick={() => umumiyBirlikniTanlash(unitId)}
-                              className={cn(
-                                "rounded-lg px-4 py-2 text-xs font-bold transition",
-                                faol ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200" : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
-                              )}
-                            >
-                              {nom}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("generalUnit.hint")}</p>
-                      {birlikXabari && (
-                        <p role="status" className="basis-full text-xs font-bold text-amber-600">
-                          {birlikXabari}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div data-umumiy-chegirma className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
-                    <span className="text-sm font-bold text-slate-600">{t("generalDiscount.label")}</span>
-                    <div className="flex items-center gap-1.5">
-                      <div className="relative w-40">
-                        <SummaMaydoni
-                          value={umumiyCheg.qiymat}
-                          data-umumiy-chegirma-qiymat
-                          onChange={(qiymat) => umumiyChegirmaniOrnatish(umumiyCheg.tur, qiymat)}
-                          aria-label={t("generalDiscount.label")}
-                          title={umumiyCheg.tur === "foiz" ? t("discountUnit.percentTitle") : t(sotuvVal === "USD" ? "labels.discountUsd" : "labels.discount")}
-                          placeholder="0"
-                          className={cn(maydonKlassi, "pr-[76px]")}
-                        />
-                        <div
-                          role="group"
-                          aria-label={t("generalDiscount.unit")}
-                          className="absolute right-1.5 top-1/2 flex -translate-y-1/2 gap-0.5 rounded-lg bg-slate-100 p-0.5 text-[10px] font-bold"
-                        >
-                          {(["foiz", "sum"] as const).map((tur) => (
-                            <button
-                              key={tur}
-                              type="button"
-                              aria-pressed={umumiyCheg.tur === tur}
-                              onClick={() => umumiyTuriniAlmashtirish(tur)}
-                              className={cn(
-                                "rounded-md px-1.5 py-1 transition",
-                                umumiyCheg.tur === tur ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200" : "text-slate-500 hover:text-slate-800"
-                              )}
-                            >
-                              {tur === "foiz" ? "%" : t(sotuvVal === "USD" ? "table.currencySuffixUsd" : "table.currencySuffix")}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      {(umumiyFoiz > 0 || umumiySumma > 0) && (
-                        <button
-                          type="button"
-                          onClick={umumiyChegirmaniOlibTashlash}
-                          aria-label={t("generalDiscount.clear")}
-                          title={t("generalDiscount.clear")}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[5, 10, 15, 20].map((foiz) => (
-                        <button
-                          key={foiz}
-                          type="button"
-                          aria-pressed={umumiyFoiz === foiz}
-                          onClick={() => umumiyChegirmaniOrnatish("foiz", String(foiz))}
-                          className={cn(
-                            "rounded-full px-3 py-1.5 text-xs font-bold transition",
-                            umumiyFoiz === foiz
-                              ? "bg-[#2563EB] text-white shadow-sm"
-                              : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-[#2563EB] hover:ring-blue-200"
-                          )}
-                        >
-                          {foiz}%
-                        </button>
-                      ))}
-                    </div>
-                    {umumiyAralash && (
-                      <span title={t("generalDiscount.mixedTitle")} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700">
-                        {t("generalDiscount.mixed")}
-                      </span>
-                    )}
-                    {umumiyUlushJami > 0 && (
-                      <span className="text-xs font-bold text-emerald-600">
-                        {t("generalDiscount.applied", { summa: pulniFormatlash(umumiyUlushJami, sotuvVal) })}
-                      </span>
-                    )}
-                    <p className="basis-full text-xs font-medium leading-5 text-slate-500">
-                      {t(umumiyCheg.tur === "sum" ? "generalDiscount.hintSum" : "generalDiscount.hint")}
-                    </p>
-                    {tannarxdanArzonSoni > 0 && (
-                      <p role="status" className="basis-full rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
-                        {t("generalDiscount.belowCost", { count: tannarxdanArzonSoni })}
-                      </p>
-                    )}
-                  </div>
-
                   <div className="mt-3">
                     <div className="relative">
                       <ScanLine size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -2893,6 +2759,144 @@ export default function YangiSotuvModal({
                         ⚠ {t("stockWarning.summary", { count: qoldiqOgohlantirishlari.size })}
                       </p>
                     )}
+                  </div>
+
+                  {/* Umumiy sozlamalar (narx turi, umumiy birlik, umumiy chegirma) mahsulotlar ro'yxati ostida: avval mahsulotlar
+                      qo'shiladi, keyin xohlasa hammasiga birdan qo'llanadi. */}
+                  <div data-umumiy-sozlamalar className="mt-1">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
+                    <span className="text-sm font-bold text-slate-600">{t("priceTypes.label")}</span>
+                    <NarxTuriTanlovi
+                      qiymat={narxTuri}
+                      holat={(tur) => ({ ruxsat: turRuxsati(tur), narxBor: true })}
+                      onChange={narxTuriniTanlash}
+                    />
+                    <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("priceTypes.hint")}</p>
+                    {narxXabari && (
+                      <p role="status" className="basis-full text-xs font-bold text-amber-600">
+                        {narxXabari}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Umumiy birlik: faqat qo'shimcha birligi (korobka, qop...) bor tovarlar bo'lsa ko'rinadi. */}
+                  {umumiyBirlikVariantlari.length > 0 && (
+                    <div data-umumiy-birlik className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
+                      <span className="text-sm font-bold text-slate-600">{t("generalUnit.label")}</span>
+                      <div role="radiogroup" aria-label={t("generalUnit.label")} className="inline-flex flex-wrap gap-0.5 rounded-xl bg-slate-100 p-1">
+                        {[{ unitId: "", nom: t("generalUnit.base") }, ...umumiyBirlikVariantlari].map(({ unitId, nom }) => {
+                          const faol = umumiyBirlik === unitId;
+                          return (
+                            <button
+                              key={unitId || "asosiy"}
+                              type="button"
+                              role="radio"
+                              aria-checked={faol}
+                              data-umumiy-birlik-variant={unitId || "asosiy"}
+                              title={unitId ? t("generalUnit.optionTitle", { unit: nom }) : t("generalUnit.baseTitle")}
+                              onClick={() => umumiyBirlikniTanlash(unitId)}
+                              className={cn(
+                                "rounded-lg px-4 py-2 text-xs font-bold transition",
+                                faol ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200" : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                              )}
+                            >
+                              {nom}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("generalUnit.hint")}</p>
+                      {birlikXabari && (
+                        <p role="status" className="basis-full text-xs font-bold text-amber-600">
+                          {birlikXabari}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div data-umumiy-chegirma className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
+                    <span className="text-sm font-bold text-slate-600">{t("generalDiscount.label")}</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative w-40">
+                        <SummaMaydoni
+                          value={umumiyCheg.qiymat}
+                          data-umumiy-chegirma-qiymat
+                          onChange={(qiymat) => umumiyChegirmaniOrnatish(umumiyCheg.tur, qiymat)}
+                          aria-label={t("generalDiscount.label")}
+                          title={umumiyCheg.tur === "foiz" ? t("discountUnit.percentTitle") : t(sotuvVal === "USD" ? "labels.discountUsd" : "labels.discount")}
+                          placeholder="0"
+                          className={cn(maydonKlassi, "pr-[76px]")}
+                        />
+                        <div
+                          role="group"
+                          aria-label={t("generalDiscount.unit")}
+                          className="absolute right-1.5 top-1/2 flex -translate-y-1/2 gap-0.5 rounded-lg bg-slate-100 p-0.5 text-[10px] font-bold"
+                        >
+                          {(["foiz", "sum"] as const).map((tur) => (
+                            <button
+                              key={tur}
+                              type="button"
+                              aria-pressed={umumiyCheg.tur === tur}
+                              onClick={() => umumiyTuriniAlmashtirish(tur)}
+                              className={cn(
+                                "rounded-md px-1.5 py-1 transition",
+                                umumiyCheg.tur === tur ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200" : "text-slate-500 hover:text-slate-800"
+                              )}
+                            >
+                              {tur === "foiz" ? "%" : t(sotuvVal === "USD" ? "table.currencySuffixUsd" : "table.currencySuffix")}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {(umumiyFoiz > 0 || umumiySumma > 0) && (
+                        <button
+                          type="button"
+                          onClick={umumiyChegirmaniOlibTashlash}
+                          aria-label={t("generalDiscount.clear")}
+                          title={t("generalDiscount.clear")}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[5, 10, 15, 20].map((foiz) => (
+                        <button
+                          key={foiz}
+                          type="button"
+                          aria-pressed={umumiyFoiz === foiz}
+                          onClick={() => umumiyChegirmaniOrnatish("foiz", String(foiz))}
+                          className={cn(
+                            "rounded-full px-3 py-1.5 text-xs font-bold transition",
+                            umumiyFoiz === foiz
+                              ? "bg-[#2563EB] text-white shadow-sm"
+                              : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-[#2563EB] hover:ring-blue-200"
+                          )}
+                        >
+                          {foiz}%
+                        </button>
+                      ))}
+                    </div>
+                    {umumiyAralash && (
+                      <span title={t("generalDiscount.mixedTitle")} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                        {t("generalDiscount.mixed")}
+                      </span>
+                    )}
+                    {umumiyUlushJami > 0 && (
+                      <span className="text-xs font-bold text-emerald-600">
+                        {t("generalDiscount.applied", { summa: pulniFormatlash(umumiyUlushJami, sotuvVal) })}
+                      </span>
+                    )}
+                    <p className="basis-full text-xs font-medium leading-5 text-slate-500">
+                      {t(umumiyCheg.tur === "sum" ? "generalDiscount.hintSum" : "generalDiscount.hint")}
+                    </p>
+                    {tannarxdanArzonSoni > 0 && (
+                      <p role="status" className="basis-full rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+                        {t("generalDiscount.belowCost", { count: tannarxdanArzonSoni })}
+                      </p>
+                    )}
+                  </div>
                   </div>
 
                   <div ref={xulosaKartasiRef} className="mt-4 grid grid-cols-2 gap-3 @min-[900px]:grid-cols-4">
