@@ -56,8 +56,9 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
     return { id: item.id, turi: "izoh", sarlavha: t("faoliyatPaneli.commentSubject"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
   }, [t]);
 
+  // OUT va sentById === null — do'kon akkaunti egasi Telegram ilovasidan yozgan (Telegram Business).
   const chatYozuvi = useCallback((item: ChatMessage, index: number): FaoliyatYozuvi => {
-    return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha: item.direction === "IN" ? t("faoliyatPaneli.chatFromCustomer") : t("faoliyatPaneli.chatSent"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
+    return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha: item.direction === "IN" ? t("faoliyatPaneli.chatFromCustomer") : item.sentById === null ? t("faoliyatPaneli.chatFromAccount") : t("faoliyatPaneli.chatSent"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
   }, [t]);
 
   const yozishTablari = yozishTabKalitlari.map((kalit) => ({ kalit, nom: t(`faoliyatPaneli.tabs.${kalit}`) }));

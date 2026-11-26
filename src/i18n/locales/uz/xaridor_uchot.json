@@ -148,6 +148,7 @@
     "commentSubject": "Izoh",
     "chatFromCustomer": "Mijozdan xabar",
     "chatSent": "Xabar yuborildi",
+    "chatFromAccount": "Telegram akkauntdan yozildi",
     "errors": {
       "noPartnerId": "CRM faoliyatini saqlash uchun real partner ID mavjud emas.",
       "noAssignee": "Joriy mas'ul foydalanuvchi aniqlanmadi."

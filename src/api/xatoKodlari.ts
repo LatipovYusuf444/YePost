@@ -8,6 +8,23 @@ type Til = "uz" | "ru";
 type KodMatni = { uz: string; ru: string };
 
 const MATNLAR: Record<string, KodMatni> = {
+  // CRM chat / Savdo agenti (Telegram bot va Telegram Business).
+  "errors.crm.chat_thread_not_found": {
+    uz: "Suhbat topilmadi — ro'yxatni yangilang.",
+    ru: "Чат не найден — обновите список.",
+  },
+  "errors.crm.telegram_bot_not_configured": {
+    uz: "Telegram bot o'chiq yoki sozlanmagan. Sozlamalar → Telegram bo'limida botni yoqing.",
+    ru: "Telegram-бот выключен или не настроен. Включите бота в разделе Настройки → Telegram.",
+  },
+  "errors.crm.telegram_business_cannot_reply": {
+    uz: "Telegram'da botga javob berish ruxsatini yoqing: Telegram → Sozlamalar → Telegram Business → Chatbots → bot → javob berish ruxsati (yoki ulanish o'chirilgan).",
+    ru: "Включите в Telegram боту право отвечать: Telegram → Настройки → Telegram Business → Чат-боты → бот → право отвечать (или подключение выключено).",
+  },
+  "errors.crm.telegram_send_failed": {
+    uz: "Telegram xabarni qabul qilmadi: Telegram akkaunt chatida mijoz oxirgi marta yozganidan keyin faqat 24 soat ichida javob berish mumkin. Xabar saqlanmadi.",
+    ru: "Telegram не принял сообщение: в чате Telegram-аккаунта отвечать можно только в течение 24 часов после последнего сообщения клиента. Сообщение не сохранено.",
+  },
   // Ishlab chiqarish moduli va seriyali tovarlar (rulon).
   "errors.production.disabled": {
     uz: "Ishlab chiqarish moduli yoqilmagan. Direktor uni Sozlamalar → Ishlab chiqarish bo'limida yoqadi.",

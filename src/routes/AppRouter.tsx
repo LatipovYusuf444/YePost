@@ -31,6 +31,7 @@ const Inventarizatsiya = lazy(() => import("@/Pages/Ombor/Inventarizatsiya"))
 const Xaridlar = lazy(() => import("@/Pages/Ombor/Xaridlar"))
 const Ombor = lazy(() => import("@/Pages/Ombor"))
 const XaridorUchot = lazy(() => import("@/Pages/XaridorUchot"))
+const SavdoAgenti = lazy(() => import("@/Pages/SavdoAgenti"))
 const Savdo = lazy(() => import("@/Pages/Savdo"))
 const SozlamalarUchot = lazy(() => import("@/Pages/SozlamalarUchot"))
 const AdminDashboard = lazy(() => import("@/Pages/Admin/Dashboard"))
@@ -121,6 +122,12 @@ export default function AppRouter() {
         <Route path="/ishlab-chiqarish/smena" element={<IshlabChiqarish bolim="smena" />} />
         <Route path="/ishlab-chiqarish/qabul" element={<IshlabChiqarish bolim="qabul" />} />
         <Route path="/ishlab-chiqarish/rulonlar" element={<IshlabChiqarish bolim="rulonlar" />} />
+        {/* Savdo agenti: Suhbatlar (Telegram bot + Telegram Business) va Lidlar tayyor; qolgan ikkitasi keyingi bosqichda. */}
+        <Route path="/savdo-agenti" element={<Navigate to="/savdo-agenti/suhbatlar" replace />} />
+        <Route path="/savdo-agenti/tasdiq-kutayotganlar" element={<SavdoAgenti bolim="tasdiq" />} />
+        <Route path="/savdo-agenti/lidlar" element={<SavdoAgenti bolim="lidlar" />} />
+        <Route path="/savdo-agenti/suhbatlar" element={<SavdoAgenti bolim="suhbatlar" />} />
+        <Route path="/savdo-agenti/sozlamalar" element={<SavdoAgenti bolim="sozlamalar" />} />
         <Route path="/kassa" element={<KassaUchot />} />
         <Route path="/hisobotlar" element={<Navigate to="/hisobotlar/tovar-harakati" replace />} />
         <Route path="/hisobotlar/tovar-harakati" element={<HisobotUchot tab="stock" />} />

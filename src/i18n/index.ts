@@ -53,6 +53,8 @@ import kassaUchotUz from "./locales/uz/kassa_uchot.json";
 import kassaUchotRu from "./locales/ru/kassa_uchot.json";
 import xaridorUchotUz from "./locales/uz/xaridor_uchot.json";
 import xaridorUchotRu from "./locales/ru/xaridor_uchot.json";
+import savdoAgentiUz from "./locales/uz/savdo_agenti.json";
+import savdoAgentiRu from "./locales/ru/savdo_agenti.json";
 import supportUz from "./locales/uz/support.json";
 import supportRu from "./locales/ru/support.json";
 import adminUz from "./locales/uz/admin.json";
@@ -99,6 +101,7 @@ void i18n.use(initReactI18next).init({
       sozlamalar_uchot: sozlamalarUchotUz,
       kassa_uchot: kassaUchotUz,
       xaridor_uchot: xaridorUchotUz,
+      savdo_agenti: savdoAgentiUz,
       support: supportUz,
       admin: adminUz,
       ishlab_chiqarish: ishlabChiqarishUz,
@@ -130,6 +133,7 @@ void i18n.use(initReactI18next).init({
       sozlamalar_uchot: sozlamalarUchotRu,
       kassa_uchot: kassaUchotRu,
       xaridor_uchot: xaridorUchotRu,
+      savdo_agenti: savdoAgentiRu,
       support: supportRu,
       admin: adminRu,
       ishlab_chiqarish: ishlabChiqarishRu,
@@ -165,6 +169,7 @@ void i18n.use(initReactI18next).init({
     "sozlamalar_uchot",
     "kassa_uchot",
     "xaridor_uchot",
+    "savdo_agenti",
     "support",
     "admin",
   ],

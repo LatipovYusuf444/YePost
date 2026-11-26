@@ -58,6 +58,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { cn } from "@/lib/utils";
 import NarxTuriTanlovi from "./NarxTuriTanlovi";
+import SotuvKartalari, { SotuvJadvali, SotuvKartasi } from "./SotuvKartalari";
 import { mijozgaMosSotuvNomi, sotuvNomiIzohi } from "@/lib/sotuvNomi";
 import {
   qoralamaFormasi,
@@ -2024,7 +2025,7 @@ export default function YangiSotuvModal({
             </div>
           )}
 
-          <div onScroll={suzishKuzatuvi} className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-7">
+          <div onScroll={suzishKuzatuvi} data-sotuv-aylantirish className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-7">
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]">
               <div className="min-w-0 space-y-4">
                 <section ref={mijozKartasiRef} className={kartaKlassi}>
@@ -2398,6 +2399,10 @@ export default function YangiSotuvModal({
                     )}
                   </div>
 
+                  {/* Narx turi, Umumiy birlik, Umumiy chegirma va Yakuniy summalar: foydalanuvchi ⋮⋮ tutqichdan sudrab jadval tepasiga yoki
+                      ostiga qo'yadi (joylashuv foydalanuvchi bo'yicha saqlanadi — refresh va qayta kirishda ham qoladi). */}
+                  <SotuvKartalari>
+                  <SotuvJadvali>
                   <p className="mt-3 hidden text-xs font-medium leading-5 text-slate-400 @min-[900px]:block">{t("products.keyboardHint")}</p>
 
                   <div className="mt-4">
@@ -2761,10 +2766,9 @@ export default function YangiSotuvModal({
                     )}
                   </div>
 
-                  {/* Umumiy sozlamalar (narx turi, umumiy birlik, umumiy chegirma) mahsulotlar ro'yxati ostida: avval mahsulotlar
-                      qo'shiladi, keyin xohlasa hammasiga birdan qo'llanadi. */}
-                  <div data-umumiy-sozlamalar className="mt-1">
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
+                  </SotuvJadvali>
+                  <SotuvKartasi kalit="narxTuri" nom={t("priceTypes.label")}>
+                  <div data-umumiy-narx-turi className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
                     <span className="text-sm font-bold text-slate-600">{t("priceTypes.label")}</span>
                     <NarxTuriTanlovi
                       qiymat={narxTuri}
@@ -2778,10 +2782,12 @@ export default function YangiSotuvModal({
                       </p>
                     )}
                   </div>
+                  </SotuvKartasi>
 
                   {/* Umumiy birlik: faqat qo'shimcha birligi (korobka, qop...) bor tovarlar bo'lsa ko'rinadi. */}
+                  <SotuvKartasi kalit="umumiyBirlik" nom={t("generalUnit.label")}>
                   {umumiyBirlikVariantlari.length > 0 && (
-                    <div data-umumiy-birlik className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
+                    <div data-umumiy-birlik className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
                       <span className="text-sm font-bold text-slate-600">{t("generalUnit.label")}</span>
                       <div role="radiogroup" aria-label={t("generalUnit.label")} className="inline-flex flex-wrap gap-0.5 rounded-xl bg-slate-100 p-1">
                         {[{ unitId: "", nom: t("generalUnit.base") }, ...umumiyBirlikVariantlari].map(({ unitId, nom }) => {
@@ -2813,8 +2819,10 @@ export default function YangiSotuvModal({
                       )}
                     </div>
                   )}
+                  </SotuvKartasi>
 
-                  <div data-umumiy-chegirma className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
+                  <SotuvKartasi kalit="umumiyChegirma" nom={t("generalDiscount.label")} majburiy={umumiyFoiz > 0 || umumiySumma > 0}>
+                  <div data-umumiy-chegirma className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
                     <span className="text-sm font-bold text-slate-600">{t("generalDiscount.label")}</span>
                     <div className="flex items-center gap-1.5">
                       <div className="relative w-40">
@@ -2897,15 +2905,20 @@ export default function YangiSotuvModal({
                       </p>
                     )}
                   </div>
-                  </div>
+                  </SotuvKartasi>
 
-                  <div ref={xulosaKartasiRef} className="mt-4 grid grid-cols-2 gap-3 @min-[900px]:grid-cols-4">
+                  <SotuvKartasi kalit="xulosa" nom={t("cardLayout.summary")}>
+                  <div>
+                  <div ref={xulosaKartasiRef} className="grid grid-cols-2 gap-3 @min-[900px]:grid-cols-4">
                     <XulosaKarta ikonka={Package} nom={t("summary.productsCount")} qiymat={String(mahsulotlarSoni)} ton="kok" />
                     <MiqdorXulosaKarta nom={t("summary.totalQuantity")} guruhlar={birlikMiqdorlari} />
                     <XulosaKarta ikonka={Percent} nom={t("summary.discount")} qiymat={pulniFormatlash(umumiyChegirma, sotuvVal)} ton="yashil" />
                     <XulosaKarta ikonka={Wallet} nom={t("summary.grandTotal")} qiymat={pulniFormatlash(jami, sotuvVal)} ton="asosiy" />
                   </div>
                   <p className="mt-3 text-xs font-medium leading-5 text-slate-500">{t("summary.paymentHint")}</p>
+                  </div>
+                  </SotuvKartasi>
+                  </SotuvKartalari>
 
                   {omborlar.length === 0 && (
                     <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-700">

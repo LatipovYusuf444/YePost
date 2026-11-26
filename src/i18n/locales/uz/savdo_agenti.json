@@ -1,0 +1,198 @@
+{
+  "title": "Savdo agenti",
+  "subtitle": "Telegram suhbatlari va lidlar bir joyda",
+  "tabs": {
+    "tasdiq": "Tasdiq kutayotganlar",
+    "lidlar": "Lidlar",
+    "suhbatlar": "Suhbatlar",
+    "sozlamalar": "Sozlamalar"
+  },
+  "tezOrada": {
+    "badge": "Tez orada",
+    "tasdiq": "Agent tayyorlagan javoblar shu yerda tasdiqlanadi. Bu bo'lim keyingi bosqichda ishga tushadi.",
+    "sozlamalar": "Savdo agentining sozlamalari (ish vaqti, javob uslubi va boshqalar) keyingi bosqichda qo'shiladi.",
+    "hozir": "Hozir ishlaydi: Suhbatlar va Lidlar"
+  },
+  "kanal": {
+    "BOT": "Bot",
+    "BUSINESS": "Telegram akkaunt"
+  },
+  "suhbat": {
+    "search": "Ism yoki @username",
+    "filterAll": "Hammasi",
+    "filterUnassigned": "Biriktirilmagan",
+    "refresh": "Yangilash",
+    "loading": "Suhbatlar yuklanmoqda...",
+    "empty": "Suhbatlar yo'q",
+    "emptyText": "Mijoz bot yoki do'kon Telegram akkauntiga yozganda suhbat shu yerda paydo bo'ladi.",
+    "notFound": "Qidiruv bo'yicha suhbat topilmadi",
+    "select": "Suhbatni tanlang",
+    "selectText": "Chapdagi ro'yxatdan suhbatni oching — xabarlar tarixi va javob maydoni shu yerda chiqadi.",
+    "unassigned": "Biriktirilmagan",
+    "assigned": "Mijozga biriktirilgan",
+    "back": "Suhbatlar ro'yxatiga qaytish",
+    "loadingMessages": "Xabarlar yuklanmoqda...",
+    "noMessages": "Bu suhbatda hali xabar yo'q",
+    "loadOlder": "Oldingi xabarlarni yuklash",
+    "loadingOlder": "Yuklanmoqda...",
+    "author": {
+      "mijoz": "Mijoz",
+      "xodim": "Xodim",
+      "akkaunt": "Telegram akkauntdan"
+    },
+    "akkauntIzoh": "Do'kon akkaunti egasi Telegram ilovasidan yozgan",
+    "placeholder": "Javob yozing...",
+    "send": "Yuborish",
+    "sendBusinessHint": "Javob do'konning Telegram akkauntidan boradi",
+    "sendBotHint": "Javob bot orqali boradi",
+    "attachment": "Fayl",
+    "downloadFailed": "Faylni yuklab bo'lmadi",
+    "closeError": "Xatoni yopish",
+    "noDate": "Sana yo'q",
+    "assign": "Mijozga biriktirish",
+    "assignTitle": "Suhbatni mijozga biriktirish",
+    "assignText": "Biriktirilgach suhbat mijoz kartasidagi faoliyat tarixida ham ko'rinadi.",
+    "assignSearch": "Ism yoki telefon bo'yicha qidiring",
+    "assignLoading": "Mijozlar yuklanmoqda...",
+    "assignEmpty": "Mijoz topilmadi",
+    "assignDone": "Suhbat mijozga biriktirildi",
+    "assignConfirm": "Biriktirish",
+    "assigning": "Biriktirilmoqda...",
+    "cancel": "Bekor qilish",
+    "openLead": "Lid kartasi",
+    "today": "Bugun",
+    "yesterday": "Kecha",
+    "leadStage": "Lid",
+    "noLead": "Lid yo'q"
+  },
+  "lid": {
+    "stage": {
+      "NEW": "Yangi",
+      "INTERESTED": "Qiziqdi",
+      "ORDER": "Buyurtma",
+      "CALL_BACK": "Qayta bog'lanish",
+      "SALE": "Sotildi",
+      "LOST": "Yo'qotildi"
+    },
+    "reason": {
+      "TOO_EXPENSIVE": "Qimmat",
+      "OUT_OF_STOCK": "Tovar yo'q",
+      "NO_REPLY": "Javob bermadi",
+      "BOUGHT_ELSEWHERE": "Boshqa joydan oldi",
+      "PRICE_ONLY": "Faqat narx so'radi",
+      "OTHER": "Boshqa sabab"
+    },
+    "actor": {
+      "SYSTEM": "Tizim",
+      "MANAGER": "Menejer",
+      "CRON": "Avtomatik",
+      "AGENT": "Agent"
+    },
+    "stats": {
+      "total": "Jami lidlar",
+      "interested": "Qiziqqan",
+      "ordered": "Buyurtma bergan",
+      "sold": "Sotilgan",
+      "lost": "Yo'qotilgan",
+      "ofTotal": "jamidan {{foiz}}%",
+      "bySource": "Kanal bo'yicha"
+    },
+    "filter": {
+      "allStages": "Barcha bosqichlar",
+      "allSources": "Barcha kanallar",
+      "period": "Davr",
+      "clearThread": "Suhbat filtrini olib tashlash"
+    },
+    "col": {
+      "contact": "Kontakt",
+      "source": "Kanal",
+      "stage": "Bosqich",
+      "owner": "Mas'ul",
+      "firstReply": "Birinchi javob",
+      "lastActivity": "Oxirgi faollik"
+    },
+    "loading": "Lidlar yuklanmoqda...",
+    "empty": "Lidlar yo'q",
+    "emptyText": "Mijoz Telegram'da yozganda lid avtomatik ochiladi.",
+    "noOwner": "Biriktirilmagan",
+    "noReply": "Javob berilmagan",
+    "duration": {
+      "soat": "{{n}} soat",
+      "daqiqa": "{{n}} daq",
+      "soniya": "{{n}} s"
+    },
+    "prev": "Oldingi",
+    "next": "Keyingi",
+    "page": "{{sahifa}} / {{jami}} sahifa · {{soni}} ta lid",
+    "card": {
+      "title": "Lid kartasi",
+      "close": "Kartani yopish",
+      "loading": "Karta yuklanmoqda...",
+      "openChat": "Suhbatni ochish",
+      "created": "Ochilgan",
+      "closedAt": "Yopilgan",
+      "stageSince": "Bosqichda",
+      "owner": "Mas'ul",
+      "assignMe": "Menga biriktirish",
+      "removeOwner": "Olib tashlash",
+      "changeStage": "Bosqichni o'zgartirish",
+      "lostReason": "Yo'qotish sababi",
+      "lostReasonPick": "Sababni tanlang",
+      "lostReasonRequired": "\"Yo'qotildi\" uchun sabab majburiy",
+      "save": "Saqlash",
+      "saving": "Saqlanmoqda...",
+      "saved": "Lid yangilandi",
+      "closedNote": "Lid yopilgan. Bosqichni o'zgartirsangiz lid qayta ochiladi.",
+      "notes": "Izohlar",
+      "noNotes": "Izoh yo'q",
+      "notePlaceholder": "Izoh yozing...",
+      "addNote": "Qo'shish",
+      "history": "Bosqichlar tarixi",
+      "noHistory": "Tarix yo'q",
+      "opened": "Lid ochildi"
+    },
+    "view": {
+      "kanban": "Kanban",
+      "table": "Jadval",
+      "label": "Ko'rinish"
+    },
+    "quick": {
+      "bugun": "Bugun",
+      "hafta": "Hafta",
+      "oy": "Oy",
+      "hammasi": "Hammasi"
+    },
+    "relative": {
+      "hozir": "hozir",
+      "daqiqa": "{{n}} daq oldin",
+      "soat": "{{n}} soat oldin",
+      "kun": "{{n}} kun oldin"
+    },
+    "ownerFilter": {
+      "all": "Barcha mas'ullar",
+      "mine": "Meniki"
+    },
+    "kanban": {
+      "empty": "Lid yo'q",
+      "more": "Yana {{n}} ta — jadvalda ko'rish",
+      "dragHint": "Kartochkani sudrab boshqa ustunga o'tkazing",
+      "handle": "Lidni sudrash",
+      "drop": "Shu yerga tashlang"
+    },
+    "lostDialog": {
+      "title": "Lid yo'qotildi",
+      "text": "Sababini tanlang — statistikada ko'rinadi.",
+      "save": "Saqlash",
+      "cancel": "Bekor qilish"
+    },
+    "funnel": {
+      "title": "Kanal bo'yicha voronka",
+      "arrow": "→"
+    },
+    "card2": {
+      "assign": "Mas'ul tayinlash",
+      "pickOwner": "Xodimni tanlang",
+      "noOwnerOption": "— Mas'ulsiz —"
+    }
+  }
+}

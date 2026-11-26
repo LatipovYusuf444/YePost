@@ -90,7 +90,8 @@ export function ishlabChiqarishYoliRuxsati(user: RoleLike | null | undefined, pa
 // qolgan ro'yxatlarni — xodimlar, filiallar, kompaniyalar, to'liq katalog —
 // 403 bilan yopadi, shuning uchun menyu va marshrutlar ham shunga mos
 // cheklanadi). ADMIN va DIREKTOR uchun cheklov yo'q — hammasi ochiq.
-const KASSIR_YOLLARI = ["/", "/savdo", "/mijozlar", "/kassa", "/sozlamalar"];
+// /savdo-agenti: backend /crm/chat va /leads ni CASHIER va STOREKEEPER uchun ham ochadi.
+const KASSIR_YOLLARI = ["/", "/savdo", "/mijozlar", "/savdo-agenti", "/kassa", "/sozlamalar"];
 
 function yolPrefiksiMosmi(pathname: string, path: string) {
   return pathname === path || pathname.startsWith(`${path}/`);

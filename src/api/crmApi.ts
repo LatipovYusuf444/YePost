@@ -1,5 +1,5 @@
 import apiClient from "./axios";
-import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { apiData, apiList, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   Activity,
   ActivityFilter,
@@ -14,6 +14,10 @@ import type {
   CursorJavobi,
   CustomField,
   CustomFieldSaqlash,
+  Lid,
+  LidIzohi,
+  LidKartochkasi,
+  LidStatistikasi,
   MijozDublikatFilter,
   MijozKartasi,
   RoyxatJavobi,
@@ -151,14 +155,55 @@ export const crmApi = {
     ),
   partnerChatXabarYuborish: async (partnerId: string, text: string) =>
     apiData((await apiClient.post<ChatMessage | ApiEnvelope<ChatMessage>>(`/crm/partners/${partnerId}/chat/messages`, { text })).data),
-  chatThreadlar: async (unassigned?: boolean) =>
+  // `fon` — davriy yangilash: xato bo'lsa toast chiqmaydi.
+  chatThreadlar: async (unassigned?: boolean, fon = false) =>
     royxatniAjratish(
       (
         await apiClient.get<RoyxatJavobi<ChatThread> | ApiListEnvelope<ChatThread>>("/crm/chat/threads", {
           params: unassigned === undefined ? undefined : { unassigned },
+          xatoniYashirish: fon,
         })
       ).data
     ),
   chatThreadPartnerBiriktirish: async (id: string, partnerId: string) =>
     apiData((await apiClient.patch<ChatThread | ApiEnvelope<ChatThread>>(`/crm/chat/threads/${id}/assign`, { partnerId })).data),
+  // Bitta suhbat tarixi (mijozga biriktirilmagan suhbatniki ham): { items, nextCursor }, eng yangisi birinchi.
+  chatThreadXabarlari: async (threadId: string, params?: { cursor?: string; limit?: number }, fon = false) =>
+    apiData(
+      (
+        await apiClient.get<CursorJavobi<ChatMessage> | ApiEnvelope<CursorJavobi<ChatMessage>>>(
+          `/crm/chat/threads/${threadId}/messages`,
+          { params: tozaParams(params), xatoniYashirish: fon }
+        )
+      ).data
+    ),
+  // Suhbatga javob: TELEGRAM_BUSINESS suhbatda javob do'kon akkauntidan boradi.
+  // Xato toast bilan emas, yozish maydoni ostida ko'rsatiladi (ruxsat yo'q / 24 soat oynasi tushuntirishi uzun).
+  chatThreadXabarYuborish: async (threadId: string, text: string, attachmentIds?: string[]) =>
+    apiData(
+      (
+        await apiClient.post<ChatMessage | ApiEnvelope<ChatMessage>>(
+          `/crm/chat/threads/${threadId}/messages`,
+          { text, ...(attachmentIds?.length ? { attachmentIds } : {}) },
+          { xatoniYashirish: true }
+        )
+      ).data
+    ),
+};
+
+// Savdo agenti → Lidlar (backend /leads).
+export type LidFiltri = { stage?: string; source?: string; ownerId?: string; threadId?: string; dateFrom?: string; dateTo?: string; page?: number; pageSize?: number };
+
+export const lidlarApi = {
+  royxat: async (filtr: LidFiltri = {}) =>
+    sahifaJavobi<Lid>((await apiClient.get<unknown>("/leads", { params: tozaParams(filtr) })).data, filtr.page ?? 1, filtr.pageSize ?? 20),
+  statistika: async (params: { dateFrom?: string; dateTo?: string } = {}) =>
+    apiData((await apiClient.get<LidStatistikasi | ApiEnvelope<LidStatistikasi>>("/leads/stats", { params: tozaParams(params) })).data),
+  kartochka: async (id: string) =>
+    apiData((await apiClient.get<LidKartochkasi | ApiEnvelope<LidKartochkasi>>(`/leads/${id}`)).data),
+  // stage (LOST uchun lostReason majburiy), lostReason, ownerId (null — olib tashlash).
+  yangilash: async (id: string, data: { stage?: string; lostReason?: string; ownerId?: string | null }) =>
+    apiData((await apiClient.patch<Lid | ApiEnvelope<Lid>>(`/leads/${id}`, data)).data),
+  izohQoshish: async (id: string, text: string) =>
+    apiData((await apiClient.post<LidIzohi | ApiEnvelope<LidIzohi>>(`/leads/${id}/notes`, { text })).data),
 };

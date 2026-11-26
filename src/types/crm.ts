@@ -171,21 +171,68 @@ export type ChatMessage = {
   id?: string;
   customerId?: string;
   partnerId?: string;
+  threadId?: string;
   text?: string;
   direction?: "IN" | "OUT" | string;
   createdAt?: string;
   sender?: CrmUser;
+  // OUT: qaysi xodim yozdi; `null` — do'kon akkaunti egasi Telegram ilovasidan yozgan (Telegram Business).
+  sentById?: string | null;
+  attachments?: Attachment[];
   [key: string]: unknown;
 };
+
+/** Suhbat kanali: bot bilan chat yoki do'konning o'z Telegram akkaunti (Telegram Business) bilan chat. */
+export type ChatKanali = "TELEGRAM_BOT" | "TELEGRAM_BUSINESS";
 
 export type ChatThread = {
   id: string;
   customerId?: string;
-  partnerId?: string;
+  // `null` — hali mijozga biriktirilmagan (yangi yozgan odam).
+  partnerId?: string | null;
   customer?: unknown;
   lastMessage?: ChatMessage;
   unreadCount?: number;
   assignedTo?: CrmUser;
+  assignedToId?: string | null;
+  channel?: ChatKanali | string;
+  // TELEGRAM_BUSINESS: do'kon akkaunti ulanishi id'si; bot chatida "".
+  businessConnectionId?: string;
+  telegramChatId?: string;
+  telegramUsername?: string;
+  displayName?: string;
+  lastMessageAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
+
+/** Lid bosqichi (voronka): SALE va LOST lidni yopadi. */
+export type LidBosqichi = "NEW" | "INTERESTED" | "ORDER" | "SALE" | "CALL_BACK" | "LOST";
+export const LID_BOSQICHLARI: LidBosqichi[] = ["NEW", "INTERESTED", "ORDER", "CALL_BACK", "SALE", "LOST"];
+/** Yo'qotish sabablari (stage LOST bo'lganda majburiy). */
+export type LidYoqotishSababi = "TOO_EXPENSIVE" | "OUT_OF_STOCK" | "NO_REPLY" | "BOUGHT_ELSEWHERE" | "PRICE_ONLY" | "OTHER";
+export const LID_YOQOTISH_SABABLARI: LidYoqotishSababi[] = ["TOO_EXPENSIVE", "OUT_OF_STOCK", "NO_REPLY", "BOUGHT_ELSEWHERE", "PRICE_ONLY", "OTHER"];
+
+export type Lid = {
+  id: string;
+  threadId: string;
+  source: ChatKanali | string;
+  stage: LidBosqichi | string;
+  lostReason?: LidYoqotishSababi | string | null;
+  ownerId?: string | null;
+  // Lidning birinchi xabaridan do'konning birinchi javobigacha (soniya).
+  firstReplySeconds?: number | null;
+  lastActivityAt?: string;
+  stageEnteredAt?: string;
+  closedAt?: string | null;
+  createdAt?: string;
+  thread?: { id: string; channel?: string; displayName?: string; telegramUsername?: string; partnerId?: string | null } | null;
+  owner?: { id: string; fullName?: string | null } | null;
+};
+
+export type LidIzohi = { id: string; author: "AGENT" | "MANAGER" | string; userId?: string | null; text: string; createdAt: string };
+export type LidHodisasi = { id: string; fromStage?: string | null; toStage: string; actor: "SYSTEM" | "MANAGER" | "CRON" | string; userId?: string | null; createdAt: string };
+export type LidKartochkasi = Lid & { notes?: LidIzohi[]; events?: LidHodisasi[] };
+
+export type LidVoronkasi = { total: number; interested: number; ordered: number; sold: number; lost: number };
+export type LidStatistikasi = { total: LidVoronkasi; bySource: Array<LidVoronkasi & { source: string }> };
