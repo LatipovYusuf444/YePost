@@ -169,6 +169,25 @@
     "photoAlt": "Mahsulot rasmi",
     "photoDrop": "Rasmni tashlang",
     "photoBrowse": "Tanlash uchun bosing",
+    "existingVariants": {
+        "title": "Mavjud variatsiyalar",
+        "attribute": "Variatsiya atributi",
+        "noAttribute": "Variatsiya nomi",
+        "name": "Nomi",
+        "barcode": "Shtrix-kod",
+        "newBadge": "Yangi",
+        "add": "Variatsiya qo'shish",
+        "remove": "Olib tashlash",
+        "costPrice": "Kelish narxi",
+        "retailPrice": "Sotuv narxi",
+        "wholesalePrice": "Ulgurji narx",
+        "hint": "Qiymatni o'zgartirsangiz, qoldiq va harakat tarixi o'sha variatsiyada qoladi. Yangi variatsiyaga shtrix-kod avtomatik beriladi.",
+        "errors": {
+          "bosh": "Variatsiya qiymatini kiriting.",
+          "takror": "Bunday variatsiya allaqachon bor.",
+          "umumiy": "Variatsiyalarda xato bor — qizil qatorlarni tekshiring."
+        }
+      },
     "sectionVariations": "Variatsiyalar",
     "sectionUnits": "Birliklar",
     "unitsHint": "Qoldiq asosiy birlikda (masalan kg) yuritiladi. Korobka kabi qo'shimcha birlikni koeffitsient bilan qo'shing: 1 korobka = 3 kg. Birlik ro'yxatda bo'lmasa, avval Sozlamalar → O'lchov birligi bo'limida yarating.",

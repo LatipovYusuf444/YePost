@@ -64,6 +64,8 @@ import BirliklarModal from "./BirliklarModal";
 import BirlikQatorlariMaydoni from "./BirlikQatorlari";
 import { birlikQatorlariImzosi, birlikQatorlariniOlish, birlikRoyxatiniYigish, type BirlikQatori } from "./birlikQatorlariMantiq";
 import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { modifikatsiyalarApi } from "@/api/catalogApi";
+import { variatsiyaAtributlari, variatsiyaNomi, variatsiyaPatchi, variatsiyaQiymatlari, variatsiyalarniTekshirish, variatsiyalimi, yangiVariatsiyaParams, type VariatsiyaXatosi } from "@/lib/mahsulotVariatsiyalari";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { serverXatoMaydonlari, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 
@@ -828,6 +830,80 @@ function sanitizeMoneyInput(value:string) {
   return cleaned.slice(0,firstDot+1)+cleaned.slice(firstDot+1).replace(/\./g,"");
 }
 
+type YangiVariatsiya={kalit:string;qiymatlar:Record<string,string>;barcode:string;narx:VariantDraft};
+
+// Tahrirlash oynasi: mavjud variatsiyalar (atribut, qiymatni o'zgartirish) va yangi variatsiya qo'shish (shtrix-kod avtomatik, narx).
+function MavjudVariatsiyalar({atributlar,mavjudlar,tahrirlar,onTahrir,yangilar,onYangilar,xatolar,faol,yangiShtrixKod,xato}:{
+  atributlar:string[];
+  mavjudlar:Array<{id:string;name?:string|null;params?:Record<string,unknown>|null;barcode:string}>;
+  tahrirlar:Record<string,Record<string,string>>;
+  onTahrir:(id:string,qiymatlar:Record<string,string>)=>void;
+  yangilar:YangiVariatsiya[];
+  onYangilar:(yangilar:YangiVariatsiya[])=>void;
+  xatolar:Record<string,VariatsiyaXatosi>;
+  faol:boolean;
+  yangiShtrixKod:()=>string;
+  xato?:string;
+}){
+  const { t } = useTranslation("mahsulotlar");
+  const maydonlar=atributlar.length>0?atributlar:[""];
+  const yorliq=(maydon:string)=>maydon||t("productModal.existingVariants.name");
+  const yangiQator=(qator:YangiVariatsiya,patch:Partial<YangiVariatsiya>)=>onYangilar(yangilar.map((x)=>x.kalit===qator.kalit?{...x,...patch}:x));
+  const narxMaydoni=(qator:YangiVariatsiya,kalit:"costPrice"|"retailPrice"|"wholesalePrice",valyutaKaliti:"costCurrency"|"retailCurrency"|"wholesaleCurrency")=>(
+    <label className="block text-[11px] font-black uppercase tracking-[0.06em] text-gray-500">{t(`productModal.existingVariants.${kalit}`)}
+      <div className="mt-1.5"><MoneyInput value={qator.narx[kalit]} currency={qator.narx[valyutaKaliti]} onChange={(value)=>yangiQator(qator,{narx:{...qator.narx,[kalit]:value}})} onCurrencyChange={(value)=>yangiQator(qator,{narx:{...qator.narx,[valyutaKaliti]:value}})}/></div>
+    </label>
+  );
+  const xatoMatni=(kalit:string)=>xatolar[kalit]?<p role="alert" className="text-xs font-bold text-red-600">{t(`productModal.existingVariants.errors.${xatolar[kalit]}`)}</p>:null;
+  return <div data-mavjud-variatsiyalar className="space-y-4 rounded-[24px] border border-gray-200 bg-white p-4">
+    <div className="flex flex-wrap items-center gap-2">
+      <p className="text-sm font-black text-gray-600">{t(atributlar.length>0?"productModal.existingVariants.attribute":"productModal.existingVariants.noAttribute")}:</p>
+      {atributlar.map((a)=><span key={a} data-variatsiya-atributi className="rounded-full bg-orange-50 px-3 py-1 text-sm font-black text-orange-600 ring-1 ring-orange-100">{a}</span>)}
+    </div>
+    <div className="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-200">
+      {mavjudlar.map((v)=>{
+        const qiymatlar=tahrirlar[v.id]??variatsiyaQiymatlari(v,atributlar);
+        return <div key={v.id} data-variatsiya-qatori={v.id} className={`grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_260px] sm:items-end ${xatolar[v.id]?"bg-red-50/60":""}`}>
+          <div className="grid gap-3" style={{gridTemplateColumns:`repeat(${maydonlar.length},minmax(0,1fr))`}}>
+            {maydonlar.map((m)=><label key={m} className="block text-[11px] font-black uppercase tracking-[0.06em] text-gray-500">{yorliq(m)}
+              <input value={qiymatlar[m]??""} disabled={!faol} aria-invalid={Boolean(xatolar[v.id])||undefined} onChange={(e)=>onTahrir(v.id,{...qiymatlar,[m]:e.target.value})} className="input mt-1.5 h-11 text-sm font-bold normal-case tracking-normal"/>
+            </label>)}
+          </div>
+          <div className="text-[11px] font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.existingVariants.barcode")}
+            <p className="mt-1.5 flex h-11 items-center truncate rounded-2xl bg-gray-50 px-4 font-mono text-sm font-bold normal-case tracking-normal text-gray-600 ring-1 ring-gray-200">{v.barcode||"—"}</p>
+          </div>
+          {xatoMatni(v.id)}
+        </div>;
+      })}
+      {yangilar.map((qator)=><div key={qator.kalit} data-yangi-variatsiya className={`space-y-3 p-3 ${xatolar[qator.kalit]?"bg-red-50/60":"bg-emerald-50/40"}`}>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_260px_auto] sm:items-end">
+          <div className="grid gap-3" style={{gridTemplateColumns:`repeat(${maydonlar.length},minmax(0,1fr))`}}>
+            {maydonlar.map((m)=><label key={m} className="block text-[11px] font-black uppercase tracking-[0.06em] text-gray-500">{yorliq(m)} <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-700">{t("productModal.existingVariants.newBadge")}</span>
+              <input value={qator.qiymatlar[m]??""} aria-invalid={Boolean(xatolar[qator.kalit])||undefined} onChange={(e)=>yangiQator(qator,{qiymatlar:{...qator.qiymatlar,[m]:e.target.value}})} className="input mt-1.5 h-11 text-sm font-bold normal-case tracking-normal"/>
+            </label>)}
+          </div>
+          <label className="block text-[11px] font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.existingVariants.barcode")}
+            <div className="relative mt-1.5">
+              <input value={qator.barcode} onChange={(e)=>yangiQator(qator,{barcode:e.target.value})} className="input h-11 pr-28 font-mono text-sm font-bold normal-case tracking-normal"/>
+              <button type="button" onClick={()=>yangiQator(qator,{barcode:yangiShtrixKod()})} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1 text-xs font-black text-orange-600 hover:bg-orange-50">{t("productModal.generateShort")}</button>
+            </div>
+          </label>
+          <button type="button" aria-label={t("productModal.existingVariants.remove")} title={t("productModal.existingVariants.remove")} onClick={()=>onYangilar(yangilar.filter((x)=>x.kalit!==qator.kalit))} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"><X size={16}/></button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {narxMaydoni(qator,"costPrice","costCurrency")}
+          {narxMaydoni(qator,"retailPrice","retailCurrency")}
+          {narxMaydoni(qator,"wholesalePrice","wholesaleCurrency")}
+        </div>
+        {xatoMatni(qator.kalit)}
+      </div>)}
+    </div>
+    {faol&&<button type="button" data-variatsiya-qoshish onClick={()=>onYangilar([...yangilar,{kalit:`yangi-${Date.now()}-${yangilar.length}`,qiymatlar:Object.fromEntries(maydonlar.map((m)=>[m,""])),barcode:yangiShtrixKod(),narx:emptyVariantDraft()}])} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-orange-300 bg-orange-50/50 px-4 py-3 text-sm font-black text-orange-600 hover:bg-orange-50"><Plus size={16}/>{t("productModal.existingVariants.add")}</button>}
+    <p className="text-xs font-bold text-gray-400">{t("productModal.existingVariants.hint")}</p>
+    <MaydonXatosi matn={xato}/>
+  </div>;
+}
+
 function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}:{value:string;suffix?:string;onChange:(value:string)=>void;currency?:"UZS"|"USD";onCurrencyChange?:(value:"UZS"|"USD")=>void;onApplyAll?:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
   // Bir valyutali rejimda (Faqat so'm / Faqat dollar) valyuta tanlovi yashiriladi — o'rnida rejim valyutasi yoziladi.
@@ -943,6 +1019,14 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
   const [activeVariationRow,setActiveVariationRow]=useState<number|null>(null);
   const [variantDrafts,setVariantDrafts]=useState<Record<string,VariantDraft>>({});
   const [variantStockDrafts,setVariantStockDrafts]=useState<Record<string,VariantStockDraft>>({});
+  // Tahrirlash: variatsiyali mahsulotning mavjud variatsiyalari (atribut va qiymatlar) — nom/qiymatini o'zgartirish va yangi
+  // variatsiya qo'shish. Bunday mahsulotda "Asosiy variant" bloki va uni saqlash yo'li ishlatilmaydi (variatsiya buzilmasin).
+  const mavjudVariatsiyalar=useMemo(()=>item!=="new"?store.modifikatsiyalar[item.id]??[]:[],[item,store.modifikatsiyalar]);
+  const variatsiyaliTahrir=item!=="new"&&variatsiyalimi(mavjudVariatsiyalar);
+  const variatsiyaAtributi=useMemo(()=>variatsiyaAtributlari(mavjudVariatsiyalar),[mavjudVariatsiyalar]);
+  const [variatsiyaTahrirlari,setVariatsiyaTahrirlari]=useState<Record<string,Record<string,string>>>({});
+  const [yangiVariatsiyalar,setYangiVariatsiyalar]=useState<YangiVariatsiya[]>([]);
+  const [variatsiyaXatolari,setVariatsiyaXatolari]=useState<Record<string,VariatsiyaXatosi>>({});
   // Tahrirlashda (oddiy, variatsiyasiz mahsulot) — mavjud "Asosiy variant"ning
   // haqiqiy narxlari shu yerga oldindan to'ldiriladi, aks holda doim "0" ko'rinardi.
   // Bir valyutali rejim valyutasi (Faqat so'm / Faqat dollar): narx valyutasi tanlovi yashirin, hammasi shu valyutada yuboriladi.
@@ -974,7 +1058,7 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
   const [categorySearch,setCategorySearch]=useState("");
   const [newCategoryName,setNewCategoryName]=useState("");
   const [categoryCreating,setCategoryCreating]=useState(false);
-  const ozgarishBor=useOzgarishBormi({name,categoryId,unitId,barcode,article,imageUrl,isActive,kind,trackSerial,baseDraft,baseStock,brand,variantDrafts},tahrirFaol);
+  const ozgarishBor=useOzgarishBormi({name,categoryId,unitId,barcode,article,imageUrl,isActive,kind,trackSerial,baseDraft,baseStock,brand,variantDrafts,variatsiyaTahrirlari,yangiVariatsiyalar},tahrirFaol);
   const [editingCategoryId,setEditingCategoryId]=useState<string|null>(null);
   const [editingCategoryName,setEditingCategoryName]=useState("");
   const [categoryUpdating,setCategoryUpdating]=useState(false);
@@ -1161,9 +1245,18 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
     if(!categoryId)majburiy.categoryId=t("validation.categoryRequired");
     if(!unitId)majburiy.unitId=t("validation.unitRequired");
     if(!editing&&generatedVariants.length===0&&!barcode.trim())majburiy.barcode=t("modForm.barcodeRequired");
+    // Mavjud variatsiyalar: bo'sh qiymat va takror tekshiriladi (mavjudlar + yangilar).
+    if(variatsiyaliTahrir){
+      const xatolar=variatsiyalarniTekshirish([
+        ...mavjudVariatsiyalar.map((v)=>({kalit:v.id,qiymatlar:variatsiyaTahrirlari[v.id]??variatsiyaQiymatlari(v,variatsiyaAtributi)})),
+        ...yangiVariatsiyalar.map((v)=>({kalit:v.kalit,qiymatlar:v.qiymatlar})),
+      ],variatsiyaAtributi);
+      setVariatsiyaXatolari(xatolar);
+      if(Object.keys(xatolar).length>0)majburiy.variants=t("productModal.existingVariants.errors.umumiy");
+    }
     // Bir valyutali rejimda faqat bir narx o'zgartirilsa: boshqa valyutada saqlangan, tegilmagan narxlar ($8) rejim valyutasida
     // jimgina "8 so'm" bo'lib ketmasligi uchun saqlash to'xtaydi — shu maydonlarda narxni qayta kiritish so'raladi.
-    if(editing&&generatedVariants.length===0&&yagona){
+    if(editing&&generatedVariants.length===0&&!variatsiyaliTahrir&&yagona){
       ozgarmaganBoshqaValyutaMaydonlar(baseDraft,store.modifikatsiyalar[item.id]?.[0]?.price,yagona)
         .forEach((maydon)=>{majburiy[`price.${maydon}`]=t(`currencyMode.reenterPrice.${yagona}`)});
     }
@@ -1207,7 +1300,7 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
     // Tahrirlashda, oddiy (variatsiyasiz) mahsulotning "Asosiy variant narxlari"
     // bo'limi alohida — mavjud variantga (yoki hali yo'q bo'lsa, yangisiga) saqlanadi,
     // aks holda mahsulotning o'z maydonlari saqlanib, narx o'zgarishi tashlab ketilardi.
-    if(ok&&editing&&generatedVariants.length===0){
+    if(ok&&editing&&generatedVariants.length===0&&!variatsiyaliTahrir){
       const asosiyVariant=store.modifikatsiyalar[item.id]?.[0];
       // Bir valyutali rejimda boshqa valyutadagi narx raqamlari o'zgartirilmagan bo'lsa, narx qayta yuborilmaydi.
       const narx=yuboriladiganNarx(baseDraft,asosiyVariant?.price,yagona);
@@ -1224,6 +1317,31 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
         // aks holda so'rov ketadi-yu, jadvalda eski narx qolib ketaveradi.
         if(ok&&narx&&asosiyVariant)ok=await fx.kuzat(()=>store.narxYangilash(item.id,asosiyVariant.id,narx));
       }
+    }
+    // Variatsiyali mahsulot: faqat o'zgargan variatsiyalar PATCH qilinadi (o'chirilmaydi, qayta yaratilmaydi — qoldiq va tarix o'zida
+    // qoladi); yangilari bittadan yaratiladi (shtrix-kod avtomatik), keyin narxi alohida /price bilan.
+    if(ok&&editing&&variatsiyaliTahrir){
+      for(const v of mavjudVariatsiyalar){
+        const tahrir=variatsiyaTahrirlari[v.id];
+        const patch=tahrir?variatsiyaPatchi(v,variatsiyaAtributi,tahrir):null;
+        if(!patch)continue;
+        ok=await fx.kuzat(()=>store.modifikatsiyaSaqlash(item.id,v.id,{...patch,barcode:v.barcode}));
+        if(!ok)break;
+      }
+      for(const yangi of ok?yangiVariatsiyalar:[]){
+        const narx=narxYigish(yangi.narx,yagona);
+        const yaratilgan=await fx.kuzat(()=>modifikatsiyalarApi.yaratish(item.id,{
+          name:variatsiyaNomi(yangi.qiymatlar,variatsiyaAtributi),
+          params:yangiVariatsiyaParams(mavjudVariatsiyalar,variatsiyaAtributi,yangi.qiymatlar),
+          barcode:yangi.barcode.trim()||generateBarcodeValue(),
+          minStock:0,
+        }));
+        if(!yaratilgan){ok=false;break}
+        // Qayta "Saqlash" bosilsa ikkinchi marta yaratilmasin.
+        setYangiVariatsiyalar((joriy)=>joriy.filter((x)=>x.kalit!==yangi.kalit));
+        if(narx&&!(await fx.kuzat(()=>modifikatsiyalarApi.narxYangilash(yaratilgan.id,narx)))){ok=false;break}
+      }
+      await store.modifikatsiyalarniYuklash(item.id);
     }
     // Tahrirlashda birliklar mahsulot saqlangach alohida PUT bilan yoziladi. Faqat ular yuklangan va o'zgargan bo'lsa (yuklanmagan ro'yxat
     // bo'sh deb yuborilib, mavjud birliklarni o'chirib yubormasligi uchun). Xato bo'lsa oyna ochiq qoladi.
@@ -1535,7 +1653,7 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
       {editing&&!faqatKorish&&(!tahrirFaol?<button key="edit" type="button" onClick={event=>{event.preventDefault();tahrirniBoshlash()}} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700"><Edit3 size={17}/>{t("actions.edit")}</button>:<button key="save" type="submit" disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50">{store.amalBajarilmoqda||unitResolving||saqlanmoqda?<LoaderCircle size={17} className="animate-spin"/>:<Save size={17}/>} {t("productModal.save")}</button>)}
     </header>
 
-    {editing && <div className="px-6 pt-5"><ProductStockSummary productId={item.id} /></div>}
+    {editing && <div className="px-6 pt-5"><ProductStockSummary productId={item.id} variatsiyalar={store.modifikatsiyalar[item.id]} /></div>}
     <fieldset disabled={!tahrirFaol || unitResolving} className="product-modal-fields min-w-0 border-0 px-6 py-6">
       <main className="min-w-0 space-y-8">
         {(fx.tepadagi||kategoriyaFx.tepadagi||(!fx.bor&&!kategoriyaFx.bor&&store.xatolik))&&<div className="mb-4"><ErrorBox matn={fx.tepadagi||kategoriyaFx.tepadagi}/></div>}
@@ -1641,7 +1759,19 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
           </div>}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4"><h3 className="text-xl font-black">{t("productModal.sectionVariations")}</h3><div className="h-px flex-1 bg-gray-100"/></div>
-            <div>
+            {variatsiyaliTahrir&&<MavjudVariatsiyalar
+              atributlar={variatsiyaAtributi}
+              mavjudlar={mavjudVariatsiyalar}
+              tahrirlar={variatsiyaTahrirlari}
+              onTahrir={(id,qiymatlar)=>{setVariatsiyaTahrirlari((joriy)=>({...joriy,[id]:qiymatlar}));setVariatsiyaXatolari((joriy)=>Object.fromEntries(Object.entries(joriy).filter(([kalit])=>kalit!==id)));fx.tozala("variants")}}
+              yangilar={yangiVariatsiyalar}
+              onYangilar={(yangilar)=>{setYangiVariatsiyalar(yangilar);fx.tozala("variants")}}
+              xatolar={variatsiyaXatolari}
+              faol={tahrirFaol}
+              yangiShtrixKod={generateBarcodeValue}
+              xato={fx.xato("variants")}
+            />}
+            {!variatsiyaliTahrir&&<div>
               <p className="text-sm font-black text-gray-500">{t("productModal.variationAttributeLabel")}</p>
               <p className="mt-1 text-xs font-bold text-gray-400">{t("productModal.variationAttributeHint")}</p>
               <div className="mt-3 space-y-4">
@@ -1672,7 +1802,7 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
                   </div>
                 ))}
               </div>
-            </div>
+            </div>}
             {variantCombinations.length>0&&<div className="overflow-hidden rounded-[24px] border border-gray-100 bg-white">
               <div className="grid grid-cols-[70px_1fr_220px_90px] border-b border-gray-100 px-4 py-3 text-sm font-semibold text-slate-600">
                 <span>{t("productModal.variantTable.photo")}</span>
@@ -1722,7 +1852,7 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
               </div>
             </div>}
             {variantCombinations.length>0&&<MaydonXatosi matn={fx.xato("variants")}/>}
-            {variantCombinations.length===0&&<div className="rounded-[24px] border border-orange-100 bg-orange-50/30 p-4">
+            {variantCombinations.length===0&&!variatsiyaliTahrir&&<div className="rounded-[24px] border border-orange-100 bg-orange-50/30 p-4">
               <div className="mb-4">
                 <p className="text-base font-black text-gray-700">{t("productModal.baseVariant.title")}</p>
                 <p className="mt-1 text-sm font-bold text-gray-400">{t("productModal.baseVariant.subtitle")}</p>

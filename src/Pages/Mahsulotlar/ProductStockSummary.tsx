@@ -5,7 +5,24 @@ import { stockBalanceReportAll, type StockBalanceItem } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 
-export default function ProductStockSummary({ productId }: { productId: string }) {
+type Variatsiya = { id: string; name?: string | null };
+
+// Hisobotda faqat omborda yozuvi bor variatsiyalar keladi — hech qachon kirim qilinmagan (qoldig'i 0) variatsiya ham
+// ro'yxatda ko'rinsin: ular 0 qoldiq bilan oxiriga qo'shiladi (ombor "—").
+function qoldiqsizVariatsiyalarniQoshish(rows: StockBalanceItem[], variatsiyalar: readonly Variatsiya[] | undefined, productId: string): StockBalanceItem[] {
+  if (!variatsiyalar?.length) return rows;
+  const borlar = new Set(rows.map((row) => row.modificationId));
+  const birlik = rows[0]?.unitName ?? null;
+  const qoshimcha = variatsiyalar
+    .filter((v) => !borlar.has(v.id))
+    .map((v): StockBalanceItem => ({
+      warehouseId: null, warehouseName: null, productId, productName: "", modificationId: v.id, modificationName: v.name ?? "",
+      unitName: birlik, quantity: 0, reservedQuantity: 0, availableQuantity: 0,
+    }));
+  return [...rows, ...qoshimcha];
+}
+
+export default function ProductStockSummary({ productId, variatsiyalar }: { productId: string; variatsiyalar?: readonly Variatsiya[] }) {
   const { t } = useTranslation("common");
   const [state, setState] = useState<{ id: string; rows: StockBalanceItem[]; error: string } | null>(null);
   useEffect(() => {
@@ -15,7 +32,8 @@ export default function ProductStockSummary({ productId }: { productId: string }
       .catch((error) => { if (active) setState({ id: productId, rows: [], error: getApiErrorMessage(error) }); });
     return () => { active = false; };
   }, [productId]);
-  const current = state?.id === productId ? state : null;
+  const yuklangan = state?.id === productId ? state : null;
+  const current = yuklangan && !yuklangan.error ? { ...yuklangan, rows: qoldiqsizVariatsiyalarniQoshish(yuklangan.rows, variatsiyalar, productId) } : yuklangan;
   return <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
     <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-700"><Package size={16} />{t("negativeStock.productStock")}</h3>
     {!current ? <LoaderCircle size={18} className="animate-spin text-slate-400" /> : current.error ? <p role="alert" className="text-xs text-red-600">{current.error}</p> : current.rows.length === 0 ? <p className="text-xs text-slate-500">{t("negativeStock.noStock")}</p> : <div className="max-h-52 space-y-2 overflow-y-auto">
