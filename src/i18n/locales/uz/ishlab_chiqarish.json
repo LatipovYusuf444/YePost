@@ -242,6 +242,25 @@
     "usdOnlyRateHint": "Kalkulyatsiya so'mda hisoblanadi: dollardagi narx uchun kurs kiritiladi.",
     "addLine": "Qator qo'shish"
   },
+  "flowBoard": {
+    "title": "Bugungi ishlar",
+    "subtitle": "Har buyurtma qaysi bosqichda turibdi va hozir nima qilish kerak. Bitta tugma — keyingi qadam.",
+    "filter": "Bosqich bo'yicha",
+    "all": "Hammasi",
+    "mine": "Mening ishim",
+    "overdue": "muddati o'tdi",
+    "returned": "Qabulda qaytarildi: kun yakunini tuzatib, qayta topshiring.",
+    "waiting": "Kutilmoqda: {{bosqich}}",
+    "empty": "Hozir ochiq buyurtma yo'q",
+    "emptyFiltered": "Bu bosqichda buyurtma yo'q",
+    "emptyHint": "Buyurtma yaratilgach u shu yerda kartochka bo'lib chiqadi va bosqichma-bosqich yuradi: xomashyo berish → kun yakuni → qabul → yopish.",
+    "action": {
+      "issue": "Xomashyo berish",
+      "report": "Kun yakunini yozish",
+      "acceptance": "Qabul qilish",
+      "close": "Yopish"
+    }
+  },
   "orders": {
     "planHint": "Qaysi mahsulot, qancha va qaysi retsept bo'yicha ishlab chiqariladi.",
     "dueHint": "Ixtiyoriy: muddati o'tsa ro'yxatda qizil ko'rinadi.",

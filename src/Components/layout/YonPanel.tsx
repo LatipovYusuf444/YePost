@@ -42,6 +42,7 @@ import {
   Home,
   LogOut,
   Layers,
+  LayoutList,
   PackageOpen,
   PackageSearch,
   ReceiptText,
@@ -117,6 +118,7 @@ const menyular: Menyu[] = [
     path: "/ishlab-chiqarish",
     icon: Factory,
     bolalar: [
+      { key: "icJarayon", path: "/ishlab-chiqarish/jarayon", icon: LayoutList },
       { key: "icBuyurtmalar", path: "/ishlab-chiqarish/buyurtmalar", icon: ClipboardList },
       { key: "icRetseptlar", path: "/ishlab-chiqarish/retseptlar", icon: BookOpenCheck },
       { key: "icKalkulyatsiya", path: "/ishlab-chiqarish/kalkulyatsiya", icon: Calculator },

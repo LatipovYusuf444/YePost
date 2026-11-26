@@ -283,7 +283,7 @@ export function buyurtmaBosqichlari(
 }
 
 /** Buyurtma holati bo'yicha hozirgi bosqich; yopilgan va bekor qilinganda yo'q. */
-function joriyBosqich(status: string | null | undefined, berishYoq: boolean): BosqichKaliti | null {
+export function joriyBosqich(status: string | null | undefined, berishYoq: boolean): BosqichKaliti | null {
   switch (status) {
     case "DRAFT":
     case "RELEASED":

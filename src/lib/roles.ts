@@ -56,7 +56,7 @@ export function foydalanuvchiAdminmi(user?: RoleLike | null) {
   return rol === "ADMIN" || rol === "DIREKTOR";
 }
 
-export type IshlabChiqarishBolimi = "buyurtmalar" | "retseptlar" | "kalkulyatsiya" | "sexga-berish" | "smena" | "qabul" | "rulonlar";
+export type IshlabChiqarishBolimi = "jarayon" | "buyurtmalar" | "retseptlar" | "kalkulyatsiya" | "sexga-berish" | "smena" | "qabul" | "rulonlar";
 
 function faolHuquqBormi(user: RoleLike | null | undefined, kod: string) {
   return (user?.grants ?? []).some((huquq) => huquq.code === kod && huquq.isActive !== false && !huquq.isDeleted);
@@ -65,9 +65,11 @@ function faolHuquqBormi(user: RoleLike | null | undefined, kod: string) {
 // Ishlab chiqarish: buyurtma — ADMIN/DIREKTOR; retsept va kalkulyatsiya — o'z huquqi yoki DIREKTOR; sexga berish va smena hisoboti — o'z huquqi, ADMIN yoki DIREKTOR;
 // qabul akti — PRODUCTION_ACCEPT yoki DIREKTOR (backend GrantsGuard ADMIN'ga avtomatik bermaydi).
 // Menyu uchun; yakuniy qarorni server beradi.
-export function ishlabChiqarishRuxsati(user: RoleLike | null | undefined, bolim: IshlabChiqarishBolimi) {
+export function ishlabChiqarishRuxsati(user: RoleLike | null | undefined, bolim: IshlabChiqarishBolimi): boolean {
   const rol = foydalanuvchiRoli(user);
   const rahbar = rol === "ADMIN" || rol === "DIREKTOR";
+  // Bugungi ishlar: ishlab chiqarishning biror bo'limiga kira oladigan har kimga.
+  if (bolim === "jarayon") return ISHLAB_CHIQARISH_BOLIMLARI.some((nom): boolean => nom !== "jarayon" && ishlabChiqarishRuxsati(user, nom));
   if (bolim === "buyurtmalar") return rahbar;
   if (bolim === "retseptlar") return rol === "DIREKTOR" || faolHuquqBormi(user, "PRODUCTION_RECIPE");
   if (bolim === "kalkulyatsiya") return rol === "DIREKTOR" || faolHuquqBormi(user, "COSTING");
@@ -77,7 +79,7 @@ export function ishlabChiqarishRuxsati(user: RoleLike | null | undefined, bolim:
   return rahbar || faolHuquqBormi(user, "PRODUCTION_ISSUE") || faolHuquqBormi(user, "PRODUCTION_REPORT");
 }
 
-const ISHLAB_CHIQARISH_BOLIMLARI: IshlabChiqarishBolimi[] = ["buyurtmalar", "retseptlar", "kalkulyatsiya", "sexga-berish", "smena", "qabul", "rulonlar"];
+const ISHLAB_CHIQARISH_BOLIMLARI: IshlabChiqarishBolimi[] = ["jarayon", "buyurtmalar", "retseptlar", "kalkulyatsiya", "sexga-berish", "smena", "qabul", "rulonlar"];
 
 export function ishlabChiqarishYoliRuxsati(user: RoleLike | null | undefined, pathname: string) {
   const bolim = pathname.split("/")[2];

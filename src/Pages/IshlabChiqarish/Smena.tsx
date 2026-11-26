@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ArrowRight, Ban, BookOpenCheck, CalendarClock, CheckCircle2, CircleCheckBig, ClipboardCheck, ClipboardList, Factory, FilePen, Hourglass, NotebookPen, Package, PackageCheck, PencilLine, Plus, Printer, RefreshCw, TimerOff, Undo2, Warehouse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ishlabChiqarishApi, yorliqniChopEtish } from "@/api/ishlabChiqarishApi";
@@ -93,7 +94,15 @@ export default function Smena() {
   const { t } = useTranslation("ishlab_chiqarish");
   const omborlar = useOmborlar();
   const [warehouseId, setWarehouseId] = useState("");
-  const navbat = useMalumot(() => ishlabChiqarishApi.smena.navbat(warehouseId || undefined), warehouseId);
+  // Server navbatni faqat sex ombori bilan beradi (warehouseId majburiy): tanlanmaguncha so'rov yuborilmaydi, birinchi sex ombori o'zi tanlanadi.
+  const [ombortanlandi, setOmborTanlandi] = useState(false);
+  useEffect(() => {
+    if (ombortanlandi || omborlar.length === 0) return;
+    setOmborTanlandi(true);
+    const sex = omborlar.find((ombor) => ombor.kind === "WIP");
+    if (sex && !warehouseId) setWarehouseId(sex.id);
+  }, [omborlar, ombortanlandi, warehouseId]);
+  const navbat = useMalumot(() => (warehouseId ? ishlabChiqarishApi.smena.navbat(warehouseId) : Promise.resolve([] as NavbatQatori[])), warehouseId);
   const hisobotlar = useMalumot(() => ishlabChiqarishApi.smena.royxat(), "reports");
   const buyurtmalar = useMalumot(() => ishlabChiqarishApi.buyurtmalar.royxat(), "orders");
   const buyurtmaRaqamlari = useMemo(() => raqamXaritasi(buyurtmalar.malumot), [buyurtmalar.malumot]);
@@ -103,6 +112,15 @@ export default function Smena() {
   const [filtr, setFiltr] = useState<{ kalit: string; holatlar: string[] } | null>(null);
   const [qidiruv, setQidiruv] = useState("");
   const yangilash = () => { navbat.qayta(); hisobotlar.qayta(); };
+  // "Bugungi ishlar"dan ?buyurtma=<id>: shu buyurtmaga kun yakuni (smena hisoboti) oynasi o'zi ochiladi.
+  const [parametrlar, setParametrlar] = useSearchParams();
+  const kutilganBuyurtma = parametrlar.get("buyurtma");
+  useEffect(() => {
+    if (!kutilganBuyurtma || !buyurtmalar.malumot) return;
+    const buyurtma = buyurtmalar.malumot.find((qator) => qator.id === kutilganBuyurtma);
+    if (buyurtma) setForma({ qiymat: bosh({ orderId: buyurtma.id, sarlavha: `${hujjatRaqami(buyurtma)} · ${qatorNomi(buyurtma)}` }) });
+    setParametrlar({}, { replace: true });
+  }, [kutilganBuyurtma, buyurtmalar.malumot, setParametrlar]);
   const buyurtmasizOchish = () => setForma({ qiymat: bosh({ sarlavha: t("shift.withoutOrder") }) });
   const navbatQatorlari = navbat.malumot ?? [];
   const hammasi = useMemo(() => hisobotlar.malumot ?? [], [hisobotlar.malumot]);

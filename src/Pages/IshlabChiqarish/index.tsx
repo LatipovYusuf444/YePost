@@ -7,6 +7,7 @@ import { foydalanuvchiDirektormi, ishlabChiqarishRuxsati, type IshlabChiqarishBo
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 import Buyurtmalar from "./Buyurtmalar";
+import IshJarayoni from "./IshJarayoni";
 import Kalkulyatsiya from "./Kalkulyatsiya";
 import QabulAktlari from "./QabulAktlari";
 import Retseptlar from "./Retseptlar";
@@ -16,6 +17,7 @@ import Smena from "./Smena";
 import { tugmaAsosiy } from "./umumiy";
 
 const BOLIMLAR: Record<IshlabChiqarishBolimi, ComponentType> = {
+  jarayon: IshJarayoni,
   buyurtmalar: Buyurtmalar,
   retseptlar: Retseptlar,
   kalkulyatsiya: Kalkulyatsiya,

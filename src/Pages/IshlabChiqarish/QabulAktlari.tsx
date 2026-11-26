@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, ArrowRight, Ban, CheckCircle2, ClipboardCheck, ClipboardList, CornerUpLeft, Hourglass, NotebookPen, PackageCheck, Scale, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
@@ -54,6 +55,15 @@ export default function QabulAktlari() {
   const [filtr, setFiltr] = useState<{ kalit: string; holatlar: string[] } | null>({ kalit: "kutilmoqda", holatlar: ["DRAFT"] });
   const [qidiruv, setQidiruv] = useState("");
   const [ochiq, setOchiq] = useState<string | null>(null);
+  // "Bugungi ishlar"dan ?buyurtma=<id>: shu buyurtmaning qabul kutayotgan akti o'zi ochiladi.
+  const [parametrlar, setParametrlar] = useSearchParams();
+  const kutilganBuyurtma = parametrlar.get("buyurtma");
+  useEffect(() => {
+    if (!kutilganBuyurtma || !royxat.malumot) return;
+    const akt = royxat.malumot.find((qator) => qator.status === "DRAFT" && (qator.orderId ?? qator.order?.id) === kutilganBuyurtma);
+    if (akt) setOchiq(akt.id);
+    setParametrlar({}, { replace: true });
+  }, [kutilganBuyurtma, royxat.malumot, setParametrlar]);
   // Holat kartalari akt holati bo'yicha (qaytarilgan va bekor alohida): `status` o'rniga hisoblangan kod.
   const hammasi = useMemo(() => (royxat.malumot ?? []).map((akt) => ({ ...akt, status: aktHolati(akt), asl: akt })), [royxat.malumot]);
   const qatorlar = useMemo(

@@ -114,6 +114,7 @@ export default function AppRouter() {
         <Route path="/ombor/qoldiq" element={<OmborQoldigi />} />
         <Route path="/ombor/inventarizatsiya" element={<Inventarizatsiya />} />
         <Route path="/ishlab-chiqarish" element={<IshlabChiqarish />} />
+        <Route path="/ishlab-chiqarish/jarayon" element={<IshlabChiqarish bolim="jarayon" />} />
         <Route path="/ishlab-chiqarish/buyurtmalar" element={<IshlabChiqarish bolim="buyurtmalar" />} />
         <Route path="/ishlab-chiqarish/retseptlar" element={<IshlabChiqarish bolim="retseptlar" />} />
         <Route path="/ishlab-chiqarish/kalkulyatsiya" element={<IshlabChiqarish bolim="kalkulyatsiya" />} />

@@ -1,5 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AlertTriangle, ArrowRight, BookOpen, BookOpenCheck, Calculator, CheckCircle2, Circle, CircleAlert, CircleCheck, CircleCheckBig, CircleDashed, CircleSlash, ClipboardCheck, ClipboardList, Factory, Hourglass, ListChecks, Lock, NotebookPen, Package, PackageCheck, PackageOpen, Plus, RefreshCw, Rocket, Sparkles, Undo2, Warehouse } from "lucide-react";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useTranslation } from "react-i18next";
@@ -29,8 +29,13 @@ export default function Buyurtmalar() {
   const royxat = useMalumot(() => ishlabChiqarishApi.buyurtmalar.royxat(), "orders");
   const [filtr, setFiltr] = useState<{ kalit: string; holatlar: string[] } | null>(null);
   const [qidiruv, setQidiruv] = useState("");
-  const [ochiq, setOchiq] = useState<string | null>(null);
-  const [forma, setForma] = useState<{ hujjat?: Buyurtma } | null>(null);
+  // "Bugungi ishlar"dan: ?ochiq=<id> — buyurtma kartasi, ?yangi=1 — yangi buyurtma oynasi.
+  const [parametrlar, setParametrlar] = useSearchParams();
+  const [ochiq, setOchiq] = useState<string | null>(() => parametrlar.get("ochiq"));
+  const [forma, setForma] = useState<{ hujjat?: Buyurtma } | null>(() => (parametrlar.get("yangi") ? {} : null));
+  useEffect(() => {
+    if (parametrlar.get("ochiq") || parametrlar.get("yangi")) setParametrlar({}, { replace: true });
+  }, [parametrlar, setParametrlar]);
   const nomlar = useMemo(() => new Map(omborlar.map((ombor) => [ombor.id, ombor.name])), [omborlar]);
   const hammasi = useMemo(() => royxat.malumot ?? [], [royxat.malumot]);
   const qatorlar = useMemo(
