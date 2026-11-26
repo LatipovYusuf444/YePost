@@ -70,7 +70,9 @@ test('saqlash kalitlari foydalanuvchi bo\'yicha: ID + do\'kon|login zaxira; noma
 
 test('Yangi sotuv oynasi: jadval SotuvJadvali ichida, 4 karta SotuvKartalari ichida; chegirma qo\'llangan bo\'lsa yashirin ham ko\'rinadi', () => {
   const kod = manba('src/Pages/Savdo/YangiSotuvModal.tsx');
-  const boshi = kod.indexOf('<SotuvKartalari>');
+  // Qisqa rejimda faqat foydalanuvchi yoqqan kartalar (ixcham), To'liq rejimda avvalgidek.
+  assert.match(kod, /<SotuvKartalari ixcham=\{qisqa\}>/);
+  const boshi = kod.indexOf('<SotuvKartalari ixcham={qisqa}>');
   const oxiri = kod.indexOf('</SotuvKartalari>');
   assert.ok(boshi > 0 && oxiri > boshi);
   const blok = kod.slice(boshi, oxiri);

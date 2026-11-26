@@ -126,6 +126,12 @@ import TelegramXabarnomaKarti from "./TelegramXabarnoma";
 import SotuvOmbordanChiqqanlar from "./SotuvOmbordanChiqqanlar";
 import OmbordanChiqqanlarOynasi, { OmbordanChiqqanlarHavolasi } from "./OmbordanChiqqanlarOynasi";
 import YangiSotuvModal from "./YangiSotuvModal";
+import { KorinishAlmashtirgich, KorinishSozlash, QisqaKorinishBeruvchi } from "./KorinishSozlashPaneli";
+import { useQisqaKorinishi } from "./qisqaKonteksti";
+import { useQisqaSozlamasi } from "@/hooks/useQisqaSozlamasi";
+
+// Kontekst/sozlama topilmasa — To'liq ko'rinish (hammasi ko'rinadi).
+const TOLIQ_KORINISH: ReturnType<typeof useQisqaKorinishi> = { qisqa: false, karta: () => true, matn: () => true };
 import QoralamaTovarlarTahriri from "./QoralamaTovarlarTahriri";
 import MahsulotKartasiOynasi from "@/Components/common/MahsulotKartasiOynasi";
 import { yetmaydiganTovarlar, type Yetishmovchilik } from "@/lib/qoralamaQoldigi";
@@ -505,6 +511,11 @@ function OddiySotuvTafsilotlariModal({
   const mijozlar = useSavdoStore((state) => state.mijozlar);
   const mijozKompaniyalari = useSavdoStore((state) => state.mijozKompaniyalari);
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
+  // Qisqa ko'rinish: Sotuv yaratish oynasi bilan bitta foydalanuvchi tanlovi. Foydalanuvchi Qisqa ko'rinishni saqlagan bo'lsa tafsilot
+  // Qisqa'da ochiladi; To'liq rejim amaldagi barcha tafsilotlarni ochadi. Faqat ko'rinish — sotuv qiymatlari o'zgarmaydi.
+  const qisqaSozlama = useQisqaSozlamasi() ?? null;
+  const [korinish, setKorinish] = useState<"toliq" | "qisqa">(() => (qisqaSozlama?.saqlangan ? "qisqa" : "toliq"));
+  const qisqa = korinish === "qisqa";
   const [activeTab, setActiveTab] = useState<string>(boshlangichTab === "Tovarlar" && sotuvHolati(sotuv) === "DRAFT" ? "Umumiy" : boshlangichTab ?? "Umumiy");
   const [tahrirRejimi, setTahrirRejimi] = useState(boshlangichTab === "Tovarlar" && sotuvHolati(sotuv) === "DRAFT");
   // Qoralama tovarlaridagi saqlanmagan o'zgarishlar soni (tahrirlagich xabar beradi): yopish va to'lovga o'tish shunga qarab nazorat qilinadi.
@@ -585,8 +596,10 @@ function OddiySotuvTafsilotlariModal({
         <div className="scrollbar-hidden h-full overflow-y-auto">
           <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
             <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-              <div className="min-w-0 flex-1"><h1 className="break-words text-xl font-bold text-slate-900 sm:text-2xl">{qoralamaFormasi(sotuv).nom || `№${sotuvJadvalId(sotuv)}`}</h1><p className="mt-1 text-xs font-medium text-slate-500">{t("fullEdit.details")}</p>{holat === "CANCELLED" && sotuv.cancelReason?.trim() && <p className="mt-2 break-words rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600"><span className="font-black">{t("fullEdit.cancelReason")}:</span> {sotuv.cancelReason}</p>}</div>
+              <div className="min-w-0 flex-1"><h1 className="break-words text-xl font-bold text-slate-900 sm:text-2xl">{qoralamaFormasi(sotuv).nom || `№${sotuvJadvalId(sotuv)}`}</h1>{(!qisqa || qisqaSozlama?.korinish.matnlar.sarlavhaIzohi) && <p className="mt-1 text-xs font-medium text-slate-500">{t("fullEdit.details")}</p>}{holat === "CANCELLED" && sotuv.cancelReason?.trim() && <p className="mt-2 break-words rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600"><span className="font-black">{t("fullEdit.cancelReason")}:</span> {sotuv.cancelReason}</p>}</div>
               <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+                {qisqaSozlama && <KorinishAlmashtirgich korinish={korinish} onChange={setKorinish} />}
+                {qisqa && qisqaSozlama && <KorinishSozlash korinish={qisqaSozlama.korinish} onSaqlash={qisqaSozlama.saqlash} joriyOyna="tafsilot" />}
                 {draft && <button type="button" disabled={amalBajarilmoqda || qoldiqYuklanmoqda} onClick={() => setTahrirRejimi(true)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-gold-600 px-4 text-sm font-semibold text-white disabled:opacity-50"><PenLine size={16} />{t("fullEdit.edit")}</button>}
                 {holat !== "CANCELLED" && bekorMumkin && <button type="button" disabled={amalBajarilmoqda} onClick={() => onBekorQilish(sotuv.id)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-600 disabled:opacity-50"><Ban size={16} />{t("fullEdit.cancelSale")}</button>}
                 <div className="relative hidden sm:block">
@@ -691,6 +704,7 @@ function OddiySotuvTafsilotlariModal({
             </div>
           )}
 
+          <QisqaKorinishBeruvchi qisqa={qisqa} korinish={qisqaSozlama?.korinish}>
           {activeTab === "Tovarlar" ? (
               <TovarlarTab
                 ajratilganQator={ajratilganQator}
@@ -721,6 +735,7 @@ function OddiySotuvTafsilotlariModal({
               onHujjatOchish={hujjatniOchish}
             />
           )}
+          </QisqaKorinishBeruvchi>
         </div>
         {yetkazishOchiq && <YetkazishPanel sotuv={sotuv} jami={jami} onClose={() => setYetkazishOchiq(false)} />}
         {ombordanChiqarishOchiq && <OmbordanChiqarishPanel sotuv={sotuv} jami={jami} onClose={() => setOmbordanChiqarishOchiq(false)} onOzgarish={setTovarOzgarishlari} />}
@@ -1268,6 +1283,7 @@ function UmumiyTab({
   onHujjatOchish: (hujjat: SaqlanganHujjat) => void;
 }) {
   const { t } = useTranslation("savdo_tafsilot");
+  const qk = useQisqaKorinishi() ?? TOLIQ_KORINISH;
   const [saqlanganFaoliyatlar, setSaqlanganFaoliyatlar] = useState<SaqlanganFaoliyat[]>([]);
   const [crmYuklanmoqda, setCrmYuklanmoqda] = useState(false);
   const [crmXatolik, setCrmXatolik] = useState("");
@@ -1435,7 +1451,7 @@ function UmumiyTab({
 
   return (
     <>
-    <div className="px-4 pt-5 sm:px-7 sm:pt-7">
+    <div className={qk.karta("jarayon") ? "px-4 pt-5 sm:px-7 sm:pt-7" : "hidden"}>
       <SotuvJarayoni
         sotuv={sotuv}
         jami={jami}
@@ -1446,7 +1462,7 @@ function UmumiyTab({
         onChiqarilganlarniKorish={onChiqarilganlarniKorish}
       />
     </div>
-    <div className="grid gap-5 px-4 pb-6 pt-5 sm:gap-6 sm:px-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <div className={qk.qisqa ? "grid gap-5 px-4 pb-6 pt-5 sm:gap-6 sm:px-7" : "grid gap-5 px-4 pb-6 pt-5 sm:gap-6 sm:px-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"}>
       <aside className="space-y-6">
         <KelishuvCard
           sotuv={sotuv}
@@ -1464,15 +1480,20 @@ function UmumiyTab({
 
         <QoshimchaMalumotCard sotuv={sotuv} draft={draft} onSanaSaqlash={onSanaSaqlash} />
 
-        <TelegramXabarnomaKarti sotuv={sotuv} />
+        {/* Telegram kartasi o'z holati va so'rovlari bilan — yashirilganda ham o'chirilmaydi (CSS). */}
+        <div className={qk.karta("telegram") ? undefined : "hidden"}>
+          <TelegramXabarnomaKarti sotuv={sotuv} />
+        </div>
       </aside>
 
-        <main className="space-y-6">
+        {/* Faoliyat faqat To'liq rejimda; xato xabari Qisqa'da ham ko'rinadi. */}
+        <main className={qk.qisqa && !crmXatolik ? "hidden" : "space-y-6"}>
           {crmXatolik && (
             <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
               {crmXatolik}
             </div>
           )}
+        <div className={qk.qisqa ? "hidden" : "space-y-6"}>
         <Divider label={t("umumiyTab.feed.bugun")} />
         {crmYuklanmoqda && (
           <div className="flex h-24 items-center justify-center rounded-2xl bg-white/92 shadow-[0_18px_46px_rgba(37,99,235,.08)]">
@@ -1526,6 +1547,7 @@ function UmumiyTab({
             <FeedCard title={t("umumiyTab.feed.sotuvYaratildi")} time={vaqt} text={t("umumiyTab.feed.sotuvYaratildiTavsif", { mijoz: mijozNomi(sotuv), raqam: sotuvRaqami(sotuv) })} />
           </TimelineElement>
         </ol>
+        </div>
       </main>
     </div>
     </>
@@ -1559,6 +1581,7 @@ function KelishuvCard({
 }) {
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
   const { t } = useTranslation("savdo_tafsilot");
+  const qk = useQisqaKorinishi() ?? TOLIQ_KORINISH;
   const [menuOpen, setMenuOpen] = useState(false);
   const [tanlanganBolim, setTanlanganBolim] = useState("To'lov va yetkazish");
   const tolanganSumma = sotuvTolanganSummasi(sotuv);
@@ -1605,7 +1628,7 @@ function KelishuvCard({
             </span>
             <div className="min-w-0">
               <h3 className="font-black text-slate-800">{t(BOLIM_LABEL_KEYS[tanlanganBolim] ?? tanlanganBolim)}</h3>
-              <p className="mt-0.5 text-xs leading-5 text-slate-400">{t("kelishuvCard.bolimTavsif")}</p>
+              {qk.matn("tolovIzohi") && <p className="mt-0.5 text-xs leading-5 text-slate-400">{t("kelishuvCard.bolimTavsif")}</p>}
             </div>
           </div>
 
@@ -1743,8 +1766,12 @@ function KelishuvCard({
       </div>
 
       <div className="mt-5 flex flex-wrap justify-between gap-3 text-xs text-slate-500">
-        <span>{t("kelishuvCard.maydonniTanlang")}</span>
-        <span>{t("kelishuvCard.maydonYarating")}</span>
+        {qk.matn("yordamchi") && (
+          <>
+            <span>{t("kelishuvCard.maydonniTanlang")}</span>
+            <span>{t("kelishuvCard.maydonYarating")}</span>
+          </>
+        )}
         {draft && bekorMumkin && (
           <button disabled={amalBajarilmoqda} onClick={() => onBekorQilish(sotuv.id)} className="text-red-500 disabled:opacity-50">
             {t("kelishuvCard.sotuvniBekorQilish")}
@@ -2853,6 +2880,7 @@ function tarixMuallifBoshHarflari(nom: string) {
 
 function TarixTab({ sotuv }: { sotuv: Sotuv }) {
   const { t } = useTranslation("savdo_tafsilot");
+  const qk = useQisqaKorinishi() ?? TOLIQ_KORINISH;
   const [filter, setFilter] = useState("");
   const [sanaTartibi, setSanaTartibi] = useState<"desc" | "asc">("desc");
   const [backendTarix, setBackendTarix] = useState<SaleAuditLog[]>([]);
@@ -2914,7 +2942,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900">{t("tarix.sarlavha")}</h2>
-          <p className="mt-1 text-sm text-slate-500">{t("tarix.tavsif")}</p>
+          {qk.matn("sarlavhaIzohi") && <p className="mt-1 text-sm text-slate-500">{t("tarix.tavsif")}</p>}
         </div>
         <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
           <label className="relative block w-full sm:w-[320px]">
@@ -2939,7 +2967,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
         </div>
       </div>
 
-      {sotuv.items && sotuv.items.length > 0 && (
+      {qk.karta("xulosa") && sotuv.items && sotuv.items.length > 0 && (
         <section className="mb-6 rounded-[24px] border border-orange-100 bg-[#F8FAFC] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-orange-600">
@@ -3049,6 +3077,7 @@ function TovarlarTab({
   ) => Promise<boolean>;
 }) {
   const { t } = useTranslation("savdo_tafsilot");
+  const qk = useQisqaKorinishi() ?? TOLIQ_KORINISH;
   const ajratish = useHisobotQatori(ajratilganQator);
   const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const items = sotuv.items ?? [];
@@ -3367,6 +3396,7 @@ function TovarlarTab({
                     );
                   })}
                 </tbody>
+                {qk.karta("xulosa") && (
                 <tfoot>
                   <tr>
                     <td colSpan={11} className="bg-slate-50 px-3 py-2.5 text-right text-sm font-bold text-slate-700">
@@ -3379,6 +3409,7 @@ function TovarlarTab({
                     </td>
                   </tr>
                 </tfoot>
+                )}
               </table>
             </SmartTable>
           </div>
@@ -3574,11 +3605,11 @@ function TovarlarTab({
 
         <div className="border-t border-slate-100 px-7 py-8">
           <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(chegirmasizJami, sotuvValyutasi(sotuv))}</span></p>
-            <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>
-            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(umumiyChegirma, sotuvValyutasi(sotuv))}</span></p>
-            <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(umumiyJami, sotuvValyutasi(sotuv))}</span></p>
-            <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>
+            {qk.karta("umumiyChegirma") && <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(chegirmasizJami, sotuvValyutasi(sotuv))}</span></p>}
+            {qk.matn("yordamchi") && <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>}
+            {(qk.karta("umumiyChegirma") || umumiyChegirma > 0) && <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(umumiyChegirma, sotuvValyutasi(sotuv))}</span></p>}
+            {qk.matn("yordamchi") && <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(umumiyJami, sotuvValyutasi(sotuv))}</span></p>}
+            {qk.matn("yordamchi") && <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>}
             <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">
               {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(umumiyJami, sotuvValyutasi(sotuv))}</span>
             </div>
@@ -4766,6 +4797,7 @@ function QoshimchaMalumotCard({
   onSanaSaqlash: (kun: string) => Promise<boolean>;
 }) {
   const { t } = useTranslation("savdo_tafsilot");
+  const qk = useQisqaKorinishi() ?? TOLIQ_KORINISH;
   const hujjatKuni = toshkentKuni(sotuv.date ?? sotuv.createdAt);
   const [kun, setKun] = useState(hujjatKuni);
   const [sanaSaqlanmoqda, setSanaSaqlanmoqda] = useState(false);
@@ -4795,10 +4827,10 @@ function QoshimchaMalumotCard({
   const erkinMatn = izohQatorlari.filter((qator) => !qator.kalit);
 
   return (
-    <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
+    <section className={`rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur ${qk.qisqa && !qk.karta("izoh") ? "hidden" : ""}`}>
       <CardTitle title={t("umumiyTab.qoshimchaMalumotlar")} action={t("common.ozgartirish")} />
 
-      <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white">
+      <div className={`mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white ${qk.qisqa ? "hidden" : ""}`}>
         <KontaktQatori icon={<RotateCcw size={17} />} label={t("umumiyTab.qaytarilganSavdo")} value={t("umumiyTab.tanlanmagan")} />
         <KontaktQatori icon={<UserCheck size={17} />} label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
         {draft ? (
@@ -4837,7 +4869,7 @@ function QoshimchaMalumotCard({
         )}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-4">
+      <div className={`mt-4 rounded-2xl border border-slate-100 bg-white p-4 ${qk.karta("izoh") ? "" : "hidden"}`}>
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
             <StickyNote size={15} />

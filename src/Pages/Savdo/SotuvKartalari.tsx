@@ -52,7 +52,7 @@ type Sudrash = { kalit: KartaKaliti; x: number; y: number; faol: boolean; pointe
  * Mahsulotlar jadvali (`SotuvJadvali` bolasi) va uning tepasi/ostidagi kartalar. Foydalanuvchi kartani ⋮⋮ tutqichdan sudrab jadval tepasiga yoki
  * ostiga qo'yadi, tartiblaydi yoki tutqich menyusidan ko'chiradi/yashiradi. Joylashuv foydalanuvchi bo'yicha saqlanadi.
  */
-export default function SotuvKartalari({ children }: { children: ReactNode }) {
+export default function SotuvKartalari({ children, ixcham = false }: { children: ReactNode; ixcham?: boolean }) {
   const { t } = useTranslation("savdo_yangi");
   const { joylashuv, ozgartirilgan, saqlash } = useSotuvKartalari();
 
@@ -291,6 +291,25 @@ export default function SotuvKartalari({ children }: { children: ReactNode }) {
         })}
         {nishon?.zona === nomi && chiziqOldidan === null && !bosh && chiziq}
       </div>
+    );
+  }
+
+  // Yangi sotuvning Qisqa rejimi: faqat foydalanuvchi "Ko'rinishni sozlash"da yoqqan kartalar (chaqiruvchi o'zi beradi), To'liq
+  // rejimdagi joylashuv tartibida, tutqichsiz va "yashirilgan" qatorisiz. Yashirilgan kartaning holati formada qoladi va hisobda ishlaydi.
+  if (ixcham) {
+    const tepa = joylashuv.tepa.filter((kalit) => kartalar.has(kalit));
+    const past = [...joylashuv.past, ...joylashuv.yashirin].filter((kalit) => kartalar.has(kalit));
+    const chiz = (kalit: KartaKaliti) => (
+      <div key={kalit} data-karta-kalit={kalit}>
+        {kartalar.get(kalit)?.children}
+      </div>
+    );
+    return (
+      <>
+        {tepa.length > 0 && <div className="mt-3 space-y-3">{tepa.map(chiz)}</div>}
+        {jadval}
+        {past.length > 0 && <div className="mt-4 space-y-3">{past.map(chiz)}</div>}
+      </>
     );
   }
 

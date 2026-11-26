@@ -20,7 +20,9 @@ import {
   ImageIcon,
   Link,
   LoaderCircle,
+  Maximize2,
   MessageSquare,
+  Minimize2,
   Package,
   PackageSearch,
   Percent,
@@ -47,7 +49,7 @@ import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { xatoRamkasi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
-import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
+import { bugungiToshkentKuni, kunMatni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { crmApi } from "@/api/crmApi";
 import { mijozlarApi } from "@/api/partnersApi";
 import { useSavdoStore } from "@/store/savdoStore";
@@ -59,6 +61,9 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { cn } from "@/lib/utils";
 import NarxTuriTanlovi from "./NarxTuriTanlovi";
 import SotuvKartalari, { SotuvJadvali, SotuvKartasi } from "./SotuvKartalari";
+import { KorinishSozlash } from "./KorinishSozlashPaneli";
+import { useQisqaSozlamasi } from "@/hooks/useQisqaSozlamasi";
+import type { QisqaKarta, QisqaMatn } from "@/lib/qisqaKorinish";
 import { mijozgaMosSotuvNomi, sotuvNomiIzohi } from "@/lib/sotuvNomi";
 import {
   qoralamaFormasi,
@@ -626,6 +631,20 @@ export default function YangiSotuvModal({
   const saqlashTugmasiRef = useRef<HTMLButtonElement | null>(null);
   // Stepper pastga surilganda ko'rinayotgan kartani kuzatadi (`null` — oyna tepada, qadam to'ldirilganlikdan olinadi).
   const [suzilganQadam, setSuzilganQadam] = useState<number | null>(null);
+  // Ko'rinish: To'liq (barcha bo'limlar) yoki Qisqa (faqat sotuvga kerakli). Faqat KO'RINISH — forma holati bitta, almashtirish hech
+  // qaysi qiymatni tozalamaydi va qayta hisoblamaydi. Oyna har safar To'liq rejimda ochiladi. Qoralama o'zgarishlari hisobiga kirmaydi.
+  const [korinish, setKorinish] = useState<"toliq" | "qisqa">("toliq");
+  const qisqa = korinish === "qisqa";
+  // Qisqa ko'rinishdagi ixtiyoriy kartalar va matnlar — foydalanuvchi tanlovi ("⚙ Ko'rinishni sozlash"), Sotuv tafsiloti bilan bitta.
+  // Faqat ko'rinish: yashirilgan karta/matn qiymatlari formada qoladi, hisob va saqlash o'zgarmaydi. To'liq rejimda hammasi ko'rinadi.
+  const qisqaSozlama = useQisqaSozlamasi() ?? null;
+  const kartaKor = (kalit: QisqaKarta) => !qisqa || Boolean(qisqaSozlama?.korinish.kartalar[kalit]);
+  const matnKor = (kalit: QisqaMatn) => !qisqa || Boolean(qisqaSozlama?.korinish.matnlar[kalit]);
+  // Qisqa rejimda kompaniya maydoni faqat kerak bo'lganda (tanlangan/xato) yoki "+ Kompaniya" bosilganda chiqadi.
+  const [qisqaKompaniya, setQisqaKompaniya] = useState(false);
+  // Qisqa rejimda xato sabab ko'rsatilgan maydonlar (izoh, sana, kompaniya, qator chegirmasi): xato tuzatilayotganda yo'qolib
+  // qolmasin — rejim almashguncha ochiq turadi.
+  const [qisqaOchiqMaydonlar, setQisqaOchiqMaydonlar] = useState<string[]>([]);
   // Sotuv valyutasi almashtirilib, qator tegilmay qaytarilsa aniq narxlar tiklanadi (yaxlitlash xatosi yig'ilmasin).
   const valyutaOldingi = useRef<{ oldingi: MahsulotQatori[]; natija: MahsulotQatori[] } | null>(null);
 
@@ -1885,6 +1904,63 @@ export default function YangiSotuvModal({
     }
   }
 
+  // Qisqa rejimda ko'rinmaydigan maydonlardagi xatolar (masalan, valyuta yoki tugash sanasi): nima yetishmayotgani aytiladi va
+  // "To'liq rejimda ochish" tegishli maydonga olib boradi. Majburiy qiymat yashirincha to'ldirilmaydi.
+  const qisqaYashirinXatolar = qisqa
+    ? ([
+        ["name", modalMatnlari.nameLabel],
+        ["stage", t("note.stageLabel")],
+        ["currency", t("note.currencyLabel")],
+        ["startDate", t("note.startDateLabel")],
+        ["endDate", t("note.endDateLabel")],
+        ["assigneeId", t("sections.activity")],
+      ] as const)
+        .flatMap(([yol, nom]) => {
+          const matn = fx.xato(yol);
+          return matn ? [{ yol, nom, matn }] : [];
+        })
+    : [];
+
+  // Qisqa rejimda xato kelgan (odatda yashirin) maydonni ochiladiganlar ro'yxatiga qo'shadi.
+  const qisqaKorsat = (yol: string) => !qisqa || Boolean(fx.xato(yol)) || qisqaOchiqMaydonlar.includes(yol);
+  useEffect(() => {
+    if (!qisqa) return;
+    const yangilari = ["note", "date", "clientCompanyId", ...mahsulotlar.map((_, i) => `items.${i}.discount`)].filter(
+      (yol) => Boolean(fx.xato(yol)) && !qisqaOchiqMaydonlar.includes(yol)
+    );
+    if (yangilari.length) setQisqaOchiqMaydonlar((joriy) => [...joriy, ...yangilari]);
+    // Faqat yangi yo'l paydo bo'lganda holat o'zgaradi — sikl bo'lmaydi.
+  }, [qisqa, mahsulotlar, fx, qisqaOchiqMaydonlar]);
+
+  function korinishniAlmashtirish(yangi: "toliq" | "qisqa") {
+    if (yangi === korinish) return;
+    // Mijoz tanlovi qayta paydo bo'lganda o'z-o'zidan ochilib ketmasin (ochish so'rovi faqat yangi so'rovda ishlaydi).
+    setKontaktOchishSorovi(0);
+    setQisqaOchiqMaydonlar([]);
+    setQisqaKompaniya(Boolean(clientCompanyId));
+    setKorinish(yangi);
+    // Yashirin bo'lgan maydon endi ko'rinadi (yoki aksincha): xatolar qayta joylanadi — tepadagi umumiy xabar ortiqcha qolmaydi.
+    xatolarniQaytaJoylash();
+  }
+
+  function xatolarniQaytaJoylash() {
+    const joriy = fx.hammasi ?? {};
+    if (Object.keys(joriy).length) window.setTimeout(() => fx.ornat({ ...joriy }), 0);
+  }
+
+  function toliqdaOchish() {
+    setKontaktOchishSorovi(0);
+    setQisqaOchiqMaydonlar([]);
+    setKorinish("toliq");
+    // To'liq ko'rinish chizilgach xatolar qayta joylanadi: ornat birinchi xatoli maydonga aylantiradi; maydonga fokus beriladi.
+    xatolarniQaytaJoylash();
+    window.setTimeout(() => {
+      const oynalar = [...document.querySelectorAll<HTMLElement>(".app-modal-compact")].reverse();
+      const maydon = oynalar.map((oyna) => oyna.querySelector<HTMLElement>("[data-maydon-xato='true']")).find(Boolean);
+      maydon?.querySelector<HTMLElement>("input:not([disabled]), textarea, button:not([disabled])")?.focus({ preventScroll: true });
+    }, 160);
+  }
+
   return (
     <>
     <AppModal ozgarishBor={ozgarishlarSoni > 0} className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-3 pr-3 backdrop-blur-[3px] sm:pl-[78px]">
@@ -1952,6 +2028,34 @@ export default function YangiSotuvModal({
                 <span className="rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-bold text-[#2563EB] ring-2 ring-blue-200">
                   {tahrir ? `№${sotuvJadvalId(tahrir.sotuv)}` : modalMatnlari.badge}
                 </span>
+                {/* Ko'rinish almashtirgichi: modalda qancha ma'lumot ko'rinishini boshqaradi (forma holatiga tegmaydi). */}
+                <div role="radiogroup" aria-label={t("viewMode.label")} data-sotuv-korinish className="inline-flex shrink-0 rounded-xl bg-slate-100 p-1 ring-2 ring-slate-200">
+                  {(["toliq", "qisqa"] as const).map((kalit) => {
+                    const faol = korinish === kalit;
+                    const Ikonka = kalit === "toliq" ? Maximize2 : Minimize2;
+                    return (
+                      <button
+                        key={kalit}
+                        type="button"
+                        role="radio"
+                        aria-checked={faol}
+                        data-korinish={kalit}
+                        title={t(kalit === "toliq" ? "viewMode.fullTitle" : "viewMode.shortTitle")}
+                        onClick={() => korinishniAlmashtirish(kalit)}
+                        className={cn(
+                          "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200",
+                          faol ? "bg-[#2563EB] text-white shadow-[0_4px_10px_rgba(37,99,235,.30)]" : "text-slate-600 hover:bg-white hover:text-[#2563EB]"
+                        )}
+                      >
+                        <Ikonka size={14} aria-hidden />
+                        {t(kalit === "toliq" ? "viewMode.full" : "viewMode.short")}
+                      </button>
+                    );
+                  })}
+                </div>
+                {qisqa && qisqaSozlama && (
+                  <KorinishSozlash korinish={qisqaSozlama.korinish} onSaqlash={qisqaSozlama.saqlash} joriyOyna="yaratish" />
+                )}
               </div>
 
               <button
@@ -1964,6 +2068,38 @@ export default function YangiSotuvModal({
               </button>
             </div>
 
+            {qisqa ? (
+              <ol aria-label={t("stepper.aria")} data-qisqa-qadamlar className="mt-3 flex flex-wrap items-center gap-1.5">
+                {(["customer", "products", "total", "save"] as const).map((kalit, index) => {
+                  const tayyor = qadamHolatlari[index];
+                  const faol = index === joriyQadam;
+                  return (
+                    <li key={kalit} className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => qadamgaOtish(index)}
+                        aria-current={faol ? "step" : undefined}
+                        className={cn(
+                          "inline-flex h-8 items-center gap-1.5 rounded-full border-2 px-3 text-xs font-extrabold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200",
+                          faol
+                            ? "border-blue-300 bg-[#EFF6FF] text-[#2563EB]"
+                            : tayyor
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-slate-300 bg-white text-slate-600 hover:border-blue-300"
+                        )}
+                      >
+                        {tayyor && !faol ? <Check size={13} strokeWidth={3} aria-hidden /> : <span className="tabular-nums">{index + 1}</span>}
+                        {t(`viewMode.steps.${kalit}`)}
+                        {matnKor("bosqichTavsifi") && (
+                          <span className="hidden font-semibold opacity-70 sm:inline">· {t(`viewMode.stepHints.${kalit}`)}</span>
+                        )}
+                      </button>
+                      {index < 3 && <ChevronRight size={14} className="shrink-0 text-slate-300" aria-hidden />}
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
             <ol aria-label={t("stepper.aria")} className="mt-3 grid grid-cols-4 gap-1.5 sm:mt-4 sm:grid-cols-2 sm:gap-2 lg:grid-cols-4">
               {qadamlar.map((qadam, index) => {
                 const tayyor = qadamHolatlari[index];
@@ -2007,9 +2143,10 @@ export default function YangiSotuvModal({
                 );
               })}
             </ol>
+            )}
           </header>
 
-          {tepaXatosi && (
+          {tepaXatosi && !(qisqa && qisqaYashirinXatolar.length > 0 && tepaXatosi === fx.tepadagi) && (
             <div className="mx-4 mt-4 flex shrink-0 items-start justify-between gap-4 rounded-2xl border-2 border-red-200 bg-red-50 px-5 py-3.5 text-sm font-bold text-red-600 shadow-sm sm:mx-7">
               <span>{tepaXatosi}</span>
               <button
@@ -2025,15 +2162,45 @@ export default function YangiSotuvModal({
             </div>
           )}
 
+          {qisqaYashirinXatolar.length > 0 && (
+            <div role="alert" data-qisqa-yashirin-xato className="mx-4 mt-3 flex shrink-0 flex-wrap items-start justify-between gap-3 rounded-2xl border-2 border-amber-200 bg-amber-50 px-5 py-3 text-sm font-bold text-amber-800 sm:mx-7">
+              {/* Maydon nomi bilan birga xatoning o'zi ham (sababi Qisqa rejimda ham ko'rinadi). */}
+              <div className="min-w-0 flex-1 space-y-1">
+                <p>{t("viewMode.hiddenErrors", { maydonlar: qisqaYashirinXatolar.map((x) => x.nom).join(", ") })}</p>
+                <ul className="space-y-0.5 text-xs font-semibold text-red-600">
+                  {qisqaYashirinXatolar.map((x) => (
+                    <li key={x.yol} data-qisqa-yashirin-xato-matni={x.yol}>
+                      <span className="font-extrabold">{x.nom}:</span> {x.matn}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <button
+                type="button"
+                onClick={toliqdaOchish}
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#2563EB] px-3.5 text-xs font-extrabold text-white transition hover:bg-[#1D4ED8]"
+              >
+                <Maximize2 size={14} aria-hidden />
+                {t("viewMode.openFull")}
+              </button>
+            </div>
+          )}
+
+          {qisqa && yagona && tahrir && asl && asl.currency !== yagona && sotuvVal === yagona && (
+            <p role="status" className="mx-4 mt-3 shrink-0 rounded-2xl bg-amber-50 px-5 py-3 text-xs font-semibold leading-5 text-amber-700 ring-2 ring-amber-100 sm:mx-7">
+              {t("hints.modeConverted", { from: asl.currency, to: yagona })}
+            </p>
+          )}
+
           <div onScroll={suzishKuzatuvi} data-sotuv-aylantirish className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-7">
-            <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]">
+            <div className={cn("grid items-start", qisqa ? "gap-4" : "gap-5 xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]")}>
               <div className="min-w-0 space-y-4">
-                <section ref={mijozKartasiRef} className={kartaKlassi}>
-                  <KartaBoshi ikonka={UserRound} sarlavha={t("sections.clientInfo")} />
-                  <div className="space-y-4">
+                <section ref={mijozKartasiRef} data-mijoz-karta className={qisqa ? qisqaKartaKlassi : kartaKlassi}>
+                  {!qisqa && <KartaBoshi ikonka={UserRound} sarlavha={t("sections.clientInfo")} />}
+                  <div className={qisqa ? "space-y-3" : "space-y-4"}>
                     <XatoliMaydon xato={fx.xato("customerId")}>
                     <label className="grid gap-1.5">
-                      <span className={yorliqKlassi}>{t("labels.contact")}</span>
+                      <span className={yorliqKlassi}>{qisqa ? t("common.client") : t("labels.contact")}</span>
                       <div className="relative">
                         <UserRound
                           size={18}
@@ -2062,7 +2229,7 @@ export default function YangiSotuvModal({
                           portal
                         />
                       </div>
-                      {customerId && clientCompanyId && (
+                      {matnKor("mijozIzohi") && customerId && clientCompanyId && (
                         <p className="text-xs font-semibold text-emerald-600">
                           {t("messages.clientAutoAttachedToCompany", {
                             company: kompaniyaNomi(tanlanganKompaniya),
@@ -2072,6 +2239,7 @@ export default function YangiSotuvModal({
                     </label>
                     </XatoliMaydon>
 
+                    {!qisqa || clientCompanyId || qisqaKompaniya || qisqaKorsat("clientCompanyId") ? (
                     <XatoliMaydon xato={fx.xato("clientCompanyId")}>
                     <label className="grid gap-1.5">
                       <span className={yorliqKlassi}>{t("labels.company")}</span>
@@ -2095,7 +2263,7 @@ export default function YangiSotuvModal({
                           portal
                         />
                       </div>
-                      {clientCompanyId && customerId && (
+                      {matnKor("mijozIzohi") && clientCompanyId && customerId && (
                         <p className="text-xs font-semibold text-emerald-600">
                           {t("messages.companyRepAutoSelected", {
                             client: mijozKorinishi(tanlanganMijoz, t),
@@ -2104,6 +2272,17 @@ export default function YangiSotuvModal({
                       )}
                     </label>
                     </XatoliMaydon>
+                    ) : (
+                      <button
+                        type="button"
+                        data-qisqa-kompaniya
+                        onClick={() => setQisqaKompaniya(true)}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2563EB] hover:underline"
+                      >
+                        <Building2 size={14} aria-hidden />
+                        {t("viewMode.addCompany")}
+                      </button>
+                    )}
 
                     {tahrir && !customerId && !clientCompanyId && (asl?.walkInCustomerName || asl?.walkInCustomerPhone) && (
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
@@ -2124,6 +2303,7 @@ export default function YangiSotuvModal({
                   </div>
                 </section>
 
+                {!qisqa && (
                 <section className={kartaKlassi}>
                   <KartaBoshi ikonka={Settings} sarlavha={draftMode ? t("sections.draftSettings") : t("sections.saleSettings")} />
                   <div className="space-y-4">
@@ -2260,10 +2440,12 @@ export default function YangiSotuvModal({
                     </div>
                   </div>
                 </section>
+                )}
               </div>
 
               <div className="min-w-0 space-y-4">
                 <section ref={mahsulotKartasiRef} className={cn(kartaKlassi, "@container")}>
+                  {!qisqa && (
                   <KartaBoshi
                     ikonka={Package}
                     sarlavha={t("sections.productList")}
@@ -2293,6 +2475,7 @@ export default function YangiSotuvModal({
                       </>
                     }
                   />
+                  )}
 
                   <div className="flex flex-wrap items-center gap-3">
                     <button
@@ -2303,6 +2486,7 @@ export default function YangiSotuvModal({
                       <Plus size={18} />
                       {t("actions.addProduct")}
                     </button>
+                    {kartaKor("katalogImport") && (
                     <button
                       type="button"
                       onClick={() => setKatalogOchiq(true)}
@@ -2312,6 +2496,41 @@ export default function YangiSotuvModal({
                       <PackageSearch size={18} />
                       {t("katalog.button")}
                     </button>
+                    )}
+                    {/* Qisqa rejimda sarlavha yo'q — Import shu yerda (kartasi yoqilgan bo'lsa). */}
+                    {qisqa && kartaKor("katalogImport") && (
+                      <>
+                        <input
+                          ref={importInputRef}
+                          type="file"
+                          accept="application/json,.json"
+                          className="hidden"
+                          onChange={(event) => {
+                            const fayl = event.target.files?.[0];
+                            event.target.value = "";
+                            if (fayl) void qoralamaniImportQilish(fayl);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          data-qisqa-import
+                          onClick={() => importInputRef.current?.click()}
+                          disabled={formaBandmi}
+                          title={t("import.title")}
+                          className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-extrabold text-slate-700 ring-2 ring-slate-300 transition hover:text-[#2563EB] hover:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Upload size={16} />
+                          {t("actions.import")}
+                        </button>
+                      </>
+                    )}
+                    {!qisqaKorsat("date") ? (
+                      hujjatSanasi !== bugungiToshkentKuni() && (
+                        <span data-qisqa-sana className="inline-flex h-9 items-center rounded-xl bg-slate-100 px-3 text-xs font-bold text-slate-600 ring-1 ring-slate-200 sm:ml-auto">
+                          {t("labels.saleDate")}: {kunMatni(hujjatSanasi)}
+                        </span>
+                      )
+                    ) : (
                     <div className="flex min-w-[200px] items-center gap-2 sm:ml-auto">
                       <span className="hidden shrink-0 text-sm font-semibold text-slate-600 sm:inline">{t("labels.saleDate")}</span>
                       <XatoliMaydon xato={fx.xato("date")}>
@@ -2327,7 +2546,8 @@ export default function YangiSotuvModal({
                         />
                       </XatoliMaydon>
                     </div>
-                    <div className="flex min-w-[220px] flex-1 items-center gap-2 sm:max-w-[420px]">
+                    )}
+                    <div className={cn("flex min-w-[220px] flex-1 items-center gap-2 sm:max-w-[420px]", qisqa && "sm:ml-auto")}>
                       <span className="hidden shrink-0 text-sm font-semibold text-slate-600 sm:inline">{t("labels.warehouse")}</span>
                       <XatoliMaydon xato={fx.xato("warehouseId")} className="flex-1">
                         <SavdoSelect
@@ -2349,6 +2569,7 @@ export default function YangiSotuvModal({
                   </div>
 
                   <div className="mt-3">
+                    {kartaKor("shtrixkod") && (
                     <div className="relative">
                       <ScanLine size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
@@ -2387,6 +2608,7 @@ export default function YangiSotuvModal({
                         </button>
                       )}
                     </div>
+                    )}
                     {skanXabari && (
                       <p role="status" className={`mt-2 text-xs font-bold ${skanXabari.xato ? "text-red-600" : skanXabari.ogoh ? "text-amber-600" : "text-emerald-600"}`}>
                         {skanXabari.matn}
@@ -2401,11 +2623,22 @@ export default function YangiSotuvModal({
 
                   {/* Narx turi, Umumiy birlik, Umumiy chegirma va Yakuniy summalar: foydalanuvchi ⋮⋮ tutqichdan sudrab jadval tepasiga yoki
                       ostiga qo'yadi (joylashuv foydalanuvchi bo'yicha saqlanadi — refresh va qayta kirishda ham qoladi). */}
-                  <SotuvKartalari>
+                  <SotuvKartalari ixcham={qisqa}>
                   <SotuvJadvali>
-                  <p className="mt-3 hidden text-xs font-medium leading-5 text-slate-400 @min-[900px]:block">{t("products.keyboardHint")}</p>
+                  {matnKor("klaviatura") && <p className="mt-3 hidden text-xs font-medium leading-5 text-slate-400 @min-[900px]:block">{t("products.keyboardHint")}</p>}
 
                   <div className="mt-4">
+                    {qisqa ? (
+                      // Qisqa: Mahsulot · Miqdor · Sotuv narxi · Jami (katalog narxi va chegirma ustunlari yo'q).
+                      <div className={`hidden rounded-t-2xl border-2 border-slate-300 bg-slate-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-slate-500 @min-[900px]:grid ${qisqaQatorUstunlari} @min-[900px]:gap-3`}>
+                        <span>{t("table.number")}</span>
+                        <span>{t("table.product")}</span>
+                        <span>{t("table.quantity")}</span>
+                        <span>{t("table.salePrice")}</span>
+                        <span className="text-right">{t("table.total")}</span>
+                        <span />
+                      </div>
+                    ) : (
                     <div className={`hidden rounded-t-2xl border-2 border-slate-300 bg-slate-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-slate-500 @min-[900px]:grid ${qatorUstunlari} @min-[900px]:gap-3`}>
                       <span>{t("table.number")}</span>
                       <span>{t("table.product")}</span>
@@ -2416,6 +2649,7 @@ export default function YangiSotuvModal({
                       <span className="text-right">{t("table.total")}</span>
                       <span />
                     </div>
+                    )}
 
                     <div ref={qatorlarRef} className="space-y-3 @min-[900px]:space-y-0 @min-[900px]:rounded-b-2xl @min-[900px]:border-2 @min-[900px]:border-slate-300">
                       {mahsulotlar.map((mahsulot, index) => {
@@ -2443,11 +2677,118 @@ export default function YangiSotuvModal({
                         const birDonaChegirma = Math.max(narx - sotuvNarxi, 0);
                         // Qator xatolari ko'rinadigan qator tartibida (server tanadagi tartibi qatorXatoQoidalari orqali o'giriladi).
                         const qatorXatosi = fx.xato(`items.${index}`);
+                        // Sotuv narxi va miqdor kataklari: To'liq — narx, miqdor; Qisqa — miqdor, narx (DOM va Tab tartibi ham).
+                        const narxKatagi = (
+                                <div className="min-w-0">
+                                  <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.salePriceUsd" : "labels.salePrice")}</p>
+                                  <XatoliMaydon xato={fx.xato(`items.${index}.price`)}>
+                                  <SummaMaydoni
+                                    disabled={narx <= 0}
+                                    value={narxTahriri?.qator === index ? narxTahriri.matn : narx > 0 ? donaNarxi(sotuvNarxi) : ""}
+                                    kasr={6}
+                                    aria-label={`${t("table.salePrice")} / ${narxBirligi}`}
+                                    data-sotuv-narx={index}
+                                    onFocus={(event) => event.currentTarget.select()}
+                                    onBlur={() => setNarxTahriri(null)}
+                                    onKeyDown={(event) => {
+                                      if (qatorKlavishlari(event, index, "narx")) return;
+                                      if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                                      event.preventDefault();
+                                      // Qisqa rejimda narx qatordagi oxirgi maydon: Enter keyingi qatorga o'tadi.
+                                      if (qisqa) keyingiQatorgaOtish(index);
+                                      else fokusSoralish(index, "miqdor");
+                                    }}
+                                    onChange={(qiymat) => {
+                                      fx.tozala(`items.${index}.price`);
+                                      setNarxTahriri({ qator: index, matn: qiymat });
+                                      const kiritilgan = raqamgaAylantirish(qiymat) * narxKoeff;
+                                      // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalogdan past narx chegirma, baland narx ustama bo'ladi.
+                                      const { ustama: yangiUstama, chegirma: yangiChegirma } = kiritilganNarx({ katalog: katalogNarxi, kiritilgan, miqdor });
+                                      const ustamaMatni = yangiUstama > 0 ? String(yangiUstama) : "";
+                                      if (mahsulot.discountTuri === "foiz") {
+                                        const foiz = kiritilgan > 0 && kiritilgan < katalogNarxi ? chegirmaFoizi(1, katalogNarxi, katalogNarxi - kiritilgan) : 0;
+                                        mahsulotniYangilash(index, { ustama: ustamaMatni, discountFoiz: foiz > 0 ? String(foiz) : "", umumiyChegirmadan: false });
+                                        return;
+                                      }
+                                      mahsulotniYangilash(index, { ustama: ustamaMatni, discount: yangiChegirma > 0 ? String(yangiChegirma) : "", umumiyChegirmadan: false });
+                                    }}
+                                    className={cn(
+                                      maydonKlassi,
+                                      birDonaChegirma > 0 && "border-emerald-300 text-emerald-700 focus:border-emerald-500 focus:ring-emerald-200",
+                                      ustama > 0 && "border-amber-300 text-amber-700 focus:border-amber-500 focus:ring-amber-100"
+                                    )}
+                                    placeholder={t("placeholders.price")}
+                                  />
+                                  </XatoliMaydon>
+                                  {matnKor("birlik") && <p className="mt-1 text-[11px] font-semibold text-slate-400">/ {narxBirligi}</p>}
+                                </div>
+                        );
+                        const miqdorKatagi = (
+                                <div className="min-w-0">
+                                  <p className={mobilYorliqKlassi}>{t("labels.quantity")}</p>
+                                  <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}>
+                                  <input
+                                    type="number"
+                                    min="0.001"
+                                    step={butunMiqdor ? "any" : "0.001"}
+                                    value={mahsulot.quantity}
+                                    data-sotuv-miqdor={index}
+                                    onChange={(event) => {
+                                      fx.tozala(`items.${index}.quantity`);
+                                      mahsulotniYangilash(index, { quantity: event.target.value });
+                                    }}
+                                    onKeyDown={(event) => {
+                                      if (qatorKlavishlari(event, index, "miqdor")) return;
+                                      if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                                      event.preventDefault();
+                                      // Qisqa rejimda miqdordan keyin shu qatorning sotuv narxi (narx o'chiq bo'lsa — keyingi qator).
+                                      if (qisqa && fokusQoyish(index, "narx")) return;
+                                      keyingiQatorgaOtish(index);
+                                    }}
+                                    className={cn(maydonKlassi, qoldiqOgohlantirishlari.has(index) && "border-amber-300 focus:border-amber-500 focus:ring-amber-100")}
+                                    placeholder={t("placeholders.quantity")}
+                                  />
+                                  </XatoliMaydon>
+                                  {qoldiqOgohlantirishlari.has(index) && (
+                                    <p
+                                      data-qoldiq-ogohlantirish={index}
+                                      className="mt-1 inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold leading-4 text-amber-700"
+                                      title={t("stockWarning.row", {
+                                        available: qoldiqOgohlantirishlari.get(index)!.mavjud.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                                        requested: qoldiqOgohlantirishlari.get(index)!.talab.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                                      })}
+                                    >
+                                      ⚠ {t("stockWarning.rowShort", {
+                                        available: qoldiqOgohlantirishlari.get(index)!.mavjud.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                                      })}
+                                    </p>
+                                  )}
+                                  {qatorBirliklari.length > 0 && (
+                                    <div className="mt-1.5">
+                                      <select
+                                        aria-label={t("labels.unit")}
+                                        value={mahsulot.birlikId}
+                                        onChange={(event) => birlikniOzgartirish(index, event.target.value)}
+                                        className="h-9 w-full min-w-0 rounded-xl border-2 border-slate-300 bg-white px-1 text-[11px] font-bold text-slate-700 outline-none focus:border-[#2563EB]"
+                                      >
+                                        {qatorBirliklari.map((birlik) => (
+                                          <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
+                                        ))}
+                                      </select>
+                                      {matnKor("birlik") && tanlanganBirlik && !tanlanganBirlik.asosiy && miqdor > 0 && (
+                                        <p className="mt-1 text-[11px] font-semibold text-slate-400">
+                                          {t("products.baseEquivalent", { qty: asosiyMiqdor(tanlanganBirlik, miqdor).toLocaleString("uz-UZ", { maximumFractionDigits: 3 }), unit: asosiyBirlikNomi })}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                        );
 
                         return (
                           <div
                             key={index}
-                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 @min-[900px]:items-start @min-[900px]:rounded-none @min-[900px]:border-0 @min-[900px]:border-b-2 @min-[900px]:border-slate-200 @min-[900px]:px-4 @min-[900px]:py-3 @min-[900px]:last:border-b-0 ${qatorUstunlari} ${qatorXatosi ? xatoRamkasi : ""}`}
+                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 @min-[900px]:items-start @min-[900px]:rounded-none @min-[900px]:border-0 @min-[900px]:border-b-2 @min-[900px]:border-slate-200 @min-[900px]:px-4 @min-[900px]:py-3 @min-[900px]:last:border-b-0 ${qisqa ? qisqaQatorUstunlari : qatorUstunlari} ${qatorXatosi ? xatoRamkasi : ""}`}
                           >
                             <div className="flex items-center justify-between sm:col-span-2 @min-[900px]:col-span-1 @min-[900px]:block @min-[900px]:pt-3">
                               <span className="text-sm font-black text-slate-400">
@@ -2468,6 +2809,7 @@ export default function YangiSotuvModal({
                             <div className="min-w-0 sm:col-span-2 @min-[900px]:col-span-1">
                               <p className={mobilYorliqKlassi}>{t("labels.product")}</p>
                               <div className="flex items-start gap-2">
+                                {!qisqa && (
                                 <button
                                   type="button"
                                   className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#2563EB] hover:text-[#2563EB] sm:flex @min-[900px]:hidden @min-[1100px]:flex"
@@ -2476,6 +2818,7 @@ export default function YangiSotuvModal({
                                 >
                                   <ImageIcon size={18} />
                                 </button>
+                                )}
                                 <div
                                   className="min-w-0 flex-1"
                                   data-sotuv-mahsulot={index}
@@ -2509,16 +2852,19 @@ export default function YangiSotuvModal({
                                     portal
                                   />
                                   </XatoliMaydon>
+                                  {matnKor("qoldiq") && (
                                   <p className="mt-1 truncate text-xs font-semibold text-slate-500">
                                     {t("labels.availableStock")}:{" "}
                                     <span className="font-bold text-[#2563EB]">
                                       {qoldiq ? (qoldiq.birliklar && qoldiq.birliklar.length > 1 ? qoldiqMatni(qoldiqMiqdori(qoldiq), qoldiq.birliklar) : `${qoldiqMiqdori(qoldiq)} ${qoldiqBirligi(qoldiq, t)}`) : "—"}
                                     </span>
                                   </p>
+                                  )}
                                 </div>
                               </div>
                             </div>
 
+                            {!qisqa && (
                             <div className="min-w-0">
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.priceUsd" : "labels.price")}</p>
                               <input
@@ -2547,108 +2893,22 @@ export default function YangiSotuvModal({
                                 </p>
                               )}
                             </div>
+                            )}
 
-                            <div className="min-w-0">
-                              <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.salePriceUsd" : "labels.salePrice")}</p>
-                              <XatoliMaydon xato={fx.xato(`items.${index}.price`)}>
-                              <SummaMaydoni
-                                disabled={narx <= 0}
-                                value={narxTahriri?.qator === index ? narxTahriri.matn : narx > 0 ? donaNarxi(sotuvNarxi) : ""}
-                                kasr={6}
-                                aria-label={`${t("table.salePrice")} / ${narxBirligi}`}
-                                data-sotuv-narx={index}
-                                onFocus={(event) => event.currentTarget.select()}
-                                onBlur={() => setNarxTahriri(null)}
-                                onKeyDown={(event) => {
-                                  if (qatorKlavishlari(event, index, "narx")) return;
-                                  if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
-                                  event.preventDefault();
-                                  fokusSoralish(index, "miqdor");
-                                }}
-                                onChange={(qiymat) => {
-                                  fx.tozala(`items.${index}.price`);
-                                  setNarxTahriri({ qator: index, matn: qiymat });
-                                  const kiritilgan = raqamgaAylantirish(qiymat) * narxKoeff;
-                                  // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalogdan past narx chegirma, baland narx ustama bo'ladi.
-                                  const { ustama: yangiUstama, chegirma: yangiChegirma } = kiritilganNarx({ katalog: katalogNarxi, kiritilgan, miqdor });
-                                  const ustamaMatni = yangiUstama > 0 ? String(yangiUstama) : "";
-                                  if (mahsulot.discountTuri === "foiz") {
-                                    const foiz = kiritilgan > 0 && kiritilgan < katalogNarxi ? chegirmaFoizi(1, katalogNarxi, katalogNarxi - kiritilgan) : 0;
-                                    mahsulotniYangilash(index, { ustama: ustamaMatni, discountFoiz: foiz > 0 ? String(foiz) : "", umumiyChegirmadan: false });
-                                    return;
-                                  }
-                                  mahsulotniYangilash(index, { ustama: ustamaMatni, discount: yangiChegirma > 0 ? String(yangiChegirma) : "", umumiyChegirmadan: false });
-                                }}
-                                className={cn(
-                                  maydonKlassi,
-                                  birDonaChegirma > 0 && "border-emerald-300 text-emerald-700 focus:border-emerald-500 focus:ring-emerald-200",
-                                  ustama > 0 && "border-amber-300 text-amber-700 focus:border-amber-500 focus:ring-amber-100"
-                                )}
-                                placeholder={t("placeholders.price")}
-                              />
-                              </XatoliMaydon>
-                              <p className="mt-1 text-[11px] font-semibold text-slate-400">/ {narxBirligi}</p>
-                            </div>
+                            {qisqa ? (
+                              <>
+                                {miqdorKatagi}
+                                {narxKatagi}
+                              </>
+                            ) : (
+                              <>
+                                {narxKatagi}
+                                {miqdorKatagi}
+                              </>
+                            )}
 
-                            <div className="min-w-0">
-                              <p className={mobilYorliqKlassi}>{t("labels.quantity")}</p>
-                              <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}>
-                              <input
-                                type="number"
-                                min="0.001"
-                                step={butunMiqdor ? "any" : "0.001"}
-                                value={mahsulot.quantity}
-                                data-sotuv-miqdor={index}
-                                onChange={(event) => {
-                                  fx.tozala(`items.${index}.quantity`);
-                                  mahsulotniYangilash(index, { quantity: event.target.value });
-                                }}
-                                onKeyDown={(event) => {
-                                  if (qatorKlavishlari(event, index, "miqdor")) return;
-                                  if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
-                                  event.preventDefault();
-                                  keyingiQatorgaOtish(index);
-                                }}
-                                className={cn(maydonKlassi, qoldiqOgohlantirishlari.has(index) && "border-amber-300 focus:border-amber-500 focus:ring-amber-100")}
-                                placeholder={t("placeholders.quantity")}
-                              />
-                              </XatoliMaydon>
-                              {qoldiqOgohlantirishlari.has(index) && (
-                                <p
-                                  data-qoldiq-ogohlantirish={index}
-                                  className="mt-1 inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold leading-4 text-amber-700"
-                                  title={t("stockWarning.row", {
-                                    available: qoldiqOgohlantirishlari.get(index)!.mavjud.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
-                                    requested: qoldiqOgohlantirishlari.get(index)!.talab.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
-                                  })}
-                                >
-                                  ⚠ {t("stockWarning.rowShort", {
-                                    available: qoldiqOgohlantirishlari.get(index)!.mavjud.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
-                                  })}
-                                </p>
-                              )}
-                              {qatorBirliklari.length > 0 && (
-                                <div className="mt-1.5">
-                                  <select
-                                    aria-label={t("labels.unit")}
-                                    value={mahsulot.birlikId}
-                                    onChange={(event) => birlikniOzgartirish(index, event.target.value)}
-                                    className="h-9 w-full min-w-0 rounded-xl border-2 border-slate-300 bg-white px-1 text-[11px] font-bold text-slate-700 outline-none focus:border-[#2563EB]"
-                                  >
-                                    {qatorBirliklari.map((birlik) => (
-                                      <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
-                                    ))}
-                                  </select>
-                                  {tanlanganBirlik && !tanlanganBirlik.asosiy && miqdor > 0 && (
-                                    <p className="mt-1 text-[11px] font-semibold text-slate-400">
-                                      {t("products.baseEquivalent", { qty: asosiyMiqdor(tanlanganBirlik, miqdor).toLocaleString("uz-UZ", { maximumFractionDigits: 3 }), unit: asosiyBirlikNomi })}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="min-w-0">
+                            {qisqaKorsat(`items.${index}.discount`) && (
+                            <div className={cn("min-w-0", qisqa && "sm:col-span-2 @min-[900px]:order-last @min-[900px]:col-span-full")}>
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.discountUsd" : "labels.discount")}</p>
                               <XatoliMaydon xato={fx.xato(`items.${index}.discount`)}>
                               <div className="relative">
@@ -2703,6 +2963,7 @@ export default function YangiSotuvModal({
                                 <p className="mt-1 text-[11px] font-semibold text-emerald-600">= {pulniFormatlash(chegirma, sotuvVal)}</p>
                               )}
                             </div>
+                            )}
 
                             <div className="min-w-0 @min-[900px]:pt-3 @min-[900px]:text-right">
                               <p className={mobilYorliqKlassi}>{t("labels.rowTotal")}</p>
@@ -2723,7 +2984,7 @@ export default function YangiSotuvModal({
                               </button>
                             </div>
 
-                            {ustama > 0 && miqdor > 0 && (
+                            {matnKor("chegirmaIzohi") && ustama > 0 && miqdor > 0 && (
                               <p className="rounded-xl bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-700 ring-2 ring-amber-100 @min-[900px]:col-span-full">
                                 {t("products.autoMarkupHint", {
                                   katalog: pulniFormatlash(donaNarxi(katalogNarxi), sotuvVal),
@@ -2734,7 +2995,7 @@ export default function YangiSotuvModal({
                               </p>
                             )}
 
-                            {birDonaChegirma > 0 && miqdor > 0 && ustama <= 0 && (
+                            {matnKor("chegirmaIzohi") && birDonaChegirma > 0 && miqdor > 0 && ustama <= 0 && (
                               <p className="rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 ring-2 ring-emerald-200 @min-[900px]:col-span-full">
                                 {t("products.autoDiscountHint", {
                                   katalog: pulniFormatlash(donaNarxi(narx), sotuvVal),
@@ -2764,9 +3025,19 @@ export default function YangiSotuvModal({
                         ⚠ {t("stockWarning.summary", { count: qoldiqOgohlantirishlari.size })}
                       </p>
                     )}
+                    {qisqa && !kartaKor("umumiyChegirma") && tannarxdanArzonSoni > 0 && (
+                      <p role="status" data-qisqa-tannarx className="mt-3 rounded-xl bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+                        ⚠ {t("generalDiscount.belowCost", { count: tannarxdanArzonSoni })}
+                      </p>
+                    )}
+                    {qisqa && !kartaKor("xulosa") && matnKor("tolovIzohi") && (
+                      <p className="mt-3 text-xs font-medium leading-5 text-slate-500">{t("summary.paymentHint")}</p>
+                    )}
+                    {qisqa && !kartaKor("xulosa") && <div ref={xulosaKartasiRef} aria-hidden className="h-px" />}
                   </div>
 
                   </SotuvJadvali>
+                  {kartaKor("narxTuri") && (
                   <SotuvKartasi kalit="narxTuri" nom={t("priceTypes.label")}>
                   <div data-umumiy-narx-turi className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
                     <span className="text-sm font-bold text-slate-600">{t("priceTypes.label")}</span>
@@ -2775,7 +3046,7 @@ export default function YangiSotuvModal({
                       holat={(tur) => ({ ruxsat: turRuxsati(tur), narxBor: true })}
                       onChange={narxTuriniTanlash}
                     />
-                    <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("priceTypes.hint")}</p>
+                    {matnKor("kartaIzohi") && <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("priceTypes.hint")}</p>}
                     {narxXabari && (
                       <p role="status" className="basis-full text-xs font-bold text-amber-600">
                         {narxXabari}
@@ -2783,8 +3054,10 @@ export default function YangiSotuvModal({
                     )}
                   </div>
                   </SotuvKartasi>
+                  )}
 
                   {/* Umumiy birlik: faqat qo'shimcha birligi (korobka, qop...) bor tovarlar bo'lsa ko'rinadi. */}
+                  {kartaKor("umumiyBirlik") && (
                   <SotuvKartasi kalit="umumiyBirlik" nom={t("generalUnit.label")}>
                   {umumiyBirlikVariantlari.length > 0 && (
                     <div data-umumiy-birlik className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
@@ -2811,7 +3084,7 @@ export default function YangiSotuvModal({
                           );
                         })}
                       </div>
-                      <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("generalUnit.hint")}</p>
+                      {matnKor("kartaIzohi") && <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("generalUnit.hint")}</p>}
                       {birlikXabari && (
                         <p role="status" className="basis-full text-xs font-bold text-amber-600">
                           {birlikXabari}
@@ -2820,7 +3093,9 @@ export default function YangiSotuvModal({
                     </div>
                   )}
                   </SotuvKartasi>
+                  )}
 
+                  {kartaKor("umumiyChegirma") && (
                   <SotuvKartasi kalit="umumiyChegirma" nom={t("generalDiscount.label")} majburiy={umumiyFoiz > 0 || umumiySumma > 0}>
                   <div data-umumiy-chegirma className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
                     <span className="text-sm font-bold text-slate-600">{t("generalDiscount.label")}</span>
@@ -2896,9 +3171,11 @@ export default function YangiSotuvModal({
                         {t("generalDiscount.applied", { summa: pulniFormatlash(umumiyUlushJami, sotuvVal) })}
                       </span>
                     )}
+                    {matnKor("chegirmaIzohi") && (
                     <p className="basis-full text-xs font-medium leading-5 text-slate-500">
                       {t(umumiyCheg.tur === "sum" ? "generalDiscount.hintSum" : "generalDiscount.hint")}
                     </p>
+                    )}
                     {tannarxdanArzonSoni > 0 && (
                       <p role="status" className="basis-full rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
                         {t("generalDiscount.belowCost", { count: tannarxdanArzonSoni })}
@@ -2906,18 +3183,25 @@ export default function YangiSotuvModal({
                     )}
                   </div>
                   </SotuvKartasi>
+                  )}
 
+                  {kartaKor("xulosa") && (
                   <SotuvKartasi kalit="xulosa" nom={t("cardLayout.summary")}>
                   <div>
-                  <div ref={xulosaKartasiRef} className="grid grid-cols-2 gap-3 @min-[900px]:grid-cols-4">
+                  <div ref={xulosaKartasiRef} className={qisqa ? "grid grid-cols-2 gap-3" : "grid grid-cols-2 gap-3 @min-[900px]:grid-cols-4"}>
                     <XulosaKarta ikonka={Package} nom={t("summary.productsCount")} qiymat={String(mahsulotlarSoni)} ton="kok" />
                     <MiqdorXulosaKarta nom={t("summary.totalQuantity")} guruhlar={birlikMiqdorlari} />
+                    {!qisqa && (
+                      <>
                     <XulosaKarta ikonka={Percent} nom={t("summary.discount")} qiymat={pulniFormatlash(umumiyChegirma, sotuvVal)} ton="yashil" />
                     <XulosaKarta ikonka={Wallet} nom={t("summary.grandTotal")} qiymat={pulniFormatlash(jami, sotuvVal)} ton="asosiy" />
+                      </>
+                    )}
                   </div>
-                  <p className="mt-3 text-xs font-medium leading-5 text-slate-500">{t("summary.paymentHint")}</p>
+                  {matnKor("tolovIzohi") && <p className="mt-3 text-xs font-medium leading-5 text-slate-500">{t("summary.paymentHint")}</p>}
                   </div>
                   </SotuvKartasi>
+                  )}
                   </SotuvKartalari>
 
                   {omborlar.length === 0 && (
@@ -2926,6 +3210,7 @@ export default function YangiSotuvModal({
                     </div>
                   )}
 
+                  {(kartaKor("izoh") || qisqaKorsat("note")) && (
                   <XatoliMaydon xato={fx.xato("note")}>
                   <label className="mt-5 grid gap-1.5">
                     <span className="flex items-center justify-between gap-3">
@@ -2945,9 +3230,10 @@ export default function YangiSotuvModal({
                     />
                   </label>
                   </XatoliMaydon>
+                  )}
                 </section>
 
-                <section className={kartaKlassi}>
+                <section data-faoliyat-karta className={cn(kartaKlassi, qisqa && "hidden")}>
                   <KartaBoshi ikonka={CalendarCheck} sarlavha={t("sections.activity")} />
                   <nav className="mb-4 flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-50 p-1.5 text-sm font-semibold text-slate-500 ring-2 ring-slate-200">
                     {faoliyatTablar.map((tab) => {
@@ -3189,12 +3475,22 @@ export default function YangiSotuvModal({
 
           <footer className="shrink-0 border-t-2 border-slate-300 bg-white px-4 py-3 sm:px-7">
             <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-              {ozgarishlarSoni > 0 && (
+              {qisqa && (
+                <div data-qisqa-jami className="mr-auto min-w-0 basis-full sm:basis-auto">
+                  <p className="text-xs font-bold text-slate-500">{t("summary.grandTotal")}</p>
+                  <p className="truncate text-xl font-black tabular-nums text-[#0F172A]">{pulniFormatlash(jami, sotuvVal)}</p>
+                  {umumiyChegirma > 0 && (
+                    <p className="text-xs font-bold text-emerald-600">{t("viewMode.discountLine", { summa: pulniFormatlash(umumiyChegirma, sotuvVal) })}</p>
+                  )}
+                </div>
+              )}
+              {!qisqa && ozgarishlarSoni > 0 && (
                 <p role="status" className="mr-auto flex items-center gap-2 text-sm font-semibold text-slate-700">
                   <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
                   {t("unsaved.indicator", { count: ozgarishlarSoni })}
                 </p>
               )}
+              {!qisqa && (
               <button
                 type="button"
                 onClick={formaniTozalash}
@@ -3204,6 +3500,7 @@ export default function YangiSotuvModal({
                 <RotateCcw size={17} />
                 <span className="sr-only sm:not-sr-only">{t("actions.clear")}</span>
               </button>
+              )}
               <button
                 type="button"
                 data-modal-yopish onClick={onYopish}
@@ -3268,7 +3565,11 @@ const IZOH_MAKS_UZUNLIK = 500;
 // mahsulotlar kartasi (@container) kengligiga bog'liq: 900px dan tor bo'lsa (1280px da oyna ikki ustunli) qatorlar kartochka ko'rinishida.
 const qatorUstunlari =
   "@min-[900px]:grid-cols-[32px_minmax(0,2.4fr)_minmax(150px,1.2fr)_minmax(88px,1fr)_minmax(64px,0.7fr)_minmax(150px,1.25fr)_minmax(96px,0.9fr)_40px]";
+// Qisqa rejim: №, mahsulot, miqdor, sotuv narxi, jami, o'chirish (katalog narxi va chegirma ustunlari yo'q).
+const qisqaQatorUstunlari =
+  "@min-[900px]:grid-cols-[32px_minmax(0,2.6fr)_minmax(110px,0.9fr)_minmax(130px,1fr)_minmax(110px,0.9fr)_40px]";
 const kartaKlassi = "rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-2 ring-[#CBD5E1] sm:p-5";
+const qisqaKartaKlassi = "rounded-2xl bg-white p-3.5 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-2 ring-[#CBD5E1] sm:p-4";
 const yorliqKlassi = "text-sm font-semibold text-slate-600";
 const mobilYorliqKlassi = "mb-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 @min-[900px]:hidden";
 const maydonKlassi =

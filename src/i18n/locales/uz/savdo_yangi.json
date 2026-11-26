@@ -331,5 +331,63 @@
     "reset": "Standart joylashuv",
     "dropTop": "Jadval tepasiga — shu yerga qo'ying",
     "dropBottom": "Jadval ostiga — shu yerga qo'ying"
+  },
+  "viewMode": {
+    "label": "Ko'rinish",
+    "full": "To'liq",
+    "short": "Qisqa",
+    "fullTitle": "Barcha bo'limlar: sotuv sozlamalari, faoliyat, chegirma va boshqalar",
+    "shortTitle": "Faqat sotuvga kerakli: mijoz, mahsulotlar, jami",
+    "steps": {
+      "customer": "Mijoz",
+      "products": "Mahsulotlar",
+      "total": "Jami",
+      "save": "Qoralama saqlash"
+    },
+    "hiddenErrors": "Saqlash uchun To'liq rejimdagi maydonni tekshiring: {{maydonlar}}",
+    "openFull": "To'liq rejimda ochish",
+    "addCompany": "Kompaniya tanlash",
+    "discountLine": "Chegirma qo'llangan: −{{summa}}",
+    "stepHints": {
+      "customer": "tanlang",
+      "products": "qo'shing",
+      "total": "tekshiring",
+      "save": "saqlang"
+    },
+    "panel": {
+      "open": "Ko'rinishni sozlash",
+      "title": "Qisqa ko'rinishni sozlash",
+      "subtitle": "Sotuv yaratish va sotuv tafsiloti uchun. Faqat ko'rinish — qiymatlar o'zgarmaydi.",
+      "kartalar": "Kartalar",
+      "matnlar": "Matnlar",
+      "save": "Ko'rinishni saqlash",
+      "cancel": "Bekor qilish",
+      "reset": "Standartga qaytarish",
+      "onlyCreate": "Faqat sotuv yaratishda",
+      "onlyDetail": "Faqat sotuv tafsilotida"
+    },
+    "kartalar": {
+      "shtrixkod": "Shtrixkod",
+      "katalogImport": "Katalog va import",
+      "narxTuri": "Narx turi",
+      "umumiyBirlik": "Umumiy birlik",
+      "umumiyChegirma": "Umumiy chegirma",
+      "izoh": "Izoh",
+      "xulosa": "Mahsulot soni va umumiy miqdor",
+      "jarayon": "Sotuv jarayoni",
+      "telegram": "Telegram xabarnoma"
+    },
+    "matnlar": {
+      "qoldiq": "Mavjud qoldiq yozuvi",
+      "birlik": "Narx birligi (/ dona) va asosiy birlik",
+      "mijozIzohi": "Mijoz va kompaniya bog'lanishi izohi",
+      "bosqichTavsifi": "Bosqich tavsiflari",
+      "chegirmaIzohi": "Chegirma va ustama izohi",
+      "kartaIzohi": "Narx turi va birlik izohlari",
+      "klaviatura": "Klaviatura yo'riqnomasi",
+      "tolovIzohi": "To'lov izohi",
+      "sarlavhaIzohi": "Sarlavha izohlari",
+      "yordamchi": "Bo'sh joy belgilari va nol qatorlar"
+    }
   }
 }

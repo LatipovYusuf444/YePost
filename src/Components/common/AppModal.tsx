@@ -4,6 +4,7 @@ import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ModalActionRail from "./ModalActionRail";
 import TasdiqlashOynasi from "./TasdiqlashOynasi";
+import { himoyaliModallar } from "./modalQatlamlari";
 
 // Modal panelining yuqori qismida o'zining yopish tugmasi (X) bormi? Telefonda yon "amallar ustuni"
 // uchun joy yo'q: tugma bor bo'lsa ustun yashiriladi, yo'q bo'lsa faqat "Yopish" qoladi.
@@ -24,8 +25,6 @@ function oziningYopishTugmasiBormi(overlay: HTMLElement) {
 let ochiqModallarSoni = 0;
 let oldingiBodyOverflow = "";
 let oldingiHtmlOverflow = "";
-// Saqlanmagan o'zgarishlar tekshiruvi yoqilgan modallar (ochilish tartibida): Esc faqat eng ustkisiga tegishli.
-const himoyaliModallar: symbol[] = [];
 
 // Yopish tugmasi: `ozgarishBor` bo'lganda shu atribut qo'yilgan tugma bosilsa avval tasdiq so'raladi.
 export const MODAL_YOPISH_ATRIBUTI = "data-modal-yopish";

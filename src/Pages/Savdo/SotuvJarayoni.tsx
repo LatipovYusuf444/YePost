@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Ban, Check, CheckCircle2, ChevronRight, CreditCard, LoaderCircle, Package } from "lucide-react";
 import type { Sotuv, SotuvHolati } from "@/types/savdo";
+import { useQisqaKorinishi } from "./qisqaKonteksti";
 import { pulniFormatlash, sotuvHolatiMatni, sotuvQarzdorlikSummasi, sotuvTolanganSummasi, sotuvValyutasi } from "./savdoYordamchilari";
 
 type QadamHolati = "bajarilgan" | "joriy" | "kutilmoqda";
@@ -45,6 +46,8 @@ const QADAM_STILI: Record<QadamHolati, { karta: string; doira: string; nom: stri
 // To'lovni tasdiqlashdan oldin ham qabul qilish mumkin, shuning uchun "to'lov" qadami mustaqil hisoblanadi.
 export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, onTolovOchish, onOmbordanChiqarish, onChiqarilganlarniKorish }: SotuvJarayoniProps) {
   const { t } = useTranslation("savdo_tafsilot");
+  // Qisqa ko'rinishda bosqich tavsiflari foydalanuvchi tanlovi bo'yicha (kontekst bo'lmasa — hammasi ko'rinadi).
+  const tavsif = useQisqaKorinishi()?.matn("bosqichTavsifi") ?? true;
   const tasdiqlangan = holat === "CONFIRMED";
   const tolangan = sotuvTolanganSummasi(sotuv);
   const qarz = sotuvQarzdorlikSummasi(sotuv);
@@ -131,7 +134,7 @@ export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, on
                     </span>
                   )}
                 </p>
-                <p className="mt-1 text-xs leading-5 text-slate-500">{qadam.izoh}</p>
+                {tavsif && <p className="mt-1 text-xs leading-5 text-slate-500">{qadam.izoh}</p>}
                 {qadam.kalit === "ombor" && tasdiqlangan && onChiqarilganlarniKorish && (
                   <button
                     type="button"
@@ -158,7 +161,7 @@ export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, on
           <CheckCircle2 size={22} className="mt-0.5 shrink-0 text-emerald-500" />
           <div>
             <p className="font-black text-emerald-800">{t("jarayon.keyingi.yakunlandi.sarlavha")}</p>
-            <p className="mt-0.5 text-sm text-emerald-700">{t("jarayon.keyingi.yakunlandi.tavsif")}</p>
+            {tavsif && <p className="mt-0.5 text-sm text-emerald-700">{t("jarayon.keyingi.yakunlandi.tavsif")}</p>}
           </div>
         </div>
       ) : (
@@ -172,11 +175,11 @@ export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, on
               <p className="mt-0.5 font-black text-slate-900">
                 {tasdiqlangan ? t("jarayon.keyingi.tolov.sarlavha") : t("jarayon.keyingi.ombor.sarlavha")}
               </p>
-              <p className="mt-1 text-sm leading-6 text-slate-500">
+              {tavsif && <p className="mt-1 text-sm leading-6 text-slate-500">
                 {tasdiqlangan
                   ? t("jarayon.keyingi.tolov.tavsif", { summa: pulniFormatlash(qarz, sotuvValyutasi(sotuv)) })
                   : t("jarayon.keyingi.ombor.tavsif")}
-              </p>
+              </p>}
             </div>
           </div>
 

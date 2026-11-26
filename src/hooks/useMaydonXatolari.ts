@@ -39,6 +39,8 @@ export function useMaydonXatolari(qoidalar: Record<string, XatoMaydonQoidasi> = 
   const bor = Object.keys(xatolar).length > 0;
   return {
     xato: (yol: string): string | undefined => xatolar[yol],
+    /** Joriy xatolar (yo'l → matn). Masalan, yashirin maydon ko'rinadigan bo'lgach `ornat(hammasi)` bilan qayta joylash uchun. */
+    hammasi: xatolar,
     bor,
     /** Maydoni ekranda topilmagan xato matni: oyna tepasida ko'rsatiladi. */
     tepadagi: korinmadi ? Object.values(xatolar).join(" ") : "",

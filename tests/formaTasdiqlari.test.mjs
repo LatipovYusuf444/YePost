@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { joriyOgohlantirish, ogohlantirishgaJavob, ogohlantirishniSorash, tasdiqniSorash } from '../src/lib/ogohlantirishSorovi.ts';
+import * as qatlamlar from '../src/Components/common/modalQatlamlari.ts';
 
 const require = createRequire(import.meta.url);
 const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : !value || typeof value !== 'object' ? [] : [value, ...nodes(value.props?.children)];
@@ -119,7 +120,9 @@ test('tasdiqniSorash sababni qaytaradi, ogohlantirishniSorash esa avvalgidek boo
 });
 
 function appModal(props) {
-  return mount('../src/Components/common/AppModal.tsx', { children: null, ...props });
+  // Har sinov toza qatlamlar ro'yxati bilan (avvalgi sinovlarning yopilmagan modallari aralashmasin).
+  qatlamlar.himoyaliModallar.length = 0;
+  return mount('../src/Components/common/AppModal.tsx', { children: null, ...props }, { './modalQatlamlari': qatlamlar });
 }
 const tasdiqOynasi = tree => nodes(tree).find(node => node.type === 'TasdiqlashOynasi');
 function esc() {
@@ -174,6 +177,22 @@ test('AppModal: tasdiq oynasi ochiq paytda ikkinchi Esc uni qayta ochmaydi', asy
   const ikkinchi = esc();
   tinglovchi(ikkinchi);
   assert.equal(ikkinchi.toxtatildi, false, 'tasdiq oynasining o\'z Esc ishlovchisi ishlashi kerak');
+});
+
+test("AppModal: ustidagi qatlam (sozlash paneli) ochiq bo'lsa Esc modalga tegmaydi, yopilgach yana tasdiq so'raydi", async () => {
+  const modal = appModal({ onClose() {}, ozgarishBor: true });
+  await modal.settle();
+  const tinglovchi = modal.listeners.find(item => item.type === 'keydown' && item.capture).fn;
+  const chiqarish = qatlamlar.modalUstiQatlami();
+  const birinchi = esc();
+  tinglovchi(birinchi);
+  assert.equal(birinchi.toxtatildi, false, "Esc qatlamning o'ziga qoladi");
+  assert.equal(tasdiqOynasi(modal.render()), undefined);
+  chiqarish();
+  const ikkinchi = esc();
+  tinglovchi(ikkinchi);
+  assert.equal(ikkinchi.toxtatildi, true);
+  assert.ok(tasdiqOynasi(modal.render()));
 });
 
 test('useOzgarishBormi: boshlang\'ich holat bilan solishtiradi, yopiq oynada o\'zgarish yo\'q', () => {
