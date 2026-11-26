@@ -622,8 +622,11 @@ export default function YonPanel({
   }
 
   const maslahatHodisalari = (matn: string, qoshimcha?: string, doim = false) => ({
-    onMouseEnter: (event: MouseEvent<HTMLElement>) => maslahatniKorsat(event.currentTarget, matn, qoshimcha, doim),
-    onMouseLeave: () => maslahatRef.current?.yashir(),
+    // Maslahat faqat sichqoncha bilan: iPad/planshetda birinchi bosish maslahat ochishga ketib, havola ochilmay qolardi.
+    onPointerEnter: (event: ReactPointerEvent<HTMLElement>) => {
+      if (event.pointerType === "mouse") maslahatniKorsat(event.currentTarget, matn, qoshimcha, doim);
+    },
+    onPointerLeave: () => maslahatRef.current?.yashir(),
     onFocus: (event: FocusEvent<HTMLElement>) => {
       if (event.currentTarget.matches(":focus-visible")) maslahatniKorsat(event.currentTarget, matn, qoshimcha, doim);
     },

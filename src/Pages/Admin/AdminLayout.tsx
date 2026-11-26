@@ -39,7 +39,7 @@ export default function AdminLayout() {
 
   return (
     <div className="app-shell mobile-app-shell min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
-      <aside className="theme-sidebar fixed left-3 top-3 z-50 hidden h-[calc(100vh-24px)] w-[260px] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0B1424] text-[#8391A7] shadow-[0_28px_70px_rgba(2,6,23,.38)] md:flex">
+      <aside className="theme-sidebar fixed left-3 top-3 z-50 hidden h-[calc(100dvh-24px)] w-[260px] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0B1424] text-[#8391A7] shadow-[0_28px_70px_rgba(2,6,23,.38)] md:flex">
         <div className="flex h-[72px] shrink-0 items-center gap-3 px-[18px]">
           <div className="theme-logo flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-linear-to-br from-sky-400 to-blue-600 text-lg font-black text-white">Y</div>
           <div className="min-w-0">
@@ -118,7 +118,7 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        <div className="app-main-surface @container min-h-[calc(100vh-120px)] min-w-0 max-w-full rounded-[20px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl md:rounded-[34px] md:p-7">
+        <div className="app-main-surface @container min-h-[calc(100dvh-120px)] min-w-0 max-w-full rounded-[20px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl md:rounded-[34px] md:p-7">
           <Outlet />
         </div>
       </main>

@@ -72,7 +72,7 @@ export default function AvatarYuklash({
           disabled={disabled || tayyorlanmoqda}
           onClick={() => inputRef.current?.click()}
           aria-label={t("avatar.change")}
-          className="absolute inset-0 flex items-center justify-center bg-slate-900/55 text-white opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
+          className="absolute inset-0 flex items-center justify-center bg-slate-900/55 text-white opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:bg-slate-900/25 [@media(hover:none)]:opacity-100"
         >
           {tayyorlanmoqda ? <LoaderCircle size={22} className="animate-spin" /> : <Camera size={22} />}
         </button>

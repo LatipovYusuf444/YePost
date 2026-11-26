@@ -101,11 +101,11 @@ export default function Xaridlar() {
       }
     };
     sozlamaJoylashuviniYangilash();
-    document.addEventListener("mousedown", tashqarigaBosish);
+    document.addEventListener("pointerdown", tashqarigaBosish);
     window.addEventListener("resize", sozlamaJoylashuviniYangilash);
     window.addEventListener("scroll", sozlamaJoylashuviniYangilash, true);
     return () => {
-      document.removeEventListener("mousedown", tashqarigaBosish);
+      document.removeEventListener("pointerdown", tashqarigaBosish);
       window.removeEventListener("resize", sozlamaJoylashuviniYangilash);
       window.removeEventListener("scroll", sozlamaJoylashuviniYangilash, true);
     };

@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -16,6 +17,7 @@ import { Check, ChevronDown, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { optionlarniCheklash } from "@/lib/optionlarniCheklash";
 import { variantniKorsatish } from "@/lib/variantniKorsatish";
+import { sichqonchaliQurilma } from "@/lib/sichqonchaliQurilma";
 
 export type SavdoSelectOption = {
   value: string;
@@ -143,7 +145,7 @@ export default function SavdoSelect({
     // uzun mahsulot nomlari kesilmasin); har doim ekranga sig'adi. Inline `minWidth: 0`
     // sinfdagi min-w ni bekor qilardi, shuning uchun eng kichik kenglik shu yerda hisoblanadi.
     const dropdownWidth = Math.min(Math.max(rect.width, engKichikKenglik), window.innerWidth - viewportPadding * 2);
-    const belowSpace = window.innerHeight - rect.bottom - gap - viewportPadding;
+    const belowSpace = (window.visualViewport?.height ?? window.innerHeight) - rect.bottom - gap - viewportPadding;
     const aboveSpace = rect.top - gap - viewportPadding;
     const preferredHeight = Math.min(224, options.length * 40 + 8);
     const opensUp = belowSpace < preferredHeight && aboveSpace > belowSpace;
@@ -178,8 +180,8 @@ export default function SavdoSelect({
       }
     }
 
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
   }, []);
 
   useLayoutEffect(() => {
@@ -198,7 +200,8 @@ export default function SavdoSelect({
     if (open && qidirishFaol) {
       setQidiruvMatni(boshlangichQidiruv ?? "");
       setFaolIndeks(boshlangichQidiruv?.trim() ? 0 : -1);
-      window.requestAnimationFrame(() => qidiruvInputRef.current?.focus());
+      // Planshetda ro'yxat ochilishi bilan klaviatura chiqib, variantlarni yopmasin — qidiruvga foydalanuvchi o'zi tegadi.
+      if (sichqonchaliQurilma()) window.requestAnimationFrame(() => qidiruvInputRef.current?.focus());
     }
     // Boshlang'ich matn faqat ochilish paytida olinadi.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -329,8 +332,9 @@ export default function SavdoSelect({
                     tabIndex: -1,
                     // Sichqoncha bosilganda qidiruv maydoni fokusi yo'qolmasin.
                     onMouseDown: (event: ReactMouseEvent) => event.preventDefault(),
-                    onMouseMove: () => {
-                      if (optionIndex !== faolIndeks) setFaolIndeks(optionIndex);
+                    // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                    onPointerMove: (event: ReactPointerEvent) => {
+                      if (event.pointerType === "mouse" && optionIndex !== faolIndeks) setFaolIndeks(optionIndex);
                     },
                   }
                 : {})}

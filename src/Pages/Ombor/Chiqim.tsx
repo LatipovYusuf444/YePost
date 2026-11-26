@@ -127,11 +127,11 @@ export default function Chiqim() {
       }
     };
     sozlamaJoylashuviniYangilash();
-    document.addEventListener("mousedown", yopish);
+    document.addEventListener("pointerdown", yopish);
     window.addEventListener("resize", sozlamaJoylashuviniYangilash);
     window.addEventListener("scroll", sozlamaJoylashuviniYangilash, true);
     return () => {
-      document.removeEventListener("mousedown", yopish);
+      document.removeEventListener("pointerdown", yopish);
       window.removeEventListener("resize", sozlamaJoylashuviniYangilash);
       window.removeEventListener("scroll", sozlamaJoylashuviniYangilash, true);
     };

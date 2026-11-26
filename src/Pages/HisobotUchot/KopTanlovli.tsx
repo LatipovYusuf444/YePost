@@ -37,8 +37,8 @@ export default function KopTanlovli({
         setQidiruv("");
       }
     }
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
   }, [open]);
 
   function qoshish(id: string) {

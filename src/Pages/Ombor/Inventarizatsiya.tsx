@@ -183,11 +183,11 @@ export default function Inventarizatsiya() {
       }
     }
     mahsulotMenyuJoylashuviniYangilash();
-    document.addEventListener("mousedown", tashqarigaBosish);
+    document.addEventListener("pointerdown", tashqarigaBosish);
     window.addEventListener("resize", mahsulotMenyuJoylashuviniYangilash);
     window.addEventListener("scroll", mahsulotMenyuJoylashuviniYangilash, true);
     return () => {
-      document.removeEventListener("mousedown", tashqarigaBosish);
+      document.removeEventListener("pointerdown", tashqarigaBosish);
       window.removeEventListener("resize", mahsulotMenyuJoylashuviniYangilash);
       window.removeEventListener("scroll", mahsulotMenyuJoylashuviniYangilash, true);
     };
@@ -215,11 +215,11 @@ export default function Inventarizatsiya() {
       }
     }
     sozlamaJoylashuviniYangilash();
-    document.addEventListener("mousedown", tashqarigaBosish);
+    document.addEventListener("pointerdown", tashqarigaBosish);
     window.addEventListener("resize", sozlamaJoylashuviniYangilash);
     window.addEventListener("scroll", sozlamaJoylashuviniYangilash, true);
     return () => {
-      document.removeEventListener("mousedown", tashqarigaBosish);
+      document.removeEventListener("pointerdown", tashqarigaBosish);
       window.removeEventListener("resize", sozlamaJoylashuviniYangilash);
       window.removeEventListener("scroll", sozlamaJoylashuviniYangilash, true);
     };
@@ -1030,13 +1030,13 @@ export default function Inventarizatsiya() {
         />
         <div className="flex h-12 items-center gap-2 px-1">
           <Filter size={17} className="shrink-0 text-blue-700" />
-          <AppSelect value={holatFiltri} onChange={(event) => setHolatFiltri(event.target.value)} aria-label={t("inventarizatsiya.filters.status")} className="h-full min-w-0 flex-1 rounded-xl px-1 text-sm text-slate-600 [&_svg]:!text-blue-600">
+          <AppSelect value={holatFiltri} onChange={(event) => setHolatFiltri(event.target.value)} aria-label={t("inventarizatsiya.filters.status")} className="h-full min-w-0 flex-1 rounded-xl text-sm text-slate-600 [&_svg]:!text-blue-600 [&>button]:px-2">
             <option value="ALL">{t("inventarizatsiya.filters.allStatuses")}</option><option value="DRAFT">{t("inventarizatsiya.stats.inProgress")}</option><option value="CONFIRMED">{t("inventarizatsiya.stats.completed")}</option><option value="CANCELLED">{t("inventarizatsiya.stats.cancelled")}</option>
           </AppSelect>
         </div>
         <div className="flex h-12 items-center gap-2 px-1">
           <Package size={17} className="shrink-0 text-blue-700" />
-          <AppSelect value={omborFiltri} onChange={(event) => setOmborFiltri(event.target.value)} aria-label={t("inventarizatsiya.filters.warehouse")} className="h-full min-w-0 flex-1 rounded-xl px-1 text-sm text-slate-600 [&_svg]:!text-blue-600">
+          <AppSelect value={omborFiltri} onChange={(event) => setOmborFiltri(event.target.value)} aria-label={t("inventarizatsiya.filters.warehouse")} className="h-full min-w-0 flex-1 rounded-xl text-sm text-slate-600 [&_svg]:!text-blue-600 [&>button]:px-2">
             <option value="ALL">{t("inventarizatsiya.filters.allWarehouses")}</option>{store.omborlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}
           </AppSelect>
         </div>
@@ -1197,8 +1197,7 @@ export default function Inventarizatsiya() {
                           value={warehouseId}
                           disabled={Boolean(tahrirHujjati || qoralamaHujjati)}
                           onChange={(event) => void omborTanlash(event.target.value)}
-                          // AppSelect ichki tugmaga tashqi paddingni meros qiladi: manfiy chekka tugmani yorliq va boshqa maydonlar bilan tekislaydi.
-                          className="-mx-3.5 h-11 rounded-xl px-3.5 text-sm font-medium text-slate-800"
+                          className="h-11 rounded-xl text-sm font-medium text-slate-800 [&>button]:px-3.5"
                         >
                           <option value="">{t("inventarizatsiya.createModal.selectWarehouse")}</option>
                           {store.omborlar.map((ombor) => (
@@ -1370,7 +1369,9 @@ export default function Inventarizatsiya() {
                                     tabIndex={-1}
                                     // Sichqoncha bilan tanlaganda qidiruv maydoni fokusini yo'qotmasin (keyingi mahsulotni darrov yozish uchun).
                                     onMouseDown={(event) => event.preventDefault()}
-                                    onMouseMove={() => {
+                                    onPointerMove={(event) => {
+                                      // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                                      if (event.pointerType !== "mouse") return;
                                       if (optionIndex !== mahsulotFaolIndeks) setMahsulotFaolIndeks(optionIndex);
                                     }}
                                     onClick={() => mahsulotQoshish(qoldiq.modificationId)}

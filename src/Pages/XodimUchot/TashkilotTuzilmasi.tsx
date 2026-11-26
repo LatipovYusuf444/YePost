@@ -233,7 +233,7 @@ export default function TashkilotTuzilmasi({
 
   return (
     <AppModal className="items-center justify-center bg-[rgba(15,23,42,.50)] p-4 backdrop-blur-[3px]">
-      <div className="flex h-[calc(100vh-32px)] w-full flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
+      <div className="flex h-[calc(100dvh-32px)] w-full flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
         <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-7 py-5 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#EFF6FF] text-[#2563EB]">

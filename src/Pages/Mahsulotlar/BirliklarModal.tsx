@@ -70,7 +70,7 @@ export default function BirliklarModal({ product, birliklar, onClose }: { produc
 
   return (
     <AppModal>
-      <form onSubmit={(event) => void saqlash(event)} className="scrollbar-hidden max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-5 shadow-2xl sm:p-6">
+      <form onSubmit={(event) => void saqlash(event)} className="scrollbar-hidden max-h-[94dvh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-5 shadow-2xl sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-xl font-black sm:text-2xl">{t("units.title")}</h2>

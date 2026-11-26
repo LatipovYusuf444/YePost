@@ -183,7 +183,7 @@ export default function BirlikMahsulotlari({ birlik, mahsulotlar, onYopish }: Pr
 
   return (
     <AppModal className="bg-[rgba(15,23,42,.45)] p-4 backdrop-blur-[3px]" onClose={onYopish}>
-      <section className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_34px_120px_rgba(15,23,42,.42)]">
+      <section className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_34px_120px_rgba(15,23,42,.42)]">
         <header className="flex items-start justify-between gap-4 border-b border-orange-100 px-6 py-5">
           <div className="flex min-w-0 items-center gap-3.5">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB]">

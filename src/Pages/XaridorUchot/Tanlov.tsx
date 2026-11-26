@@ -171,7 +171,9 @@ export default function Tanlov({
                     data-faol={belgilangan || undefined}
                     // Sichqoncha bilan tanlashda fokus qidiruvdan ketmasin; sichqoncha harakati belgini ham siljitadi.
                     onMouseDown={(event) => event.preventDefault()}
-                    onMouseMove={() => {
+                    onPointerMove={(event) => {
+                      // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                      if (event.pointerType !== "mouse") return;
                       if (!belgilangan) setFaol(indeks);
                     }}
                     onClick={() => tanlash(v.value)}

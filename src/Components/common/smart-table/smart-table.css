@@ -104,8 +104,16 @@ table.smart-data-table[data-resizing=true] { cursor: col-resize; user-select: no
 .smart-table-frame[data-density=comfortable] table.smart-data-table > :is(tbody, tfoot) > tr > :is(td, th):not([colspan]) { height: 56px; padding-top: 12px !important; padding-bottom: 12px !important; }
 .smart-table-frame[data-density=standard] table.smart-data-table > :is(tbody, tfoot) > tr > :is(td, th):not([colspan]) { height: 44px; padding-top: 6px !important; padding-bottom: 6px !important; }
 .smart-table-frame[data-density=compact] table.smart-data-table > :is(tbody, tfoot) > tr > :is(td, th):not([colspan]) { height: 34px; padding-top: 4px !important; padding-bottom: 4px !important; }
-table.smart-data-table tbody tr:hover:not([data-state=selected]):not([aria-selected=true]) { background-color: var(--smart-hover) !important; }
-table.smart-data-table tbody tr:hover [data-pinned] { background: var(--smart-hover) !important; }
+/* Hover faqat sichqonchali qurilmada: planshetda bosilgan qator rangi "yopishib" qolmasin. */
+@media (hover: hover) {
+  table.smart-data-table tbody tr:hover:not([data-state=selected]):not([aria-selected=true]) { background-color: var(--smart-hover) !important; }
+  table.smart-data-table tbody tr:hover [data-pinned] { background: var(--smart-hover) !important; }
+}
+/* Sensorli ekranda ustun tutqichi doim ko'rinadi va kattaroq, kenglik tutqichi barmoq bilan ushlanadigan. */
+@media (hover: none) and (pointer: coarse) {
+  .smart-column-grip { opacity: 1; width: 28px; height: 36px; }
+  .smart-column-resize { width: 24px; right: -12px; }
+}
 table.smart-data-table tbody tr[data-state=selected] [data-pinned], table.smart-data-table tbody tr[aria-selected=true] [data-pinned] { background: var(--muted) !important; }
 .dark table.smart-data-table :is(thead, thead tr, thead th) { background-color: var(--smart-header) !important; color: #cbd5e1 !important; }
 .dark table.smart-data-table tbody { color: #e2e8f0; }

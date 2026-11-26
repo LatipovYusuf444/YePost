@@ -63,7 +63,7 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
           </button>
         </div>
 
-        <section className="flex h-[min(880px,94vh)] w-full flex-col overflow-hidden rounded-[36px] border border-white/60 bg-white shadow-[0_40px_140px_rgba(15,23,42,.45)]">
+        <section className="flex h-[min(880px,94dvh)] w-full flex-col overflow-hidden rounded-[36px] border border-white/60 bg-white shadow-[0_40px_140px_rgba(15,23,42,.45)]">
           {/* Sarlavha */}
           <header className="relative flex shrink-0 items-center justify-between gap-4 overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 px-8 py-6">
             <span aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-gold-500/20 blur-2xl" />

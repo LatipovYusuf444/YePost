@@ -69,7 +69,7 @@ export default function MahsulotTanlov({
     const chekka = 10;
     const kerakli = 256;
     const kenglik = Math.min(Math.max(rect.width, 380), window.innerWidth - chekka * 2);
-    const pastda = window.innerHeight - rect.bottom - oraliq - chekka;
+    const pastda = (window.visualViewport?.height ?? window.innerHeight) - rect.bottom - oraliq - chekka;
     const tepada = rect.top - oraliq - chekka;
     const yuqoriga = pastda < Math.min(kerakli, 150) && tepada > pastda;
     const maxHeight = Math.max(80, Math.min(kerakli, yuqoriga ? tepada : pastda));
@@ -101,8 +101,8 @@ export default function MahsulotTanlov({
         setQidiruv(null);
       }
     }
-    document.addEventListener("mousedown", tashqarigaBosish);
-    return () => document.removeEventListener("mousedown", tashqarigaBosish);
+    document.addEventListener("pointerdown", tashqarigaBosish);
+    return () => document.removeEventListener("pointerdown", tashqarigaBosish);
   }, [ochiq]);
 
   useEffect(() => {
@@ -224,7 +224,9 @@ export default function MahsulotTanlov({
                   disabled={variant.disabled}
                   // Sichqoncha bosilganda maydon fokusi yo'qolmasin.
                   onMouseDown={(event) => event.preventDefault()}
-                  onMouseMove={() => {
+                  onPointerMove={(event) => {
+                    // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                    if (event.pointerType !== "mouse") return;
                     if (index !== faol) setFaol(index);
                   }}
                   onClick={() => tanlash(variant)}

@@ -45,7 +45,7 @@ const Demo3DSex = lazy(() => import("@/Pages/Demo3DSex"))
 function SahifaYuklanmoqda() {
   const { t } = useTranslation("common")
   return (
-    <div role="status" aria-label={t("actions.loading")} className="flex min-h-[50vh] w-full items-center justify-center">
+    <div role="status" aria-label={t("actions.loading")} className="flex min-h-[50dvh] w-full items-center justify-center">
       <LoaderCircle size={28} className="animate-spin text-blue-600" />
     </div>
   )

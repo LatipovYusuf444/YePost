@@ -619,8 +619,10 @@ table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(svg):focus-v
 }
 
 /* Mavjud qator hoveri bo'lsa, rangi bir xil och kulrang. */
-table:not(:where(.font-serif *)) tbody tr[class*="hover:bg-"]:hover {
-  background-color: #F8FAFC;
+@media (hover: hover) {
+  table:not(:where(.font-serif *)) tbody tr[class*="hover:bg-"]:hover {
+    background-color: #F8FAFC;
+  }
 }
 
 table:not(:where(.font-serif *)) button,
@@ -1646,4 +1648,14 @@ html[data-theme="purple"] :is(button, input, textarea, select)[class~="bg-white"
     --yp-sut-fon: #FFFFFF;
     --yp-sut-tugma: #FFFFFF;
   }
+}
+
+/*
+ * 26.11 — planshet/iPad (sensorli ekran):
+ *  - tez-tez bosishda (miqdor +/−) sahifa ikki marta bosish bilan kattalashmasin;
+ *  - faqat hover'da ko'rinadigan amallar (tahrirlash/o'chirish) sensorli ekranda doim ko'rinsin — `.hover-amal` sinfi.
+ */
+button, a, input, select, textarea, label, summary, [role="button"] { touch-action: manipulation; }
+@media (hover: none) {
+  .hover-amal { opacity: 1 !important; }
 }

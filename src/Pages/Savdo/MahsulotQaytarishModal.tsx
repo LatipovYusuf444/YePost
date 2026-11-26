@@ -35,7 +35,7 @@ export default function MahsulotQaytarishModal({
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-3 backdrop-blur-[3px] lg:py-4 lg:pl-[88px] lg:pr-4">
-      <section className="scrollbar-hidden h-[calc(100vh-24px)] w-full overflow-y-auto rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_90px_rgba(15,23,42,.25)] lg:h-[calc(100vh-32px)]">
+      <section className="scrollbar-hidden h-[calc(100dvh-24px)] w-full overflow-y-auto rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_90px_rgba(15,23,42,.25)] lg:h-[calc(100dvh-32px)]">
         <header className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-5 py-5 backdrop-blur sm:px-8 lg:px-10 lg:py-6">
           <div className="flex min-w-0 items-start gap-3">
             <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">

@@ -157,7 +157,7 @@ export default function HisobKitobModal({
 
   return (
     <AppModal>
-      <div className="scrollbar-hidden max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white shadow-2xl">
+      <div className="scrollbar-hidden max-h-[92dvh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wide text-orange-500">O'zaro hisob-kitob</p>

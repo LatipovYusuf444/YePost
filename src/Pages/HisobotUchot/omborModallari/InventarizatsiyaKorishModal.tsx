@@ -102,8 +102,8 @@ export default function InventarizatsiyaKorishModal({
         setUstunlarMenyusiOchiq(false);
       }
     }
-    document.addEventListener("mousedown", tashqigaBosish);
-    return () => document.removeEventListener("mousedown", tashqigaBosish);
+    document.addEventListener("pointerdown", tashqigaBosish);
+    return () => document.removeEventListener("pointerdown", tashqigaBosish);
   }, [ustunlarMenyusiOchiq]);
 
   function ustunKorinishiniAlmashtirish(kalit: UstunKaliti) {
@@ -197,7 +197,7 @@ export default function InventarizatsiyaKorishModal({
 
   return (
     <AppModal className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-[78px] pr-3 backdrop-blur-[3px]">
-      <div className="relative h-[calc(100vh-32px)] w-full">
+      <div className="relative h-[calc(100dvh-32px)] w-full">
         <div className="absolute -left-[46px] top-5 z-[90] flex flex-col items-center gap-2">
           <button
             type="button"

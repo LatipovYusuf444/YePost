@@ -209,7 +209,7 @@ export default function AdminQollabQuvvatlash() {
         />
       )}
 
-      <div className="grid h-[calc(100vh-260px)] min-h-[520px] gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid h-[calc(100dvh-260px)] min-h-[520px] gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <aside className={`${tanlangan ? "hidden lg:flex" : "flex"} min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_4px_20px_rgba(15,23,42,.05)]`}>
           <div className="space-y-3 border-b border-slate-100 p-4">
             <label className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 transition focus-within:border-orange-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100">

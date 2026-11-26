@@ -865,7 +865,7 @@ export default function BoshSahifa() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-214px)] w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_minmax(390px,24%)]">
+    <div className="grid min-h-[calc(100dvh-214px)] w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_minmax(390px,24%)]">
       <section className="flex min-h-[520px] min-w-0 flex-col rounded-[26px] border-2 border-(--yp-chegara) bg-white/95 p-4 shadow-gold-soft sm:p-5 xl:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -1137,7 +1137,7 @@ export default function BoshSahifa() {
                           aria-selected={indeks === nomTaklifiFaol}
                           tabIndex={-1}
                           onMouseDown={(event) => event.preventDefault()}
-                          onMouseMove={() => indeks !== nomTaklifiFaol && setNomTaklifiFaol(indeks)}
+                          onPointerMove={(event) => { if (event.pointerType === "mouse" && indeks !== nomTaklifiFaol) setNomTaklifiFaol(indeks); }}
                           onClick={() => nomTaklifiniTanlash(customer)}
                           className={[
                             "flex w-full min-w-0 items-center gap-1.5 rounded-lg px-3 py-2 text-left text-sm transition",
@@ -1537,7 +1537,7 @@ export default function BoshSahifa() {
       )}
       {tolovModalOchiq && (
         <AppModal className="bg-slate-950/60 backdrop-blur-md">
-          <section onKeyDown={(event) => { if (enterTolovniTasdiqlaydimi(event, { mumkin: tolovYaroqli, band: saving })) { event.preventDefault(); void tolovniTasdiqlash(); } }} className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E8EEF7] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
+          <section onKeyDown={(event) => { if (enterTolovniTasdiqlaydimi(event, { mumkin: tolovYaroqli, band: saving })) { event.preventDefault(); void tolovniTasdiqlash(); } }} className="max-h-[94dvh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E8EEF7] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
             <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gold-100 bg-white/85 px-9 py-7 backdrop-blur-xl">
               <div><p className="text-xs font-black uppercase tracking-[.22em] text-gold-500">{t("paymentModal.eyebrow")}</p><h2 className="mt-1 text-2xl font-black text-slate-950">{t("paymentModal.title")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("paymentModal.subtitle")}</p></div>
               <button aria-label={t("common:actions.close")} type="button" onClick={() => setTolovModalOchiq(false)} disabled={saving} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 hover:bg-gold-500 hover:text-white disabled:opacity-50"><X size={20}/></button>

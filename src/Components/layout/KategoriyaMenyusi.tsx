@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
 import { Check, ChevronDown, LayoutGrid, Search, SearchX, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { sichqonchaliQurilma } from "@/lib/sichqonchaliQurilma";
 import { variantniKorsatish } from "@/lib/variantniKorsatish";
 import { Popover, PopoverContent, PopoverTrigger } from "@/Components/ui/popover";
 import { kategoriyalarniFiltrlash } from "@/lib/kategoriyaQidiruvi";
@@ -173,12 +174,13 @@ export default function KategoriyaMenyusi({ kategoriyalar, kategoriyaId, onTanla
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           // Kursor bilan ochilgan va mahsulot qidiruvida yozilayotgan bo'lsa fokus o'sha yerda qoladi; aks holda — qidiruv maydoniga.
-          if (!(hoverBilanOchilgan.current && inputFokusdaEdi.current)) sozRef.current?.focus({ preventScroll: true });
+          // Planshetda klaviatura o'z-o'zidan ochilmasin — qidiruvga foydalanuvchi o'zi tegadi.
+          if (!(hoverBilanOchilgan.current && inputFokusdaEdi.current) && sichqonchaliQurilma()) sozRef.current?.focus({ preventScroll: true });
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           // Menyu ichidagi fokus (qidiruv maydoni) yo'qolmasin: skaner uchun mahsulot qidiruviga qaytadi.
-          if (!document.activeElement || document.activeElement === document.body) qidiruvInputRef.current?.focus({ preventScroll: true });
+          if ((!document.activeElement || document.activeElement === document.body) && sichqonchaliQurilma()) qidiruvInputRef.current?.focus({ preventScroll: true });
         }}
         // Kursor bilan ochilgan menyuda tugmani bosish "tashqarida bosish" deb hisoblanmaydi (yuqoridagi onClick boshqaradi).
         onInteractOutside={(event) => {
@@ -243,7 +245,9 @@ export default function KategoriyaMenyusi({ kategoriyalar, kategoriyaId, onTanla
                 aria-selected={index === faol}
                 // Bosilganda fokus qidiruv maydonida qoladi (klik tanlaydi va menyuni yopadi).
                 onMouseDown={(event) => event.preventDefault()}
-                onMouseMove={() => {
+                onPointerMove={(event) => {
+                  // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                  if (event.pointerType !== "mouse") return;
                   if (index !== faol) setFaol(index);
                 }}
                 onClick={() => tanlash(variant.id)}

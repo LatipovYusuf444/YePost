@@ -240,7 +240,7 @@ export default function OlchovBirligiBolimi() {
                   <Ruler size={20} />
                 </span>
                 {direktor && (
-                  <div className="flex gap-1.5 opacity-0 transition group-hover:opacity-100">
+                  <div className="hover-amal flex gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                     <button
                       type="button"
                       onClick={(event) => {

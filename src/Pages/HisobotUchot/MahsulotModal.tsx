@@ -175,7 +175,7 @@ export default function MahsulotModal({
     <AppModal>
       <form
         onSubmit={(e) => { e.preventDefault(); void saqlash(); }}
-        className="scrollbar-hidden max-h-[94vh] w-full max-w-[min(1200px,calc(100vw-32px))] overflow-y-auto rounded-[30px] bg-white shadow-2xl"
+        className="scrollbar-hidden max-h-[94dvh] w-full max-w-[min(1200px,calc(100vw-32px))] overflow-y-auto rounded-[30px] bg-white shadow-2xl"
       >
         <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-5">
           <div className="flex min-w-0 items-center gap-4">

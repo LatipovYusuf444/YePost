@@ -513,7 +513,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
 
   return (
     <AppModal onClose={onClose} className={tur === "inventarizatsiya" ? "bg-slate-950/75 backdrop-blur-[5px]" : ""}>
-      <div className={tur === "inventarizatsiya" ? "stock-take-details scrollbar-hidden max-h-[94dvh] w-full max-w-[1360px] overflow-y-auto rounded-[26px] border border-slate-200 bg-[#F3F6FB] shadow-[0_30px_100px_rgba(2,6,23,.4)]" : "scrollbar-hidden max-h-[95vh] w-full max-w-[1500px] overflow-y-auto rounded-[36px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_100px_rgba(15,23,42,.28)]"}>
+      <div className={tur === "inventarizatsiya" ? "stock-take-details scrollbar-hidden max-h-[94dvh] w-full max-w-[1360px] overflow-y-auto rounded-[26px] border border-slate-200 bg-[#F3F6FB] shadow-[0_30px_100px_rgba(2,6,23,.4)]" : "scrollbar-hidden max-h-[95dvh] w-full max-w-[1500px] overflow-y-auto rounded-[36px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_100px_rgba(15,23,42,.28)]"}>
         <header className={tur === "inventarizatsiya" ? "sticky top-0 z-10 flex flex-col items-start justify-between gap-4 border-b border-slate-200/80 bg-white/95 px-6 py-5 backdrop-blur-xl lg:flex-row lg:items-center" : "sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-7 py-5 backdrop-blur-xl"}>
           <div className="flex min-w-0 items-start gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">

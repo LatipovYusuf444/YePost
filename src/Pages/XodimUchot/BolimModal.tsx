@@ -61,7 +61,7 @@ export default function BolimModal({
     <AppModal className="items-center justify-center bg-[rgba(15,23,42,.45)] p-4 backdrop-blur-[3px]">
       <form
         onSubmit={saqlash}
-        className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80"
+        className="flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80"
       >
         <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-7 py-5 backdrop-blur-xl">
           <div className="flex items-center gap-3">

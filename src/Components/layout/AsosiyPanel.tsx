@@ -45,7 +45,7 @@ export default function AsosiyLayout() {
       >
         <div className="mx-auto w-full max-w-[1880px]">
           <YuqoriPanel sidebarAcik={sidebarAcik} onSidebarToggle={sidebarniAlmashtirish} />
-          <div className="app-main-surface @container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[20px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl sm:rounded-[28px] sm:p-5 lg:rounded-[34px] lg:p-7">
+          <div className="app-main-surface @container min-h-[calc(100dvh-48px)] min-w-0 max-w-full rounded-[20px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl sm:rounded-[28px] sm:p-5 lg:rounded-[34px] lg:p-7">
             <motion.div
               key={location.pathname}
               initial="initial"

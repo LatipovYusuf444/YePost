@@ -13,7 +13,6 @@ import {
   LoaderCircle,
   FlaskConical,
   Package,
-  PackageX,
   PieChart as PieChartIcon,
   Receipt,
   RefreshCw,
@@ -1712,49 +1711,6 @@ export default function Monitoring() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MiniStat
-              icon={Package}
-              label={t("kpi.stockValueCost")}
-              value={pul(demoMode ? jamiSumma(demoOmborQoldiqlari) : omborJami.qiymat)}
-              yuklanmoqda={!demoMode && omborYuklanmoqda}
-              xato={!demoMode && !!omborXato}
-              rang="blue"
-              belgi={{ matn: t("mini.warehousesBadge", { count: demoMode ? DEMO_OMBORLAR.length : omborJami.omborlarSoni }) }}
-              ornament={<MiniBars values={(demoMode ? demoOmborQoldiqlari : omborlarBoyicha).slice(0, 6).map((item) => item.summa)} className="bg-blue-400" />}
-            />
-            <MiniStat
-              icon={Warehouse}
-              label={t("mini.warehouses")}
-              value={String(demoMode ? DEMO_OMBORLAR.length : omborJami.omborlarSoni)}
-              yuklanmoqda={!demoMode && omborYuklanmoqda}
-              xato={!demoMode && !!omborXato}
-              rang="violet"
-              belgi={{ matn: t("mini.badgeTotal") }}
-              ornament={<MiniBars values={Array.from({ length: Math.min(8, demoMode ? DEMO_OMBORLAR.length : omborJami.omborlarSoni) }, () => 1)} className="bg-violet-400" />}
-            />
-            <MiniStat
-              icon={AlertTriangle}
-              label={t("mini.lowStock")}
-              value={String(demoMode ? 7 : omborJami.kamQolgan)}
-              yuklanmoqda={!demoMode && omborYuklanmoqda}
-              xato={!demoMode && !!omborXato}
-              rang="amber"
-              belgi={{ matn: t("mini.countBadge", { count: demoMode ? 7 : omborJami.kamQolgan }), yaxshi: (demoMode ? 7 : omborJami.kamQolgan) === 0 }}
-              ornament={<MiniMeter faol={demoMode ? 7 : omborJami.kamQolgan} jami={demoMode ? 40 : omborJami.qatorlarSoni} className="bg-amber-400" />}
-            />
-            <MiniStat
-              icon={PackageX}
-              label="Manfiy qoldiqli mahsulotlar"
-              value={String(demoMode ? 0 : omborJami.manfiyQoldiq)}
-              yuklanmoqda={!demoMode && omborYuklanmoqda}
-              xato={!demoMode && !!omborXato}
-              rang="rose"
-              belgi={{ matn: t("mini.countBadge", { count: demoMode ? 0 : omborJami.manfiyQoldiq }), yaxshi: (demoMode ? 0 : omborJami.manfiyQoldiq) === 0 }}
-              ornament={<MiniMeter faol={demoMode ? 0 : omborJami.manfiyQoldiq} jami={demoMode ? 40 : omborJami.qatorlarSoni} className="bg-rose-400" />}
-            />
-          </div>
-
           <TaqsimotCard
             title={t("charts.warehouseStock.title")}
             subtitle={t("charts.warehouseStock.subtitle")}
@@ -2254,132 +2210,6 @@ function KpiCard({
         </div>
       )}
     </article>
-  );
-}
-
-type MiniRang = "blue" | "violet" | "amber" | "rose";
-
-// Har bir kartaning o'z urg'u rangi bor (ma'lumot turiga mos); hammasi bitta dizayn tizimida.
-const MINI_USLUBLAR: Record<MiniRang, { karta: string; plitka: string; belgi: string }> = {
-  blue: {
-    karta: "border-blue-200/70 from-blue-50 via-white to-sky-50/70 hover:shadow-blue-200/70",
-    plitka: "from-blue-100 to-sky-50 text-blue-600 ring-blue-200/70",
-    belgi: "bg-blue-100/80 text-blue-700",
-  },
-  violet: {
-    karta: "border-violet-200/70 from-violet-50 via-white to-fuchsia-50/60 hover:shadow-violet-200/70",
-    plitka: "from-violet-100 to-fuchsia-50 text-violet-600 ring-violet-200/70",
-    belgi: "bg-violet-100/80 text-violet-700",
-  },
-  amber: {
-    karta: "border-amber-200/70 from-amber-50 via-white to-yellow-50/70 hover:shadow-amber-200/70",
-    plitka: "from-amber-100 to-yellow-50 text-amber-600 ring-amber-200/70",
-    belgi: "bg-amber-100/80 text-amber-700",
-  },
-  rose: {
-    karta: "border-rose-200/70 from-rose-50 via-white to-pink-50/70 hover:shadow-rose-200/70",
-    plitka: "from-rose-100 to-pink-50 text-rose-600 ring-rose-200/70",
-    belgi: "bg-rose-100/80 text-rose-700",
-  },
-};
-
-// Faqat bezak: ustunlar soni/balandligi kartadagi real ma'lumotdan olinadi (yangi ma'lumot o'ylab topilmaydi).
-function MiniBars({ values, className }: { values: number[]; className: string }) {
-  if (values.length === 0) return null;
-  const eng = Math.max(...values, 1);
-  return (
-    <div aria-hidden className="flex h-9 items-end gap-1">
-      {values.map((qiymat, index) => (
-        <span
-          key={index}
-          className={`w-2.5 rounded-t-md opacity-80 ${className}`}
-          style={{ height: `${Math.max(24, (qiymat / eng) * 100)}%` }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function MiniMeter({ faol, jami, className }: { faol: number; jami: number; className: string }) {
-  const SEGMENTLAR = 10;
-  const tolgan =
-    jami > 0 ? Math.min(SEGMENTLAR, Math.max(faol > 0 ? 1 : 0, Math.round((faol / jami) * SEGMENTLAR))) : 0;
-  return (
-    <div aria-hidden className="flex h-9 items-end gap-1">
-      {Array.from({ length: SEGMENTLAR }, (_, index) => (
-        <span
-          key={index}
-          className={`w-1.5 rounded-full ${index < tolgan ? className : "bg-slate-200/80"}`}
-          style={{ height: `${38 + index * 6}%` }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function MiniStat({
-  icon: Icon,
-  label,
-  value,
-  yuklanmoqda,
-  rang = "blue",
-  belgi,
-  ornament,
-  xato = false,
-}: {
-  icon: typeof Package;
-  label: string;
-  value: string;
-  yuklanmoqda: boolean;
-  rang?: MiniRang;
-  belgi?: { matn: string; yaxshi?: boolean };
-  ornament?: ReactNode;
-  xato?: boolean;
-}) {
-  const { t } = useTranslation("monitoring");
-  const uslub = MINI_USLUBLAR[rang];
-  const { raqam, birlik } = summaniAjratish(value);
-  return (
-    <div
-      className={`monitoring-enter @container group min-w-0 rounded-[22px] border bg-linear-to-br p-4 shadow-[0_8px_24px_-16px_rgba(15,23,42,.22)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-5 ${uslub.karta}`}
-    >
-      <div className="flex items-center gap-3.5">
-        <span
-          aria-hidden
-          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br shadow-sm ring-1 ${uslub.plitka}`}
-        >
-          <Icon size={26} strokeWidth={1.9} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="min-w-0 text-[13px] font-semibold leading-snug text-slate-600">{label}</p>
-            {belgi && !yuklanmoqda && !xato && (
-              <span
-                className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ${belgi.yaxshi ? "bg-emerald-100/80 text-emerald-700" : uslub.belgi}`}
-              >
-                {belgi.matn}
-              </span>
-            )}
-          </div>
-          <div className="mt-1.5 flex items-end justify-between gap-3">
-            {yuklanmoqda ? (
-              <MarkaziyYuklanish
-                text={t("dynamics.loading")}
-                className="min-h-9 flex-row justify-start gap-2 text-xs"
-              />
-            ) : (
-              <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
-                <span className="whitespace-nowrap text-[26px] font-extrabold leading-none tracking-tight tabular-nums text-slate-950">
-                  {raqam}
-                </span>
-                {birlik && <span className="text-sm font-bold text-slate-500">{birlik}</span>}
-              </p>
-            )}
-            {!yuklanmoqda && !xato && ornament && <div className="hidden shrink-0 @[300px]:block">{ornament}</div>}
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 

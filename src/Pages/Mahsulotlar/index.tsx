@@ -758,7 +758,7 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
   }
 
   const preview = bosqich === "preview";
-  return <AppModal><div className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+  return <AppModal><div className="scrollbar-hidden max-h-[94dvh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
     <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
       <div><p className="text-sm font-bold uppercase tracking-[0.16em] text-blue-600">{t("excelImport.eyebrow")}</p><h2 className="mt-1 text-2xl font-black text-slate-900">{t("excelImport.title")}</h2><p className="mt-1 text-sm text-slate-500">{t("excelImport.subtitle")}</p></div>
       <button aria-label={t("common:actions.close")} type="button" disabled={band} onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 disabled:opacity-50 hover:bg-slate-200"><X size={18}/></button>
@@ -1527,7 +1527,7 @@ export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKori
     updateVariantDraft(key,{imageUrl:URL.createObjectURL(file)});
   }
 
-  return <AppModal className="product-modal-overlay" onClose={onClose} ozgarishBor={ozgarishBor}><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+  return <AppModal className="product-modal-overlay" onClose={onClose} ozgarishBor={ozgarishBor}><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94dvh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-white/95 px-6 py-5 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-4">
         <h2 className="truncate text-2xl font-black">{editing?(tahrirFaol?t("productModal.editTitle"):name):t("productModal.createTitle")}</h2>
@@ -1981,7 +1981,7 @@ function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifik
 }
 
 const modalSizeClass={normal:"max-w-xl",medium:"max-w-3xl",wide:"max-w-5xl"} as const;
-function Modal({title,onClose,children,size="normal"}:{title:string;onClose:()=>void;children:React.ReactNode;size?:"normal"|"medium"|"wide"}){const { t } = useTranslation("common");return <AppModal><div className={`scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${modalSizeClass[size]}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button aria-label={t("common:actions.close")} onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
+function Modal({title,onClose,children,size="normal"}:{title:string;onClose:()=>void;children:React.ReactNode;size?:"normal"|"medium"|"wide"}){const { t } = useTranslation("common");return <AppModal><div className={`scrollbar-hidden max-h-[94dvh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${modalSizeClass[size]}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button aria-label={t("common:actions.close")} onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
 function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){const { t } = useTranslation("mahsulotlar");return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}{t("actions.save")}</button></div>}
 // matn — maydoni ekranda topilmagan forma xatosi (useMaydonXatolari.tepadagi); bo'lmasa store xatosi.
 function ErrorBox({matn}:{matn?:string}){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{matn||x}</div>}

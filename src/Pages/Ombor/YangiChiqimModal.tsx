@@ -3,7 +3,6 @@ import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Barcode,
-  ChevronDown,
   Clock3,
   Image,
   LoaderCircle,
@@ -509,7 +508,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function SelectField({ label, value, onChange, placeholder, options, xato }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; options: Array<{ id: string; name: string }>; xato?: string }) {
-  return <XatoliMaydon xato={xato}><label className="space-y-2 text-sm font-bold text-slate-500"><span>{label}</span><div className="relative"><AppSelect value={value} onChange={(event) => onChange(event.target.value)} className={`${input} appearance-none pr-10`}><option value="">{placeholder}</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</AppSelect><ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" /></div></label></XatoliMaydon>;
+  return <XatoliMaydon xato={xato}><label className="space-y-2 text-sm font-bold text-slate-500"><span>{label}</span><div className="relative"><AppSelect value={value} onChange={(event) => onChange(event.target.value)} className={input}><option value="">{placeholder}</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</AppSelect></div></label></XatoliMaydon>;
 }
 
 function ActionButton({ children, busy, outline, onClick }: { children: React.ReactNode; busy: boolean; outline?: boolean; onClick: () => void }) {

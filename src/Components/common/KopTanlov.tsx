@@ -31,7 +31,7 @@ export function TanlashKatagi({ holat, onChange, ariaLabel, disabled, className 
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
       onChange={(event) => onChange(event.target.checked)}
-      className={`h-[18px] w-[18px] shrink-0 cursor-pointer rounded accent-orange-500 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      className={`h-[18px] w-[18px] shrink-0 cursor-pointer rounded accent-orange-500 [@media(pointer:coarse)]:h-6 [@media(pointer:coarse)]:w-6 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
     />
   );
 }

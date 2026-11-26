@@ -93,7 +93,7 @@ export default function SupportChatOynasi({ compact = false, onClose }: Props) {
   return (
     <div
       className={`flex min-h-0 flex-col overflow-hidden bg-white ${
-        compact ? "h-full" : "h-[calc(100vh-140px)] min-h-[560px] rounded-[28px] border border-blue-100 shadow-[0_24px_70px_rgba(37,99,235,.12)]"
+        compact ? "h-full" : "h-[calc(100dvh-140px)] min-h-[560px] rounded-[28px] border border-blue-100 shadow-[0_24px_70px_rgba(37,99,235,.12)]"
       }`}
     >
       <header

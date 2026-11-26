@@ -30,29 +30,30 @@ type SotuvStatistikasiProps = {
 type Ohang = "kok" | "yashil" | "binafsha" | "qizil";
 type Rejim = "barchasi" | "bugun" | "davr";
 
-const OHANG_STILI: Record<Ohang, { ikonka: string; chegara: string; porlash: string; matn: string }> = {
+// Kartalar bir xil uslubda (valyutadan qat'i nazar): sutli yuza, aniq chegara, tepada ohang chizig'i, yumshoq rangli ikonka.
+const OHANG_STILI: Record<Ohang, { ikonka: string; chiziq: string; porlash: string; matn: string }> = {
   kok: {
-    ikonka: "from-blue-500 to-blue-700 shadow-blue-200",
-    chegara: "border-blue-100 to-blue-50/70",
-    porlash: "bg-blue-200/40",
+    ikonka: "bg-blue-50 text-blue-600 ring-blue-100",
+    chiziq: "from-blue-500 via-blue-400 to-sky-300",
+    porlash: "bg-blue-200/30",
     matn: "text-blue-700",
   },
   yashil: {
-    ikonka: "from-emerald-400 to-emerald-600 shadow-emerald-200",
-    chegara: "border-emerald-100 to-emerald-50/70",
-    porlash: "bg-emerald-200/40",
+    ikonka: "bg-emerald-50 text-emerald-600 ring-emerald-100",
+    chiziq: "from-emerald-500 via-emerald-400 to-teal-300",
+    porlash: "bg-emerald-200/30",
     matn: "text-emerald-700",
   },
   binafsha: {
-    ikonka: "from-violet-500 to-violet-700 shadow-violet-200",
-    chegara: "border-violet-100 to-violet-50/70",
-    porlash: "bg-violet-200/40",
+    ikonka: "bg-violet-50 text-violet-600 ring-violet-100",
+    chiziq: "from-violet-500 via-violet-400 to-fuchsia-300",
+    porlash: "bg-violet-200/30",
     matn: "text-violet-700",
   },
   qizil: {
-    ikonka: "from-rose-400 to-rose-600 shadow-rose-200",
-    chegara: "border-rose-100 to-rose-50/70",
-    porlash: "bg-rose-200/40",
+    ikonka: "bg-rose-50 text-rose-600 ring-rose-100",
+    chiziq: "from-rose-500 via-rose-400 to-orange-300",
+    porlash: "bg-rose-200/30",
     matn: "text-rose-700",
   },
 };
@@ -202,7 +203,6 @@ function StatKarta({
   pastki,
   onClick,
   sarlavhaTitle,
-  dollar = false,
   qiymatToliqKenglik = false,
 }: {
   ikonka: ReactNode;
@@ -212,27 +212,25 @@ function StatKarta({
   pastki: ReactNode;
   onClick?: () => void;
   sarlavhaTitle?: string;
-  dollar?: boolean;
   qiymatToliqKenglik?: boolean;
 }) {
   const stil = OHANG_STILI[ohang];
-  const sinf = `group relative isolate flex min-h-[148px] flex-col justify-between overflow-hidden rounded-[22px] border bg-gradient-to-br p-5 text-left transition duration-300 hover:-translate-y-1 ${dollar ? "border-[#A8C2EF] from-[#ECF3FF] to-[#D9E6FC] shadow-[0_4px_16px_rgba(37,99,235,.07)] hover:border-blue-400 hover:shadow-[0_10px_24px_rgba(37,99,235,.12)]" : `from-white shadow-[0_5px_18px_rgba(15,23,42,.05)] hover:shadow-[0_16px_34px_rgba(15,23,42,.10)] ${stil.chegara}`}`;
+  const sinf = "group relative isolate flex h-full min-h-[164px] flex-col overflow-hidden rounded-[20px] border border-gray-200 bg-white p-5 text-left shadow-[0_1px_2px_rgba(15,23,42,.04),0_8px_22px_rgba(15,23,42,.05)] transition duration-300 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_14px_30px_rgba(15,23,42,.09)]";
   const ichki = (
     <>
-      <span className={`pointer-events-none absolute -right-8 -top-10 -z-10 h-32 w-32 rounded-full blur-2xl transition duration-500 group-hover:scale-150 ${dollar ? "bg-blue-300/20" : stil.porlash}`} />
+      <span aria-hidden className={`pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${stil.chiziq}`} />
+      <span aria-hidden className={`pointer-events-none absolute -right-10 -top-12 -z-10 h-36 w-36 rounded-full blur-3xl transition duration-500 group-hover:scale-125 ${stil.porlash}`} />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`${qiymatToliqKenglik ? "leading-snug" : "truncate"} text-sm font-bold ${dollar ? "text-blue-950/80" : "text-slate-500"}`}>{sarlavha}</p>
-          {!qiymatToliqKenglik && <div className="mt-2">{qiymat}</div>}
+          <p className={`${qiymatToliqKenglik ? "leading-snug" : "truncate"} text-[13px] font-semibold text-slate-500`}>{sarlavha}</p>
+          {!qiymatToliqKenglik && <div className="mt-2.5">{qiymat}</div>}
         </div>
-        <span
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition duration-300 group-hover:-rotate-6 group-hover:scale-105 ${dollar ? "border border-blue-300/60 bg-blue-200/70 text-blue-700" : `bg-gradient-to-br text-white shadow-md ${stil.ikonka}`}`}
-        >
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 transition duration-300 group-hover:-rotate-6 group-hover:scale-105 ${stil.ikonka}`}>
           {ikonka}
         </span>
       </div>
-      {qiymatToliqKenglik && <div className="mt-2">{qiymat}</div>}
-      <div className="mt-4">{pastki}</div>
+      {qiymatToliqKenglik && <div className="mt-3">{qiymat}</div>}
+      <div className="mt-auto border-t border-dashed border-gray-200 pt-3">{pastki}</div>
     </>
   );
 
@@ -261,8 +259,8 @@ function Qiymat({ raqam, birlik, aniqlik = 0 }: { raqam: number | null; birlik?:
   const dollar = birlik === "$";
   return (
     <p className="flex flex-wrap items-baseline gap-x-1.5 leading-none">
-      {dollar && <span className="text-2xl font-semibold text-blue-600">$</span>}
-      <span className="text-3xl font-black tracking-tight text-slate-900 tabular-nums">{raqam === null ? "—" : raqam.toLocaleString("uz-UZ", { minimumFractionDigits: dollar ? 2 : 0, maximumFractionDigits: aniqlik })}</span>
+      {dollar && <span className="text-xl font-bold text-slate-400">$</span>}
+      <span className="text-[28px] font-black tracking-tight text-slate-900 tabular-nums">{raqam === null ? "—" : raqam.toLocaleString("uz-UZ", { minimumFractionDigits: dollar ? 2 : 0, maximumFractionDigits: aniqlik })}</span>
       {birlik && !dollar && <span className="text-sm font-bold text-slate-400">{birlik}</span>}
     </p>
   );
@@ -295,22 +293,20 @@ function ValyutaKarta({ natija, valyuta, tur, yuklanmoqda, qarzTugmasiBor }: {
   const pul = (raqam: number, toliq: boolean) => <Qiymat raqam={yuklanmoqda || !toliq ? null : raqam} birlik={birlik} aniqlik={aniqlik} />;
   if (tur === "savdo") return <StatKarta
       qiymatToliqKenglik
-      dollar={valyuta === "USD"}
       ikonka={<TrendingUp size={22} />} ohang="yashil"
       sarlavha={t("savdoSahifasi.statistika.valyutaSavdo", { valyuta })}
       qiymat={pul(qiymat, natija.savdoToliq)}
-      pastki={<div className="space-y-1.5 text-xs text-slate-500">
+      pastki={<div className="space-y-1 pr-14 text-xs leading-5 text-slate-500">
         <p>{hint(natija.savdoToliq) ?? t("savdoSahifasi.statistika.sotuvSanasi")}</p>
         {!yuklanmoqda && natija.savdoToliq && <p className="font-semibold">{t("savdoSahifasi.statistika.ortachaChek", { summa: `${(natija.savdoSoni ? natija.savdo / natija.savdoSoni : 0).toLocaleString("uz-UZ", { maximumFractionDigits: aniqlik })} ${birlik}` })}</p>}
       </div>}
     />;
   if (tur === "tolov") return <StatKarta
       qiymatToliqKenglik
-      dollar={valyuta === "USD"}
       ikonka={<Wallet size={22} />} ohang="binafsha"
       sarlavha={t("savdoSahifasi.statistika.valyutaTolov", { valyuta })}
       qiymat={pul(qiymat, natija.tolovToliq)}
-      pastki={<div className="space-y-1.5 text-xs text-slate-500">
+      pastki={<div className="space-y-1 pr-14 text-xs leading-5 text-slate-500">
         <p>{hint(natija.tolovToliq) ?? t("savdoSahifasi.statistika.tolovSanasi")}</p>
         {!yuklanmoqda && natija.tolovToliq && <p>{t("savdoSahifasi.statistika.naqdKartaBank")}</p>}
         {!yuklanmoqda && natija.tolovToliq && natija.qaytim > 0 && <p className="font-semibold">{t("savdoSahifasi.statistika.qaytim", { summa: `${raqamMatni(natija.qaytim)} ${birlik}` })}</p>}
@@ -318,12 +314,11 @@ function ValyutaKarta({ natija, valyuta, tur, yuklanmoqda, qarzTugmasiBor }: {
     />;
   return <StatKarta
       qiymatToliqKenglik
-      dollar={valyuta === "USD"}
       ikonka={natija.qarz > 0 ? <CircleAlert size={22} /> : <CircleCheck size={22} />}
       ohang={natija.qarz > 0 ? "qizil" : "yashil"}
       sarlavha={t("savdoSahifasi.statistika.valyutaQarz", { valyuta })}
       qiymat={pul(qiymat, natija.qarzToliq)}
-      pastki={<div className={qarzTugmasiBor ? "pb-9" : undefined}>{hint(natija.qarzToliq) ? <p className="text-xs text-slate-500">{hint(natija.qarzToliq)}</p> : <Belgi ohang={natija.qarz > 0 ? "sariq" : "yashil"}>{natija.qarz > 0 ? t("savdoSahifasi.statistika.qarzdorSotuvlar", { count: natija.qarzdorSotuvlar }) : t("savdoSahifasi.statistika.qarzYoq")}</Belgi>}</div>}
+      pastki={<div className={`pr-14 ${qarzTugmasiBor ? "pb-7" : ""}`}>{hint(natija.qarzToliq) ? <p className="text-xs text-slate-500">{hint(natija.qarzToliq)}</p> : <Belgi ohang={natija.qarz > 0 ? "sariq" : "yashil"}>{natija.qarz > 0 ? t("savdoSahifasi.statistika.qarzdorSotuvlar", { count: natija.qarzdorSotuvlar }) : t("savdoSahifasi.statistika.qarzYoq")}</Belgi>}</div>}
     />;
 }
 
@@ -350,7 +345,7 @@ function AylanadiganValyutaKarta({ tur, natijalar, yuklanmoqda, onQarzniKorsatis
   const qarzTugmasiBor = tur === "qarz" && Boolean(onQarzniKorsatish);
   const qarzniOchishMumkin = qarzTugmasiBor && !yuklanmoqda && natijalar[valyuta].qarzToliq && natijalar[valyuta].qarz > 0;
   const qarzTugmasi = qarzniOchishMumkin ? <button type="button" onClick={onQarzniKorsatish}
-      className="absolute bottom-5 left-5 z-20 max-w-[calc(100%-88px)] cursor-pointer text-left text-xs font-bold text-blue-700 underline decoration-blue-300 underline-offset-4 hover:text-blue-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+      className="absolute bottom-4 left-5 z-20 max-w-[calc(100%-96px)] cursor-pointer text-left text-xs font-bold text-blue-700 underline decoration-blue-300 underline-offset-4 hover:text-blue-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
       {t("savdoSahifasi.statistika.qarzdorlarniKorsatish")}
     </button> : null;
 
@@ -372,8 +367,8 @@ function AylanadiganValyutaKarta({ tur, natijalar, yuklanmoqda, onQarzniKorsatis
     <button type="button" onClick={() => setOrqa((old) => !old)}
       aria-label={`${t(`savdoSahifasi.statistika.${sarlavhaKaliti}`, { valyuta })}. ${aylantirishMatni}`}
       aria-describedby={`${id}-${valyuta}`} title={aylantirishMatni}
-      className="absolute inset-0 z-10 cursor-pointer rounded-[22px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:ring-offset-2" />
-    <span aria-hidden className="pointer-events-none absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full border border-blue-200/70 bg-white/90 px-2 py-1 text-[10px] font-bold text-blue-600">
+      className="absolute inset-0 z-10 cursor-pointer rounded-[20px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:ring-offset-2" />
+    <span aria-hidden className="pointer-events-none absolute bottom-3.5 right-3.5 z-20 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600 ring-1 ring-gray-200">
       <RotateCw size={12} />{keyingiValyuta === "USD" ? "$" : t("savdoSahifasi.statistika.som")}
     </span>
     {qarzTugmasi}
@@ -428,7 +423,7 @@ export default function SotuvStatistikasi({
     return (
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-busy>
         {[0, 1, 2, 3].map((index) => (
-          <div key={index} className="min-h-[148px] animate-pulse rounded-[22px] border border-slate-100 bg-white p-5">
+          <div key={index} className="min-h-[164px] animate-pulse rounded-[20px] border border-gray-200 bg-white p-5">
             <div className="h-3 w-24 rounded-full bg-slate-100" />
             <div className="mt-4 h-8 w-32 rounded-lg bg-slate-100" />
             <div className="mt-8 h-2 w-full rounded-full bg-slate-100" />
@@ -442,17 +437,18 @@ export default function SotuvStatistikasi({
   const bugunTanlangan = natija.rejim === "bugun";
 
   return (
-    <section className="relative rounded-[28px] border border-[#9DBBEF] bg-gradient-to-br from-[#D4E2FB] via-[#DFE9FC] to-[#C9DAF7] p-4 shadow-[0_6px_24px_rgba(37,99,235,.07)] sm:p-5" aria-label={t("savdoSahifasi.statistika.aria")}>
+    <section className="relative rounded-[28px] border border-gray-200 bg-slate-50 p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] sm:p-5" aria-label={t("savdoSahifasi.statistika.aria")}>
       <header className="mb-4 flex flex-wrap items-center justify-between gap-4 px-1">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-600 shadow-sm"><CircleDollarSign size={25} aria-hidden /></span>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100"><CircleDollarSign size={24} aria-hidden /></span>
           <div className="min-w-0">
             <h2 className="text-base font-bold tracking-tight text-slate-900">{t("savdoSahifasi.statistika.hisobKitob")}</h2>
             {!kartalarAylanmaydi && <p className="mt-0.5 text-xs text-slate-500">{t("savdoSahifasi.statistika.kartaAylanishIzoh")}</p>}
           </div>
         </div>
       </header>
-      <div className="grid gap-4 xl:grid-cols-4">
+      {/* 4 ustun faqat sahifa yuzasi (@container) yetarli keng bo'lsa; tor joyda (yon panel ochiq 1280px) pul kartalari alohida qatorda. */}
+      <div className="grid gap-4 @min-[1100px]:grid-cols-4">
       <StatKarta
         ikonka={<ShoppingBag size={22} />}
         ohang="kok"
@@ -474,7 +470,7 @@ export default function SotuvStatistikasi({
         }
       />
 
-        <div className="grid gap-4 md:grid-cols-3 xl:col-span-3">
+        <div className="grid gap-4 md:grid-cols-3 @min-[1100px]:col-span-3">
           {(["savdo", "tolov", "qarz"] as const).map((tur) => <AylanadiganValyutaKarta key={tur} tur={tur}
             natijalar={valyutaNatijalari} yagona={kartaYagonasi(tur)} asosiy={yagona} yuklanmoqda={valyutaStat.yuklanmoqda} onQarzniKorsatish={onQarzniKorsatish} />)}
         </div>

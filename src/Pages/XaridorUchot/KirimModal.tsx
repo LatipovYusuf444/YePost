@@ -25,7 +25,7 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-4 pr-4 md:pl-[88px] backdrop-blur-[3px]">
-      <div className="relative h-[calc(100vh-32px)] w-full">
+      <div className="relative h-[calc(100dvh-32px)] w-full">
         <TezkorPanel
           havolaId={kirim.id}
           faylNomi={`kirim-${kirim.raqam}`}

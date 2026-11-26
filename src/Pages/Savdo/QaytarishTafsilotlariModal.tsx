@@ -480,7 +480,7 @@ export default function QaytarishTafsilotlariModal({
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-3 backdrop-blur-[3px] lg:py-4 lg:pl-[88px] lg:pr-4">
-      <section className="scrollbar-hidden h-[calc(100vh-24px)] w-full overflow-y-auto rounded-[34px] border border-orange-100 bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80 lg:h-[calc(100vh-32px)] lg:rounded-l-[46px] lg:rounded-r-[36px]">
+      <section className="scrollbar-hidden h-[calc(100dvh-24px)] w-full overflow-y-auto rounded-[34px] border border-orange-100 bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80 lg:h-[calc(100dvh-32px)] lg:rounded-l-[46px] lg:rounded-r-[36px]">
         <header className="sticky top-0 z-20 flex items-start justify-between gap-3 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-4 py-4 backdrop-blur-xl sm:gap-4 sm:px-6 sm:py-5 lg:px-10 lg:py-6">
           <div className="flex min-w-0 items-start gap-3">
             <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200 sm:flex">

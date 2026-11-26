@@ -238,13 +238,6 @@
       }
     }
   },
-  "mini": {
-    "warehouses": "Omborlar soni",
-    "lowStock": "Kam qolgan mahsulotlar",
-    "warehousesBadge": "{{count}} ta ombor",
-    "badgeTotal": "Jami",
-    "countBadge": "{{count}} ta"
-  },
   "charts": {
     "salesTrend": {
       "title": "Savdo dinamikasi",

@@ -155,8 +155,8 @@ export default function Ombor() {
       }
     }
 
-    document.addEventListener("mousedown", tashqarigaBosish);
-    return () => document.removeEventListener("mousedown", tashqarigaBosish);
+    document.addEventListener("pointerdown", tashqarigaBosish);
+    return () => document.removeEventListener("pointerdown", tashqarigaBosish);
   }, [korinishMenuOchiq]);
 
   function sananiFormatlash(sana?: string) {
@@ -719,7 +719,7 @@ export default function Ombor() {
         <AppModal>
           <form
             onSubmit={saqlash}
-            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-2xl"
+            className="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-2xl"
           >
             <header className="flex shrink-0 items-center justify-between border-b border-orange-100 px-7 py-6 sm:px-9">
               <div className="flex items-center gap-4">

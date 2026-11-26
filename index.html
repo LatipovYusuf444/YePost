@@ -16,6 +16,15 @@
     } catch {
       document.documentElement.dataset.theme = "default";
     }
+    // iPhone/iPad (iPadOS o'zini Mac deb ko'rsatadi): 16px dan kichik maydonga bosilganda Safari sahifani kattalashtirmasin.
+    // iOS foydalanuvchining barmoq bilan kattalashtirishini baribir saqlaydi; Android'da qo'shilmaydi (u yerda kattalashtirishni o'chirardi).
+    try {
+      const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const meta = document.querySelector('meta[name="viewport"]');
+      if (ios && meta) meta.setAttribute("content", meta.getAttribute("content") + ", maximum-scale=1");
+    } catch {
+      // Viewport o'zgarmasa ham ilova ishlaydi.
+    }
   </script>
 </head>
 

@@ -249,7 +249,7 @@ export default function Demo3DSex() {
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 lg:flex-row">
         {/* 3D sahna */}
-        <section className="relative h-[62vh] min-h-[420px] overflow-hidden rounded-3xl border border-slate-200 bg-[#e9eef5] shadow-sm lg:h-auto lg:min-h-0 lg:flex-1" aria-label={t("title")}>
+        <section className="relative h-[62dvh] min-h-[420px] overflow-hidden rounded-3xl border border-slate-200 bg-[#e9eef5] shadow-sm lg:h-auto lg:min-h-0 lg:flex-1" aria-label={t("title")}>
           {webgl ? (
             <SahnaXatosi zaxira={<p className="p-6 text-sm font-semibold text-slate-600">{t("noWebgl")}</p>}>
               <Suspense fallback={<div role="status" className="flex h-full items-center justify-center gap-2 text-sm font-bold text-slate-500"><LoaderCircle size={20} className="animate-spin text-blue-600" />{t("loading")}</div>}>

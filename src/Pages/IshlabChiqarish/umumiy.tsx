@@ -29,7 +29,7 @@ export const tugmaXavfli =
 
 export function Sahifa({ sarlavha, izoh, amal, children }: { sarlavha: string; izoh?: string; amal?: ReactNode; children: ReactNode }) {
   return (
-    <section className="min-h-[calc(100vh-245px)] space-y-6">
+    <section className="min-h-[calc(100dvh-245px)] space-y-6">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-3xl font-black tracking-tight text-slate-950">{sarlavha}</h1>

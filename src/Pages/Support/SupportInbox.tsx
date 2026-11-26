@@ -387,7 +387,7 @@ export default function SupportInbox() {
   const tepaXatolik = xatolik || fxYozish.tepadagi;
 
   return (
-    <div className="grid h-[calc(100vh-140px)] min-h-[560px] gap-4 xl:grid-cols-[340px_minmax(0,1fr)_320px]">
+    <div className="grid h-[calc(100dvh-140px)] min-h-[560px] gap-4 xl:grid-cols-[340px_minmax(0,1fr)_320px]">
       {/* ================= Chap: murojaatlar ================= */}
       <aside className={`min-h-0 flex-col overflow-hidden rounded-[26px] border border-slate-100 bg-white shadow-[0_18px_50px_rgba(37,99,235,.08)] ${mobilChat ? "hidden xl:flex" : "flex"}`}>
         <div className="space-y-3 p-4 pb-3">

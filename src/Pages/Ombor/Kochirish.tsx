@@ -265,11 +265,11 @@ export default function Kochirish() {
       }
     }
     sozlamalarJoylashuviniYangilash();
-    document.addEventListener("mousedown", tashqarigaBosish);
+    document.addEventListener("pointerdown", tashqarigaBosish);
     window.addEventListener("resize", sozlamalarJoylashuviniYangilash);
     window.addEventListener("scroll", sozlamalarJoylashuviniYangilash, true);
     return () => {
-      document.removeEventListener("mousedown", tashqarigaBosish);
+      document.removeEventListener("pointerdown", tashqarigaBosish);
       window.removeEventListener("resize", sozlamalarJoylashuviniYangilash);
       window.removeEventListener("scroll", sozlamalarJoylashuviniYangilash, true);
     };
@@ -394,12 +394,14 @@ export default function Kochirish() {
     function tugatish() {
       document.body.style.cursor = oldingiCursor;
       document.body.style.userSelect = oldingiTanlash;
-      window.removeEventListener("mousemove", surish);
-      window.removeEventListener("mouseup", tugatish);
+      window.removeEventListener("pointermove", surish);
+      window.removeEventListener("pointerup", tugatish);
+      window.removeEventListener("pointercancel", tugatish);
     }
 
-    window.addEventListener("mousemove", surish);
-    window.addEventListener("mouseup", tugatish);
+    window.addEventListener("pointermove", surish);
+    window.addEventListener("pointerup", tugatish);
+    window.addEventListener("pointercancel", tugatish);
   }
 
   function scrollTrekkaBosish(event: ReactMouseEvent<HTMLDivElement>) {
@@ -450,7 +452,7 @@ export default function Kochirish() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-245px)] space-y-6">
+    <div className="min-h-[calc(100dvh-245px)] space-y-6">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-slate-950">{t("kochirish.pageTitle")}</h1>
@@ -633,13 +635,13 @@ export default function Kochirish() {
           </button>
           <div
             ref={scrollTrackRef}
-            onMouseDown={scrollTrekkaBosish}
+            onPointerDown={scrollTrekkaBosish}
             className={`relative h-3 flex-1 rounded-full bg-orange-50 ${scrollHolati.mavjud ? "cursor-pointer" : "opacity-55"}`}
             aria-label={t("kochirish.scrollTrackAria")}
           >
             <div
-              onMouseDown={scrollThumbniSurish}
-              className={`absolute inset-y-0 rounded-full bg-[#2563EB] transition-[background-color] hover:bg-orange-600 ${scrollHolati.mavjud ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+              onPointerDown={scrollThumbniSurish}
+              className={`absolute inset-y-0 touch-none rounded-full bg-[#2563EB] transition-[background-color] hover:bg-orange-600 ${scrollHolati.mavjud ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
               style={{
                 left: `${scrollHolati.chap}%`,
                 width: `${scrollHolati.kenglik}%`,

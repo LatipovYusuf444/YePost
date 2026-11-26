@@ -98,7 +98,7 @@ export default function AppSelect({
     const padding = 10;
     const width = Math.min(Math.max(rect.width, dropdownMinWidth), window.innerWidth - padding * 2);
     const desiredHeight = Math.min(256, options.length * 40 + 10);
-    const below = window.innerHeight - rect.bottom - gap - padding;
+    const below = (window.visualViewport?.height ?? window.innerHeight) - rect.bottom - gap - padding;
     const above = rect.top - gap - padding;
     const opensUp = below < Math.min(desiredHeight, 150) && above > below;
     const maxHeight = Math.max(80, Math.min(desiredHeight, opensUp ? above : below));
@@ -132,8 +132,8 @@ export default function AppSelect({
         setFaol(-1);
       }
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
   }, [open]);
 
   function choose(nextValue: string) {
@@ -210,7 +210,9 @@ export default function AppSelect({
 
   return (
     <div
-      className={`relative ${className} !border-transparent !bg-transparent !shadow-none !ring-0`}
+      // O'ramga berilgan px/py (masalan, `.input` dagi px-4) tugmaga ikkinchi marta qo'shilib, tugmani torayib-chekinib qolishiga olib kelardi:
+      // o'ram chekinmaydi, tugmaning o'z chekinishi bor (chaqiruvchi `[&>button]:px-*` bilan o'zgartira oladi).
+      className={`relative ${className} !border-transparent !bg-transparent !p-0 !shadow-none !ring-0`}
       data-app-select="true"
     >
       <select
@@ -238,7 +240,7 @@ export default function AppSelect({
         aria-activedescendant={open && faol >= 0 ? `${royxatId}-${faol}` : undefined}
         onKeyDown={klaviatura}
         onClick={() => (open ? yopish() : ochish())}
-        className="flex h-full min-h-[inherit] w-full items-center justify-between gap-2 rounded-[inherit] border border-slate-200 bg-white px-[inherit] py-[inherit] text-left font-inherit text-inherit outline-none transition hover:border-orange-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-50"
+        className="flex h-full min-h-[inherit] w-full items-center justify-between gap-2 rounded-[inherit] border border-slate-200 bg-white px-4 py-0 text-left font-inherit text-inherit outline-none transition hover:border-orange-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-50"
       >
         <span className={`min-w-0 truncate ${selected ? "" : "text-slate-400"}`}>
           {selected?.label ?? "Tanlang"}
@@ -269,7 +271,9 @@ export default function AppSelect({
                 data-faol={belgilangan || undefined}
                 // Sichqoncha bilan tanlaganda fokus tugmada qoladi (keyin Tab bilan keyingi maydonga o'tish mumkin).
                 onMouseDown={(event) => event.preventDefault()}
-                onMouseMove={() => {
+                onPointerMove={(event) => {
+                  // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                  if (event.pointerType !== "mouse") return;
                   if (!belgilangan && !option.disabled) setFaol(index);
                 }}
                 onClick={() => {

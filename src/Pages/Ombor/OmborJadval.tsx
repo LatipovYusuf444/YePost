@@ -157,11 +157,13 @@ export default function OmborJadval({ children, className = "" }: OmborJadvalPro
       );
     };
     const tugatish = () => {
-      document.removeEventListener("mousemove", yurish);
-      document.removeEventListener("mouseup", tugatish);
+      document.removeEventListener("pointermove", yurish);
+      document.removeEventListener("pointerup", tugatish);
+      document.removeEventListener("pointercancel", tugatish);
     };
-    document.addEventListener("mousemove", yurish);
-    document.addEventListener("mouseup", tugatish);
+    document.addEventListener("pointermove", yurish);
+    document.addEventListener("pointerup", tugatish);
+    document.addEventListener("pointercancel", tugatish);
   };
 
   return (
@@ -188,8 +190,8 @@ export default function OmborJadval({ children, className = "" }: OmborJadvalPro
         </button>
         <div ref={trackRef} className="relative h-3 flex-1 rounded-full bg-[#EFF6FF]">
           <div
-            onMouseDown={thumbniSurish}
-            className={`absolute inset-y-0 rounded-full bg-orange-500 ${maksimalScroll > 0 ? "cursor-grab active:cursor-grabbing" : ""}`}
+            onPointerDown={thumbniSurish}
+            className={`absolute inset-y-0 touch-none rounded-full bg-orange-500 ${maksimalScroll > 0 ? "cursor-grab active:cursor-grabbing" : ""}`}
             style={{ left: `${thumbChap}%`, width: `${thumbKengligi}%` }}
           />
         </div>

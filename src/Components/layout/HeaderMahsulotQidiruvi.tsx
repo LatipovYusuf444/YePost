@@ -3,6 +3,7 @@ import { POS_SAVATCHAGA_OTISH } from "@/lib/skanerFokusi";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type UIEvent } from "react";
 import { AlertTriangle, Check, LayoutGrid, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { sichqonchaliQurilma } from "@/lib/sichqonchaliQurilma";
 import { pulMatni } from "@/lib/valyuta";
 import { asosiyMiqdor, birlikTopish } from "@/lib/kopBirlik";
 import { mahsulotlarniServerdanQidirish, omborlarRoyxatiniOlish } from "@/api/savdoApi";
@@ -250,7 +251,8 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     setFaol(-1);
     // Kategoriya tanlansa natijalar darrov ochiladi (yozuvsiz ham ro'yxat ko'rinadi).
     setOchiq(Boolean(id) || Boolean(soz.trim()));
-    inputRef.current?.focus();
+    // Planshetda kategoriya tanlangach klaviatura ochilib natijalarni yopmasin.
+    if (sichqonchaliQurilma()) inputRef.current?.focus();
   }
 
   function xabarBerish(xatoMi: boolean, matn: string) {
@@ -310,7 +312,7 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     // Keyingi mahsulot (yoki keyingi skan) uchun maydon tozalanadi va fokus qoladi.
     setSoz("");
     setFaol(-1);
-    inputRef.current?.focus();
+    if (sichqonchaliQurilma()) inputRef.current?.focus();
   }
 
   // Enter natija kelishidan oldin bosilgan (skaner): kod bitta so'rov bilan tekshiriladi, faqat shtrix-kod/artikul aniq mos kelsa qo'shiladi.
@@ -584,7 +586,9 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
                     tabIndex={-1}
                     // Sichqoncha bosilganda qidiruv maydoni fokusi yo'qolmasin (keyingi mahsulotni darrov yozish uchun).
                     onMouseDown={(event) => event.preventDefault()}
-                    onMouseMove={() => {
+                    onPointerMove={(event) => {
+                      // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                      if (event.pointerType !== "mouse") return;
                       if (index !== faol) setFaol(index);
                     }}
                     onClick={() => qoshish(qator)}

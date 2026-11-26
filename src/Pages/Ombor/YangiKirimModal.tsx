@@ -6,7 +6,6 @@ import {
   Barcode,
   Check,
   CheckSquare,
-  ChevronDown,
   Clock3,
   FileText,
   LoaderCircle,
@@ -390,8 +389,8 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
         setSupplierOchiq(false);
       }
     }
-    document.addEventListener("mousedown", tashqariBosildi);
-    return () => document.removeEventListener("mousedown", tashqariBosildi);
+    document.addEventListener("pointerdown", tashqariBosildi);
+    return () => document.removeEventListener("pointerdown", tashqariBosildi);
   }, []);
 
   const supplierMoslari = useMemo(() => {
@@ -876,7 +875,11 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                           aria-selected={item.id === supplierId}
                           data-faol={indeks === supplierFaol || undefined}
                           onMouseDown={(event) => event.preventDefault()}
-                          onMouseMove={() => { if (indeks !== supplierFaol) setSupplierFaol(indeks); }}
+                          onPointerMove={(event) => {
+                            // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                            if (event.pointerType !== "mouse") return;
+                            if (indeks !== supplierFaol) setSupplierFaol(indeks);
+                          }}
                           onClick={() => supplierTanlash(item.id, item.name ?? item.fullName ?? item.id)}
                           className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-orange-50 ${indeks === supplierFaol ? "bg-orange-50 ring-2 ring-inset ring-orange-200" : ""}`}
                         >
@@ -893,7 +896,11 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                           aria-selected={false}
                           data-faol={supplierFaol === supplierMoslari.length || undefined}
                           onMouseDown={(event) => event.preventDefault()}
-                          onMouseMove={() => { if (supplierFaol !== supplierMoslari.length) setSupplierFaol(supplierMoslari.length); }}
+                          onPointerMove={(event) => {
+                            // Faqat sichqoncha: iPad/planshetda bosish paytida mazmun o'zgarsa Safari "click"ni yubormaydi.
+                            if (event.pointerType !== "mouse") return;
+                            if (supplierFaol !== supplierMoslari.length) setSupplierFaol(supplierMoslari.length);
+                          }}
                           onClick={() => void yangiSupplierQoshish()}
                           disabled={store.amalBajarilmoqda}
                           className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-black text-orange-600 hover:bg-orange-50 disabled:opacity-50 ${supplierFaol === supplierMoslari.length ? "bg-orange-50 ring-2 ring-inset ring-orange-200" : ""}`}
@@ -1606,7 +1613,7 @@ function SelectField({
     <label className="space-y-2 text-sm font-bold text-slate-500">
       <span>{label}</span>
       <div className="relative">
-        <AppSelect value={value} onChange={(event) => onChange(event.target.value)} className={`${input} appearance-none pr-10`}>
+        <AppSelect value={value} onChange={(event) => onChange(event.target.value)} className={input}>
           <option value="">{placeholder}</option>
           {options.map((option) => (
             <option key={option.id} value={option.id}>
@@ -1614,7 +1621,6 @@ function SelectField({
             </option>
           ))}
         </AppSelect>
-        <ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
       </div>
     </label>
     </XatoliMaydon>

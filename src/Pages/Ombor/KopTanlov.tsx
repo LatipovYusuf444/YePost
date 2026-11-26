@@ -43,10 +43,10 @@ export default function KopTanlov({
         setQidiruv("");
       }
     }
-    document.addEventListener("mousedown", tashqigaBosish);
+    document.addEventListener("pointerdown", tashqigaBosish);
     document.addEventListener("keydown", escBosildi);
     return () => {
-      document.removeEventListener("mousedown", tashqigaBosish);
+      document.removeEventListener("pointerdown", tashqigaBosish);
       document.removeEventListener("keydown", escBosildi);
     };
   }, [ochiq]);

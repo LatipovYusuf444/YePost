@@ -21,8 +21,8 @@ export default function KorinishTanlash({ qiymat, onChange, sarlavha, jadvalMatn
     function tashqarigaBosish(event: MouseEvent) {
       if (!ref.current?.contains(event.target as Node)) setOchiq(false);
     }
-    document.addEventListener("mousedown", tashqarigaBosish);
-    return () => document.removeEventListener("mousedown", tashqarigaBosish);
+    document.addEventListener("pointerdown", tashqarigaBosish);
+    return () => document.removeEventListener("pointerdown", tashqarigaBosish);
   }, [ochiq]);
 
   const variantlar: Array<{ kalit: RoyxatKorinishi; matn: string; ikonka: typeof Table2 }> = [

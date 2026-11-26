@@ -407,7 +407,7 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
         role="dialog"
         aria-modal="true"
         aria-labelledby="mijoz-tahrir-sarlavha"
-        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-[32px] bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-[32px] bg-white shadow-2xl"
       >
         <header className="flex items-center gap-4 px-8 pb-5 pt-8">
           <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-[#2563EB]">

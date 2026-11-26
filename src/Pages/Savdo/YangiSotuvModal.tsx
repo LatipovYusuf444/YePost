@@ -1887,7 +1887,7 @@ export default function YangiSotuvModal({
   return (
     <>
     <AppModal ozgarishBor={ozgarishlarSoni > 0} className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-3 pr-3 backdrop-blur-[3px] sm:pl-[78px]">
-      <div className="relative h-[calc(100vh-24px)] w-full min-w-0">
+      <div className="relative h-[calc(100dvh-24px)] w-full min-w-0">
         <div className="absolute -left-[46px] top-5 z-[90] hidden flex-col items-center gap-2 sm:flex">
           <button
             type="button"
@@ -3340,9 +3340,9 @@ function XulosaKarta({ ikonka: Ikonka, nom, qiymat, ton }: { ikonka: LucideIcon;
       <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-2 ${stil.belgi}`}>
         <Ikonka size={21} />
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-semibold text-slate-500">{nom}</p>
-        <p className={`truncate text-xl font-black tabular-nums ${stil.qiymat}`} title={qiymat}>
+        <p className={`text-lg font-black leading-tight tabular-nums [overflow-wrap:anywhere] @min-[1100px]:text-xl ${stil.qiymat}`} title={qiymat}>
           {qiymat}
         </p>
       </div>

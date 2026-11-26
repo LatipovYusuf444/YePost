@@ -579,7 +579,7 @@ function OddiySotuvTafsilotlariModal({
 
   return (
     <AppModal className="items-start justify-start p-0 py-4 pl-4 pr-4 md:pl-[88px] bg-[rgba(15,23,42,.50)] backdrop-blur-[3px]">
-      <div className="relative h-[calc(100vh-32px)] w-full min-w-0">
+      <div className="relative h-[calc(100dvh-32px)] w-full min-w-0">
         <ModalTezkorPanel sotuv={sotuv} onYopish={yopishniSoraymiz} />
         <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
         <div className="scrollbar-hidden h-full overflow-y-auto">
@@ -602,7 +602,7 @@ function OddiySotuvTafsilotlariModal({
 
                   {hujjatMenuOchiq && (
                     <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute right-0 top-12 z-[90] w-[390px] overflow-hidden rounded-[22px] bg-white p-4 text-left shadow-[0_24px_70px_rgba(15,23,42,.24)] ring-1 ring-slate-100 duration-200">
-                      <div className="max-h-[62vh] overflow-y-auto pr-1">
+                      <div className="max-h-[62dvh] overflow-y-auto pr-1">
                         {[
                           "Akt",
                           "Hisob",
@@ -1078,8 +1078,8 @@ function YukXatiGeneratorModal({
   }
 
   return (
-    <div className="app-modal-compact fixed inset-0 z-[140] flex items-start justify-end bg-slate-950/45 px-5 py-5 pl-[380px] backdrop-blur-sm">
-      <div className="relative h-[calc(100vh-40px)] w-full max-w-[1120px] overflow-visible rounded-[32px] bg-[#EEF3F6] shadow-[0_30px_90px_rgba(15,23,42,.34)]">
+    <div className="app-modal-compact fixed inset-0 z-[140] flex items-start justify-end bg-slate-950/45 px-5 py-5 md:pl-[88px] 2xl:pl-[380px] backdrop-blur-sm">
+      <div className="relative h-[calc(100dvh-40px)] w-full max-w-[1120px] overflow-visible rounded-[32px] bg-[#EEF3F6] shadow-[0_30px_90px_rgba(15,23,42,.34)]">
         <div className="absolute -left-[58px] top-4 z-20 flex flex-col items-center gap-2">
           <button
             type="button"
@@ -4176,7 +4176,7 @@ export function OmbordanChiqarishHujjatModal({ sotuv, jami, onClose }: { sotuv: 
   const [yopishSorovi, setYopishSorovi] = useState(false);
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-4 pr-4 md:pl-[88px] backdrop-blur-[3px]">
-      <div className="relative h-[calc(100vh-32px)] w-full">
+      <div className="relative h-[calc(100dvh-32px)] w-full">
         <ModalTezkorPanel sotuv={sotuv} onYopish={() => (saqlanmaganSoni > 0 ? setYopishSorovi(true) : onClose())} />
         <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} onOzgarish={setSaqlanmaganSoni} />
         {yopishSorovi && (
@@ -5067,7 +5067,7 @@ function FeedCard({
           <button
             type="button"
             onClick={onOchirish}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-400 opacity-0 transition hover:bg-red-100 hover:text-red-600 group-hover:opacity-100"
+            className="hover-amal flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-400 opacity-0 transition hover:bg-red-100 hover:text-red-600 group-hover:opacity-100 focus-visible:opacity-100"
             aria-label={t("feedCard.ochirishAria", { title })}
           >
             <Trash2 size={16} />
