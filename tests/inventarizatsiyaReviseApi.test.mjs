@@ -75,3 +75,30 @@ test('stale-version and closed-period errors never replace the existing inventor
     assert.equal(calls.length, 1);
   }
 });
+
+test('later_stock_take (tasdiq, tahrir, bekor qilish): keyingi inventarizatsiya havolasi uchun saqlanadi, hujjat va qoldiq o\'zgarmaydi', async () => {
+  const later = { code: 'errors.inventory.later_stock_take', stockTakeId: 'st70', stockTakeNumber: 'INV-000070', stockTakeDate: '2026-11-24' };
+  const xato = () => { throw Object.assign(new Error('later'), { isAxiosError: true, response: { status: 409, data: later } }); };
+  for (const [yol, amal] of [
+    ['POST /inventory/stock-takes/inv/confirm', () => useOmborStore.getState().inventarizatsiyaTasdiqlash('inv')],
+    ['POST /inventory/stock-takes/inv/revise', () => useOmborStore.getState().inventarizatsiyaTahrirlash('inv', payload)],
+    ['POST /inventory/stock-takes/inv/cancel', () => useOmborStore.getState().inventarizatsiyaBekorQilish('inv')],
+  ]) {
+    reset();
+    useOmborStore.setState({ ...initial, inventarizatsiyalar: [old], qoldiqlar: [{ modificationId: 'a', quantity: 100 }] }, true);
+    handlers.set(yol, xato);
+    const natija = await amal();
+    assert.ok(natija === false || natija === null, yol);
+    assert.deepEqual(useOmborStore.getState().inventarizatsiyaKeyingiSanoq, { id: 'st70', raqam: 'INV-000070', sana: '2026-11-24' }, yol);
+    assert.deepEqual(useOmborStore.getState().inventarizatsiyalar[0], old);
+    assert.equal(useOmborStore.getState().qoldiqlar[0].quantity, 100);
+    assert.equal(calls.filter((c) => c.method === 'post').length, 1, `${yol}: qayta yuborilmaydi`);
+    useOmborStore.getState().xatolikniTozalash();
+    assert.equal(useOmborStore.getState().inventarizatsiyaKeyingiSanoq, null);
+  }
+  // Boshqa xato — havola yo'q.
+  reset();
+  handlers.set('POST /inventory/stock-takes/inv/cancel', () => { throw Object.assign(new Error('consumed'), { isAxiosError: true, response: { status: 400, data: { code: 'errors.inventory.stock_already_consumed' } } }); });
+  await useOmborStore.getState().inventarizatsiyaBekorQilish('inv');
+  assert.equal(useOmborStore.getState().inventarizatsiyaKeyingiSanoq, null);
+});

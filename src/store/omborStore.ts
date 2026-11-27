@@ -16,7 +16,18 @@ import {
   yetkazibBeruvchilar,
 } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import { xatoKodi, xatoMaydoni } from "@/api/xatoKodlari";
+import { KEYINGI_INVENTARIZATSIYA_KODI, xatoKodi, xatoMaydoni } from "@/api/xatoKodlari";
+
+export type KeyingiSanoq = { id: string; raqam: string; sana: string };
+
+/** later_stock_take javobidan keyingi inventarizatsiya (id, raqam, sana); boshqa xato — null. */
+export function keyingiSanoqniOlish(error: unknown): KeyingiSanoq | null {
+  const body = axios.isAxiosError(error) ? error.response?.data : undefined;
+  if (xatoKodi(body) !== KEYINGI_INVENTARIZATSIYA_KODI) return null;
+  const id = String(xatoMaydoni(body, "stockTakeId") ?? "").trim();
+  if (!id) return null;
+  return { id, raqam: String(xatoMaydoni(body, "stockTakeNumber") ?? "").trim(), sana: String(xatoMaydoni(body, "stockTakeDate") ?? "").trim() };
+}
 import { qaytarishlarRoyxatiniOlish, sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import type {
   ChiqimHujjati,
@@ -59,6 +70,8 @@ type OmborState = {
   amalBajarilmoqda: boolean;
   xatolik: string | null;
   inventarizatsiyaTahrirXatosi: { code: string | null; movements: Array<{ type: string; docId: string; date: string; quantity: number | string }> } | null;
+  /** 409 errors.inventory.later_stock_take (tasdiq, tahrir, bekor qilish): shu tovar keyinroq sanalgan hujjat — xato bannerida havola. */
+  inventarizatsiyaKeyingiSanoq: KeyingiSanoq | null;
   malumotlarniYuklash: () => Promise<void>;
   malumotlarniYuklashAgarKerak: () => Promise<void>;
   amalgaOshirilganlarniYuklash: () => Promise<void>;
@@ -844,16 +857,17 @@ export const useOmborStore = create<OmborState>((set, get) => ({
   },
 
   inventarizatsiyaTahrirXatosi: null,
+  inventarizatsiyaKeyingiSanoq: null,
   inventarizatsiyaTahrirlash: async (id, data) => {
     if (get().amalBajarilmoqda) return null;
-    set({ amalBajarilmoqda: true, xatolik: null, inventarizatsiyaTahrirXatosi: null });
+    set({ amalBajarilmoqda: true, xatolik: null, inventarizatsiyaTahrirXatosi: null, inventarizatsiyaKeyingiSanoq: null });
     let hujjat: InventarizatsiyaHujjati;
     try {
       hujjat = await inventarizatsiyaApi.tahrirlash(id, data);
     } catch (error) {
       const body = axios.isAxiosError(error) ? error.response?.data : undefined;
       const movements = xatoMaydoni(body, "movements");
-      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error), inventarizatsiyaTahrirXatosi: {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error), inventarizatsiyaKeyingiSanoq: keyingiSanoqniOlish(error), inventarizatsiyaTahrirXatosi: {
         code: xatoKodi(body) ?? null, movements: Array.isArray(movements) ? movements : [],
       } });
       return null;
@@ -911,7 +925,7 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     }
   },
   inventarizatsiyaTasdiqlash: async (id) => {
-    set({ amalBajarilmoqda: true, xatolik: null });
+    set({ amalBajarilmoqda: true, xatolik: null, inventarizatsiyaKeyingiSanoq: null });
     try {
       const hujjat = await inventarizatsiyaApi.tasdiqlash(id);
       const { omborlar, modifikatsiyalar } = get();
@@ -923,12 +937,12 @@ export const useOmborStore = create<OmborState>((set, get) => ({
       }));
       return true;
     } catch (error) {
-      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error), inventarizatsiyaKeyingiSanoq: keyingiSanoqniOlish(error) });
       return false;
     }
   },
   inventarizatsiyaBekorQilish: async (id) => {
-    set({ amalBajarilmoqda: true, xatolik: null });
+    set({ amalBajarilmoqda: true, xatolik: null, inventarizatsiyaKeyingiSanoq: null });
     try {
       const hujjat = await inventarizatsiyaApi.bekorQilish(id);
       const { omborlar, modifikatsiyalar } = get();
@@ -940,7 +954,7 @@ export const useOmborStore = create<OmborState>((set, get) => ({
       }));
       return true;
     } catch (error) {
-      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error), inventarizatsiyaKeyingiSanoq: keyingiSanoqniOlish(error) });
       return false;
     }
   },
@@ -987,5 +1001,5 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     });
   },
 
-  xatolikniTozalash: () => set({ xatolik: null, inventarizatsiyaTahrirXatosi: null }),
+  xatolikniTozalash: () => set({ xatolik: null, inventarizatsiyaTahrirXatosi: null, inventarizatsiyaKeyingiSanoq: null }),
 }));

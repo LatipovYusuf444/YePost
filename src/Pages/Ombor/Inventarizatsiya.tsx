@@ -27,6 +27,10 @@ import { UmumiyBirlikPaneli } from "./HujjatBirligi";
 import { umumiyBirlikVariantlari } from "@/lib/hujjatBirligi";
 import { holat, hujjatRaqami, mahsulotQidiruvi, modificationNomi, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
+import KeyingiSanoqHavolasi from "./KeyingiSanoqHavolasi";
+import { INVENTARIZATSIYA_OCHISH_HODISASI } from "@/lib/inventarizatsiyaOchish";
+import { harakatMatni } from "@/api/xatoKodlari";
+import { apiTiliniOlish } from "@/api/apiLanguage";
 import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
 import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
@@ -94,6 +98,15 @@ export default function Inventarizatsiya() {
     if (!search) return;
     const documentId = new URLSearchParams(search).get("hujjat");
     if (documentId) setTanlanganId(documentId);
+  }, []);
+  // Sahifadagi xato havolasi (masalan, "INV-000070 da qayta sanalgan") — o'sha hujjat oynasini ochadi.
+  useEffect(() => {
+    const ochish = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail;
+      if (typeof id === "string" && id) setTanlanganId(id);
+    };
+    window.addEventListener(INVENTARIZATSIYA_OCHISH_HODISASI, ochish);
+    return () => window.removeEventListener(INVENTARIZATSIYA_OCHISH_HODISASI, ochish);
   }, []);
   const [warehouseId, setWarehouseId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
@@ -1043,7 +1056,10 @@ export default function Inventarizatsiya() {
       </section>
 
       {store.xatolik && !modal && (
-        <div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">{store.xatolik}</div>
+        <div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">
+          {store.xatolik}
+          <div><KeyingiSanoqHavolasi /></div>
+        </div>
       )}
 
       <OmborJadval className="border-blue-100 shadow-[0_3px_14px_rgba(37,99,235,.06)] [&_thead]:!bg-[#F4F8FF] [&_thead]:!text-blue-800 [&_thead_th]:!border-blue-100 [&_tbody]:!divide-blue-100 [&>div:last-child]:!border-blue-100 [&>div:last-child>button]:!border-blue-100 [&>div:last-child>button]:!text-blue-600 [&>div:last-child>button:hover]:!bg-blue-50 [&>div:last-child>div]:!bg-blue-50 [&>div:last-child>div>div]:!bg-blue-500">
@@ -1171,9 +1187,10 @@ export default function Inventarizatsiya() {
                   <p className="font-semibold leading-6">{fx.tepadagi && !formaXatosi ? fx.tepadagi : formaXatosi ? t(formaXatosi.key, formaXatosi.params) : tahrirHujjati && store.inventarizatsiyaTahrirXatosi?.code === "errors.inventory.movements_after_stock_take" ? t("inventarizatsiya.editModal.movementsError") : store.xatolik}</p>
                   {tahrirHujjati && store.inventarizatsiyaTahrirXatosi?.movements && store.inventarizatsiyaTahrirXatosi.movements.length > 0 && (
                     <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-xs font-medium">
-                      {store.inventarizatsiyaTahrirXatosi.movements.map((movement, index) => <li key={index} className="break-words">{movement.type} · {movement.docId} · {sana(movement.date)} · {movement.quantity}</li>)}
+                      {store.inventarizatsiyaTahrirXatosi.movements.map((movement, index) => <li key={index} className="break-words">{harakatMatni(movement, apiTiliniOlish() === "ru" ? "ru" : "uz") || `${movement.type} · ${sana(movement.date)} · ${movement.quantity}`}</li>)}
                     </ul>
                   )}
+                  {tahrirHujjati && <KeyingiSanoqHavolasi />}
                   {sanalmaganXato && <p className="mt-1 line-clamp-2 text-xs font-medium leading-5">{sanoqXulosasi.uncounted.slice(0, 3).join(", ")}{sanoqXulosasi.uncounted.length > 3 ? "…" : ""}</p>}
                 </div>
                 <button type="button" aria-label={t("inventarizatsiya.createModal.closeAria")} onClick={() => { setFormaXatosi(null); fx.ornat({}); store.xatolikniTozalash(); }} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"><X size={16} /></button>
@@ -1643,6 +1660,7 @@ export default function Inventarizatsiya() {
 
       {tanlanganId && (
         <InventoryHujjatModal
+          key={tanlanganId}
           tur="inventarizatsiya"
           id={tanlanganId}
           onTasdiqlanganTahrir={tahrirlashniOchish}

@@ -5,7 +5,11 @@
       "save": "O'zgarishlarni saqlash",
       "lockedFields": "Tasdiqlangan hujjatning ombori va sanasi o'zgartirilmaydi.",
       "noteHelper": "Saqlanganda sanoq tuzatiladi va ombor qoldiqlari qayta hisoblanadi.",
-      "movementsError": "Sanashdan keyin tovar harakati bor. Yangi inventarizatsiya qiling."
+      "movementsError": "Inventarizatsiya sanasidan keyin tovar harakati bor — tahrir saqlanmadi. Saqlash uchun qayta bosing va savolga «Ha» deb javob bering: farq inventarizatsiya sanasiga yoziladi."
+    },
+    "laterStockTake": {
+      "open": "{{raqam}} ni ochish",
+      "document": "Keyingi inventarizatsiya"
     },
     "pageTitle": "Inventarizatsiya",
     "pageSubtitle": "Ombordagi haqiqiy qoldiqlarni tekshirish hujjatlari.",

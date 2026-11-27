@@ -269,6 +269,10 @@ const BEKOR_QILISH_MATNI: KodMatni = {
 
 /** Tasdiqlashda "Davom etasizmi?" deb so'raladigan ogohlantirish (409): `confirmWarnings: true` bilan qayta yuboriladi. */
 export const OGOHLANTIRISH_KODI = "errors.inventory.before_stock_take";
+/** O'tgan sanadagi inventarizatsiya: tovar shu sanadan keyin harakat qilgan — "Davom etasizmi?" (confirmWarnings bilan o'tadi). */
+export const KEYINGI_HARAKAT_KODI = "errors.inventory.movements_after_stock_take";
+/** Shu tovar keyinroq sanada qayta sanalgan — xato (confirmWarnings o'tkazmaydi): tasdiqlash, tahrir va bekor qilishda. */
+export const KEYINGI_INVENTARIZATSIYA_KODI = "errors.inventory.later_stock_take";
 
 type Obyekt = Record<string, unknown>;
 
@@ -322,8 +326,11 @@ function royxatMatni(qiymat: unknown, chegara = 5): string {
   return elementlar.length > chegara ? `${korinadigan} (+${elementlar.length - chegara})` : korinadigan;
 }
 
+// Backend `movements[].type` — ombor yozuvi manbai (purchase, sale, return, supplier_return, write_off, transfer, stock_take, production_*).
 const HARAKAT_TURLARI: Array<[RegExp, KodMatni]> = [
+  [/SUPPLIER_RETURN/i, { uz: "yetkazib beruvchiga qaytarish", ru: "возврат поставщику" }],
   [/RETURN/i, { uz: "qaytarish", ru: "возврат" }],
+  [/PRODUCTION/i, { uz: "ishlab chiqarish", ru: "производство" }],
   [/SALE/i, { uz: "sotuv", ru: "продажа" }],
   [/PURCHASE|RECEIPT/i, { uz: "kirim", ru: "приход" }],
   [/WRITE/i, { uz: "chiqim", ru: "списание" }],
@@ -331,7 +338,8 @@ const HARAKAT_TURLARI: Array<[RegExp, KodMatni]> = [
   [/STOCK/i, { uz: "inventarizatsiya", ru: "инвентаризация" }],
 ];
 
-function harakatMatni(harakat: unknown, til: Til): string {
+/** Bitta harakat: "kirim 23.11.2026 (44)" — xato matni va tahrir oynasidagi ro'yxat uchun. */
+export function harakatMatni(harakat: unknown, til: Til): string {
   const element = obyekt(harakat);
   if (!element) return "";
   const turi = typeof element.type === "string" ? element.type : "";
@@ -407,15 +415,24 @@ const DINAMIK_MATNLAR: Record<string, DinamikMatn> = {
       ? `Из-за этого расхода касса в сумах уйдёт в минус${kun ? ` ${kun}` : " в одном из следующих дней"}${yetishmaydi ? ` (не хватает: ${yetishmaydi} сум)` : ""}. Измените дату или сумму.`
       : `Bu chiqim tufayli so'm kassasi${kun ? ` ${kun} kuni` : " keyingi kunda"} minusga tushadi${yetishmaydi ? ` (yetishmaydi: ${yetishmaydi} so'm)` : ""}. Sanani yoki summani o'zgartiring.`;
   },
-  "errors.inventory.movements_after_stock_take": (til, tafsilot) => {
+  // Endi xato emas, savol: "Ha" bo'lsa so'rov confirmWarnings: true bilan qayta yuboriladi (api/hujjatOgohlantirishi).
+  [KEYINGI_HARAKAT_KODI]: (til, tafsilot) => {
     const harakatlar = xatoMaydoni(tafsilot, "movements");
     const royxat = royxatMatni(
       (Array.isArray(harakatlar) ? harakatlar : []).map((harakat) => harakatMatni(harakat, til)),
-      3
+      5
     );
     return til === "ru"
-      ? `Инвентаризация проведена задним числом, а по этим товарам после этой даты уже были движения${royxat ? `: ${royxat}` : ""}. Проведите инвентаризацию сегодняшней датой.`
-      : `Inventarizatsiya o'tgan sanada o'tkazilmoqda, lekin shu tovarlar bo'yicha undan keyin harakatlar bo'lgan${royxat ? `: ${royxat}` : ""}. Inventarizatsiyani bugungi sana bilan o'tkazing.`;
+      ? `После даты инвентаризации по этим товарам были движения${royxat ? `: ${royxat}` : ""}. Продолжить?`
+      : `Inventarizatsiya sanasidan keyin shu tovarlar bo'yicha harakatlar bo'lgan${royxat ? `: ${royxat}` : ""}. Davom etasizmi?`;
+  },
+  [KEYINGI_INVENTARIZATSIYA_KODI]: (til, tafsilot) => {
+    const raqam = String(xatoMaydoni(tafsilot, "stockTakeNumber") ?? "").trim();
+    const kun = kunMatni(String(xatoMaydoni(tafsilot, "stockTakeDate") ?? ""));
+    if (til === "ru") {
+      return `Этот товар пересчитан${kun ? ` ${kun}` : " позже"}${raqam ? ` в инвентаризации ${raqam}` : " в другой инвентаризации"}. Проведите пересчёт датой после неё.`;
+    }
+    return `Bu tovar${kun ? ` ${kun} sanasida` : " keyinroq"}${raqam ? ` ${raqam} inventarizatsiyada` : " boshqa inventarizatsiyada"} qayta sanalgan. Shu sanadan keyingi sana bilan sanang.`;
   },
   [OGOHLANTIRISH_KODI]: (til, tafsilot) => {
     const raqam = String(xatoMaydoni(tafsilot, "stockTakeNumber") ?? "");

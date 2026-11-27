@@ -52,6 +52,7 @@ import {
   pul,
   sana,
 } from "./omborYordamchilari";
+import KeyingiSanoqHavolasi from "./KeyingiSanoqHavolasi";
 
 export type InventoryHujjatTuri =
   | "kirim"
@@ -606,6 +607,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
             {(fx.tepadagi || (!(tahrir && fx.bor) && (store.xatolik || validatsiyaXatosi))) && (
               <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
                 {fx.tepadagi || (validatsiyaXatosi ? t(validatsiyaXatosi) : store.xatolik)}
+                {tur === "inventarizatsiya" && !fx.tepadagi && !validatsiyaXatosi && <div><KeyingiSanoqHavolasi /></div>}
               </div>
             )}
 
