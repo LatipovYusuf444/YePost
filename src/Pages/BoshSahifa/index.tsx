@@ -33,7 +33,7 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { savatchaChegirma, savatchaNarxTuri, savatchaSotuvNarxi, savatchaUstama, usePosStore, type CartItem } from "@/store/posStore";
 import { sotuvBirliklari } from "@/lib/kopBirlik";
 import { yaratishValyutasi } from "@/lib/mijozValyutasi";
-import { tolovRangi } from "@/lib/tolovTuriRanglari";
+import { tolovIkonkaUslubi, tolovRangi } from "@/lib/tolovTuriRanglari";
 import { mijozMosmi, telefonKorinishi } from "@/lib/mijozQidiruvi";
 import { qidiruvKorinishi } from "@/lib/kategoriyaQidiruvi";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
@@ -1299,6 +1299,7 @@ export default function BoshSahifa() {
                   key={item.label}
                   onClick={() => setPaymentType(item.label)}
                   aria-pressed={paymentType === item.label}
+                  data-tolov-tanlangan={paymentType === item.label ? "" : undefined}
                   // Tanlangan tur o'z rangida (TOLOV_TURI_RANGLARI): naqd — yashil, Payme/Click — ko'k, bank — siyohrang.
                   style={paymentType === item.label ? { background: tolovRangi(item.apiTuri).fon, borderColor: tolovRangi(item.apiTuri).chegara, color: tolovRangi(item.apiTuri).matn } : undefined}
                   className={[
@@ -1311,7 +1312,8 @@ export default function BoshSahifa() {
                   <WalletCards
                     size={15}
                     className="mr-2"
-                    style={{ color: tolovRangi(item.apiTuri).matn }}
+                    data-tolov-ikonka=""
+                    style={tolovIkonkaUslubi(tolovRangi(item.apiTuri))}
                   />
                   {item.label}
                 </button>
@@ -1573,6 +1575,7 @@ export default function BoshSahifa() {
                         aria-checked={tanlangan}
                         onClick={() => setPaymentType(tur.label)}
                         style={tanlangan ? { background: rang.fon, color: rang.matn, borderColor: rang.chegara } : undefined}
+                        data-tolov-tanlangan={tanlangan ? "" : undefined}
                         className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition ${tanlangan ? "ring-2 ring-current/20" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
                       >
                         <kbd className="rounded bg-white/70 px-1 text-[10px] font-black text-slate-500 ring-1 ring-slate-200">{raqam + 1}</kbd>

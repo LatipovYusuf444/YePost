@@ -8,6 +8,7 @@ import QollabQuvvatlashVidjeti from "@/Components/common/QollabQuvvatlashVidjeti
 import { useValyutaRejiminiKuzatish, useValyutaStore } from "@/lib/valyuta";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
+import { useShishaSahifa } from "@/hooks/useShishaSahifa";
 
 // Faqat kirish animatsiyasi. Chiqish animatsiyasi (AnimatePresence) olib tashlangan: chiqayotgan blok ichidagi <Outlet /> darhol YANGI
 // sahifani chizardi, so'ng 320 ms dan keyin yangi blokda u yana mount bo'lardi — har o'tishda sahifa ikki marta ochilib,
@@ -19,6 +20,8 @@ const sahifaVariantlari = {
 
 export default function AsosiyLayout() {
   const location = useLocation();
+  // "Shisha" rejimi (data-theme="shisha") yon paneldagi barcha sahifalarda — modal va ochiladigan ro'yxatlar ham (html atributi).
+  useShishaSahifa("ilova");
   const loadInventorySettings = useInventorySettingsStore((state) => state.load);
   useEffect(() => { void loadInventorySettings(); }, [loadInventorySettings, location.pathname]);
   // Menyu modul holatiga bog'liq; 5 daqiqada bir yangilanadi, har sahifaga so'rov ketmaydi.

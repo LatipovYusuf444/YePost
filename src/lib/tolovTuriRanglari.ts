@@ -50,6 +50,14 @@ export function tolovRangi(turi: string | null | undefined): TolovRangi {
   return TOLOV_TURI_RANGLARI[tolovRangGuruhi(turi)];
 }
 
+/**
+ * To'lov turi ikonkasi rangi: asosiy mavzuda `matn`; "Shisha" rejimida (to'q shisha ustida) `--tolov-matn-q` — ochroq jufti
+ * (index.css: `[data-tolov-ikonka]`).
+ */
+export function tolovIkonkaUslubi(rang: TolovRangi): Record<string, string> {
+  return { color: rang.matn, "--tolov-matn-q": rang.matnQorongi };
+}
+
 /** Bir savdodagi to'lovlar turlari bo'yicha (tartib saqlanadi): [Naqd $50] [Karta $66.16]. Qarz yozuvlari (`DEBT`) kirmaydi. */
 export function tolovlarniTurBoyichaYigish<T extends { paymentType?: string | null; amount?: number | string | null }>(tolovlar: readonly T[] | null | undefined) {
   const guruhlar = new Map<string, { turi: string; summa: number }>();

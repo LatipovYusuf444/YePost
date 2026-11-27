@@ -110,6 +110,7 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
           ref={triggerRef}
           type="button"
           aria-label={t("dateRange.ariaLabel")}
+          data-sana-oraligi=""
           className={cn(
             "w-full cursor-pointer justify-between rounded-xl bg-primary px-3 font-bold text-primary-foreground shadow-sm hover:bg-primary/90",
             compact ? "h-10 text-sm" : "h-11 text-sm",

@@ -90,6 +90,12 @@
     "working": "Bajarilmoqda...",
     "reason": "Sabab (ixtiyoriy)"
   },
+  "theme": {
+    "label": "Ko'rinish rejimi",
+    "default": "Asosiy",
+    "glass": "Shisha",
+    "glassHint": "Shisha — fon rasmi ustida suyuq shisha ko'rinish"
+  },
   "hujjatOgohlantirish": {
     "title": "Ogohlantirish",
     "defaultName": "Inventarizatsiya",

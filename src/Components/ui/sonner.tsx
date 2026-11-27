@@ -1,9 +1,8 @@
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
-// next-themes o'rniga loyihaning o'z ThemeProvider'i ishlatiladi (3 rang-tema:
-// default/green/purple). Toast kartasining foni/matni shu temaga moslashadi,
-// muvaffaqiyat/xato ranglari esa semantik (yashil/qizil) bo'lib qoladi —
-// aks holda "yashil" temada xato ham muvaffaqiyat kabi ko'rinib qolar edi.
+// next-themes o'rniga loyihaning o'z ThemeProvider'i ishlatiladi (asosiy va "Shisha" rejimlari).
+// Toast kartasining foni/matni mavzu tokenlariga (--popover...) moslashadi, muvaffaqiyat/xato ranglari
+// esa semantik (yashil/qizil) bo'lib qoladi.
 function Toaster({ ...props }: ToasterProps) {
   return (
     <Sonner

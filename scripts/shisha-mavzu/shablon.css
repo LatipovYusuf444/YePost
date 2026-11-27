@@ -1,0 +1,362 @@
+/*
+ * 27.11 — "Shisha" rejimi: html[data-theme="shisha"] VA html[data-shisha-sahifa] (useShishaSahifa — asosiy layout, yon paneldagi
+ * barcha sahifalar). Asosiy rejim (data-theme="default") bu blokka umuman tegmaydi; chop etishda ham qog'oz oq (@media screen).
+ * Dizayn ("2D liquid glass"): tiniq interyer fotosurati (public/mavzu/shisha-fon.webp, Unsplash litsenziyasi) ustida tutunli suyuq
+ * shisha — yon panel, yuqori panel va asosiy oyna: yengil xiralik + to'yinganlik (fon ko'rinib turadi), yuqori-chapdan yaltiroq gradient,
+ * ikki tomonlama yorug' qirra; kartalar shisha ustida shisha; asosiy tugma/tanlov — oq "pill" (to'q matn); matn — oq, foto ustida
+ * o'qilishi uchun juda yengil soya. Semantik ranglar (yashil/qizil/sariq) o'z ma'nosida qoladi.
+ * Bu fayl shablon: scripts/shisha-mavzu/generatsiya.mjs uni va generatsiya qilingan qoidalarni index.css ga yozadi.
+ */
+html[data-theme="shisha"][data-shisha-sahifa] {
+  color-scheme: dark;
+  --s-karta: rgb(255 255 255 / 0.08);
+  --s-karta-2: rgb(255 255 255 / 0.11);
+  --s-ichki: rgb(0 0 0 / 0.22);
+  /* Jadval sarlavhasi — to'q tasma (oq qatlamlar yig'ilib, yorqin foto ustida oqarib ketmasin). */
+  --s-sarlavha: rgb(0 0 0 / 0.34);
+  --s-oyna: rgb(18 16 14 / 0.56);
+  --s-panel: rgb(18 16 14 / 0.42);
+  --s-ochiluvchi: rgb(32 28 25 / 0.96);
+  --s-chegara-och: rgb(255 255 255 / 0.08);
+  --s-chegara: rgb(255 255 255 / 0.14);
+  --s-chegara-toq: rgb(255 255 255 / 0.22);
+  --s-matn: #FFFFFF;
+  --s-matn-2: #F1EDE7;
+  --s-xira: #DAD3C9;
+  --s-pill: #F6F3EE;
+  --s-pill-matn: #1A1714;
+  /* Suyuq shisha: kam xiralik (fon tiniq ko'rinadi), to'yinganlik va yorqinlik — "linza" hissi. */
+  --s-blur: blur(12px) saturate(175%) brightness(0.92);
+  --s-blur-oyna: blur(16px) saturate(165%) brightness(0.84);
+  --s-yaltiroq: linear-gradient(150deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.05) 22%, transparent 48%, rgb(255 255 255 / 0.03) 100%);
+  --s-qirra: inset 1px 1px 0 rgb(255 255 255 / 0.42), inset -1px -1px 0 rgb(255 255 255 / 0.1), inset 0 0 22px rgb(255 255 255 / 0.05);
+
+  /* Sutli tokenlar → shisha sirtlar (bg-[#F8FAFC], bg-white tugma/maydonlar, chegaralar shular orqali). */
+  --yp-sut: var(--s-karta);
+  --yp-sut-ichki: var(--s-ichki);
+  --yp-sut-sarlavha: var(--s-sarlavha);
+  --yp-sut-fon: transparent;
+  --yp-sut-tugma: var(--s-karta-2);
+  --yp-chegara-och: var(--s-chegara-och);
+  --yp-chegara: var(--s-chegara);
+  --yp-chegara-toq: var(--s-chegara-toq);
+  --yp-chegara-rang: var(--s-chegara);
+
+  /* text-white oq qoladi (bg-white pastda alohida — shisha karta). */
+  --color-white: #FFFFFF;
+  /* Neytral shkala teskari (iliq): 50–800. 900/950 to'q qoladi — qoplamalar (bg-slate-950/60) va to'q tugmalar. */
+  --color-slate-50: var(--s-ichki);
+  --color-slate-100: rgb(255 255 255 / 0.08);
+  --color-slate-200: var(--s-chegara);
+  --color-slate-300: var(--s-chegara-toq);
+  --color-slate-400: #D8D0C5;
+  --color-slate-500: var(--s-xira);
+  --color-slate-600: #E4DED6;
+  --color-slate-700: #ECE7E0;
+  --color-slate-800: var(--s-matn-2);
+  --color-gray-50: var(--s-ichki);
+  --color-gray-100: rgb(255 255 255 / 0.08);
+  --color-gray-200: var(--s-chegara);
+  --color-gray-300: var(--s-chegara-toq);
+  --color-gray-400: #D8D0C5;
+  --color-gray-500: var(--s-xira);
+  --color-gray-600: #E4DED6;
+  --color-gray-700: #ECE7E0;
+  --color-gray-800: var(--s-matn-2);
+
+  /* shadcn (popover, dropdown-menu, sheet, tabs, toast). */
+  --background: #1E1A17;
+  --foreground: var(--s-matn);
+  --card: var(--s-karta);
+  --card-foreground: var(--s-matn);
+  --popover: var(--s-ochiluvchi);
+  --popover-foreground: var(--s-matn);
+  --primary: var(--s-pill);
+  --primary-foreground: var(--s-pill-matn);
+  --secondary: rgb(255 255 255 / 0.08);
+  --secondary-foreground: var(--s-matn);
+  --muted: rgb(255 255 255 / 0.08);
+  --muted-foreground: var(--s-xira);
+  --accent: rgb(255 255 255 / 0.12);
+  --accent-foreground: var(--s-matn);
+  --border: var(--s-chegara);
+  --input: var(--s-chegara);
+  --ring: rgb(255 255 255 / 0.45);
+
+  /* Mavzu tokenlari (yon panel, savatcha rasmi, fokus, theme-primary-gradient, mobil dock). */
+  --theme-primary: var(--s-pill);
+  --theme-primary-light: #FFFFFF;
+  --theme-primary-hover: #E6E0D7;
+  --theme-primary-dark: var(--s-matn);
+  --theme-background: transparent;
+  --theme-surface: var(--s-karta);
+  --theme-surface-muted: var(--s-ichki);
+  --theme-border: var(--s-chegara);
+  --theme-border-strong: var(--s-chegara-toq);
+  --theme-text: var(--s-matn);
+  --theme-muted: var(--s-xira);
+  --theme-icon: #F2E3CC;
+  --theme-primary-soft: rgb(255 255 255 / 0.16);
+  --theme-primary-faint: rgb(255 255 255 / 0.08);
+  --theme-focus: rgb(255 255 255 / 0.22);
+  --theme-shadow: rgb(0 0 0 / 0.3);
+  --theme-sidebar: var(--s-panel);
+  --theme-sidebar-hover: rgb(255 255 255 / 0.08);
+  --theme-sidebar-active: rgb(255 255 255 / 0.16);
+  --theme-sidebar-subactive: rgb(255 255 255 / 0.12);
+  --theme-cart-start: rgb(255 255 255 / 0.2);
+  --theme-cart-sparkle: #F2E3CC;
+  /* Grafiklar (Monitoring): asosiy chiziq iliq oq-oltin, to'r chiziqlari xira. */
+  --theme-chart: #F5C67A;
+  --theme-chart-faint: rgb(255 255 255 / 0.08);
+  --theme-chart-grid: rgb(255 255 255 / 0.12);
+  --theme-chart-grid-sales: rgb(255 255 255 / 0.14);
+  --theme-chart-grid-income: rgb(255 255 255 / 0.14);
+  --theme-chart-grid-expense: rgb(255 255 255 / 0.14);
+  --theme-chart-shadow: rgb(0 0 0 / 0.3);
+}
+html[data-theme="shisha"][data-shisha-sahifa] body {
+  background-color: #1E1A17;
+  color: var(--s-matn);
+}
+
+/* Foto ustidagi shishada kichik/xira matn ham o'qilsin: juda yengil soya (maydonlar va oq pill ichida yo'q). */
+html[data-theme="shisha"][data-shisha-sahifa] .app-shell { text-shadow: 0 1px 2px rgb(0 0 0 / 0.28); }
+html[data-theme="shisha"][data-shisha-sahifa] :is(input, textarea, select, [data-tolov-tanlangan], .theme-primary-gradient, .theme-logo) { text-shadow: none; }
+
+/* ---------- Fon: tiniq interyer fotosurati, ustida juda yengil iliq parda ----------
+   background-attachment: fixed o'rniga fixed qatlam: iOS/iPadOS fixed fonni e'tiborsiz qoldirib, rasmni butun sahifa bo'yiga cho'zardi. */
+html[data-theme="shisha"][data-shisha-sahifa] .app-shell { background: none; }
+html[data-theme="shisha"][data-shisha-sahifa] .app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgb(20 16 12 / 0.12), rgb(20 16 12 / 0.3)),
+    #2A2420 url("/mavzu/shisha-fon.webp") center / cover no-repeat;
+  pointer-events: none;
+}
+
+/* ---------- Yon panel: shisha "pill" (o'lcham, navigatsiya, scroll o'zgarmaydi) ---------- */
+html[data-theme="shisha"][data-shisha-sahifa] :is(.yp-aside, .yp-tip, .yp-fly) {
+  --yp-muted: #EAE4DC;
+  --yp-hover: rgb(255 255 255 / 0.1);
+  border-color: rgb(255 255 255 / 0.22);
+  background-image: var(--s-yaltiroq);
+  backdrop-filter: var(--s-blur);
+  -webkit-backdrop-filter: var(--s-blur);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.32), var(--s-qirra);
+}
+html[data-theme="shisha"][data-shisha-sahifa] :is(.yp-tip, .yp-fly) { background-color: rgb(36 32 29 / 0.9) !important; }
+html[data-theme="shisha"][data-shisha-sahifa] .yp-aside :is(.yp-sep, .yp-foot) { border-color: rgb(255 255 255 / 0.1); }
+html[data-theme="shisha"][data-shisha-sahifa] .yp-sep { background: rgb(255 255 255 / 0.1); }
+html[data-theme="shisha"][data-shisha-sahifa] .yp-nav { scrollbar-color: rgb(255 255 255 / 0.22) transparent; }
+html[data-theme="shisha"][data-shisha-sahifa] :is(.theme-sidebar-active, .theme-sidebar-subactive) {
+  color: #FFFFFF !important;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2), 0 6px 16px rgb(0 0 0 / 0.18);
+}
+html[data-theme="shisha"][data-shisha-sahifa] .theme-sidebar .bg-sky-400 { background-color: #FFFFFF !important; }
+html[data-theme="shisha"][data-shisha-sahifa] .theme-sidebar :is(.text-sky-200, .text-sky-300) { color: #F2E3CC !important; }
+html[data-theme="shisha"][data-shisha-sahifa] .yp-child[data-faol] { color: #FFFFFF; }
+html[data-theme="shisha"][data-shisha-sahifa] .yp-head-btn[aria-pressed="true"] { background: var(--s-pill); color: var(--s-pill-matn); box-shadow: none; }
+html[data-theme="shisha"][data-shisha-sahifa] .yp-profile { background: rgb(255 255 255 / 0.07); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1); }
+html[data-theme="shisha"][data-shisha-sahifa] .yp-avatar { background: rgb(255 255 255 / 0.16); color: #FFFFFF; }
+html[data-theme="shisha"][data-shisha-sahifa] .theme-logo {
+  background-image: none !important;
+  background-color: var(--s-pill) !important;
+  color: var(--s-pill-matn);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.25);
+}
+html[data-theme="shisha"][data-shisha-sahifa] .yp-backdrop { background: rgb(12 10 9 / 0.4); }
+
+/* ---------- Yuqori panel: shisha "pill" ---------- */
+/* backdrop-filter to'g'ridan-to'g'ri headerga qo'yilmaydi — ichidagi `fixed inset-0` yopish qatlami headerga qamalib qolardi.
+   O'rniga ::before qatlami xiralashtiradi (isolation — z-index:-1 header ichida qoladi; navbar o'rami allaqachon sticky z-40).
+   Headerning o'z box-shadow'i (aylantirilganda soya + halqa) tegilmaydi — yorug' qirra ::before da. */
+html[data-theme="shisha"][data-shisha-sahifa] header.theme-sidebar {
+  isolation: isolate;
+  background-color: transparent !important;
+  border-color: rgb(255 255 255 / 0.22);
+}
+html[data-theme="shisha"][data-shisha-sahifa] header.theme-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--s-yaltiroq), var(--s-panel);
+  box-shadow: var(--s-qirra);
+  backdrop-filter: var(--s-blur);
+  -webkit-backdrop-filter: var(--s-blur);
+  pointer-events: none;
+}
+html[data-theme="shisha"][data-shisha-sahifa] .mobile-display-menu { background: var(--s-ochiluvchi); border-color: rgb(255 255 255 / 0.14); }
+/* Aylantirishdagi parda (from-white/75 via-white/45) — fon rasmi ustida yengil to'q parda. */
+html[data-theme="shisha"][data-shisha-sahifa] [class~="from-white/75"][class~="via-white/45"] {
+  --tw-gradient-from: rgb(20 17 15 / 0.45);
+  --tw-gradient-via: rgb(20 17 15 / 0.2);
+}
+
+/* Rejim tanlagichida faol tugma — oq pill, ikonka to'q (navbar shishasida aniq ko'rinsin). */
+html[data-theme="shisha"][data-shisha-sahifa] [data-mavzu][aria-checked="true"] { background-color: var(--s-pill); box-shadow: 0 4px 12px rgb(0 0 0 / 0.25); }
+html[data-theme="shisha"][data-shisha-sahifa] [data-mavzu][aria-checked="true"] svg { color: var(--s-pill-matn); }
+
+/* ---------- Asosiy oyna: katta tutunli shisha ---------- */
+html[data-theme="shisha"][data-shisha-sahifa] .app-main-surface {
+  background-color: var(--s-oyna);
+  background-image: var(--s-yaltiroq);
+  border-color: rgb(255 255 255 / 0.22);
+  box-shadow: 0 40px 100px rgb(0 0 0 / 0.36), var(--s-qirra);
+  backdrop-filter: var(--s-blur-oyna);
+  -webkit-backdrop-filter: var(--s-blur-oyna);
+}
+
+/* ---------- Ochiladigan ro'yxatlar, suzuvchi panellar, oyna paneli — kontent ustida deyarli to'liq ---------- */
+/* Inline joylashuvli (portal: style="position: fixed") va z-indeksli panellar ham — masalan, SavdoSelect mahsulot ro'yxati. */
+html[data-theme="shisha"][data-shisha-sahifa] :is([role="listbox"], [role="menu"], [role="dialog"], [class~="fixed"], [class~="absolute"], [style*="position: fixed"], [style*="position:fixed"], [style*="position: absolute"], [class*="z-["], [class~="z-50"], [class~="z-40"], body > div)[class*="bg-white"] {
+  background-color: var(--s-ochiluvchi);
+  backdrop-filter: var(--s-blur);
+  -webkit-backdrop-filter: var(--s-blur);
+}
+/* Oyna paneli (AppModal bolasi): noaniq to'q shisha — ichidagi kartalar shisha ustida shisha (oqarib ketmaydi). */
+html[data-theme="shisha"][data-shisha-sahifa] .app-modal-compact > [class*="rounded"]:not(.app-modal-action-rail, [class*="-left-"][class*="flex-col"], button) {
+  background-color: var(--s-ochiluvchi) !important;
+  background-image: var(--s-yaltiroq) !important;
+  border-color: rgb(255 255 255 / 0.14);
+}
+/* Jadval sarlavhasi — barcha jadvallarda bir xil to'q tasma (faqat katakda; thead/tr qatlamlari yig'ilmaydi). */
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) :is(thead, thead > tr) { background-color: transparent !important; }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) thead > tr > :is(th, td) { background-color: var(--s-sarlavha) !important; background-image: none !important; }
+/* Kirim/chiqim/ko'chirish jadvali o'z strelkali aylantirgichiga ega (scrollbar-hidden) — smart-table.css dagi majburiy native
+   scrollbar ikkinchi bo'lib chiqmasin. */
+html[data-theme="shisha"][data-shisha-sahifa] .scrollbar-hidden:has(> .smart-table-frame) { scrollbar-width: none !important; }
+html[data-theme="shisha"][data-shisha-sahifa] .scrollbar-hidden:has(> .smart-table-frame)::-webkit-scrollbar { display: none !important; }
+/* Oyna ortidagi sahifa: to'qroq va kuchli xira — shaffof oyna kartalari orqasida kontent aralashmaydi. */
+html[data-theme="shisha"][data-shisha-sahifa] .app-modal-compact {
+  background-color: rgb(12 10 9 / 0.66);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+}
+/* Yopishqoq (sticky) panellar — kontent ustidan aylanadi: deyarli to'liq. */
+html[data-theme="shisha"][data-shisha-sahifa] [class~="sticky"]:is([class*="bg-white"], [class*="bg-[#F"], [class*="bg-slate-50"]) {
+  background-color: var(--s-ochiluvchi);
+  backdrop-filter: var(--s-blur);
+  -webkit-backdrop-filter: var(--s-blur);
+}
+/* Sana oralig'i filtri (DateRangePicker, bg-primary) — filtr qatorida maydon kabi shisha (asosiy rejimda brend tugma). */
+html[data-theme="shisha"][data-shisha-sahifa] [data-sana-oraligi] {
+  background-color: var(--s-karta-2);
+  color: var(--s-matn);
+  box-shadow: inset 0 0 0 1px var(--s-chegara);
+  text-shadow: none;
+}
+html[data-theme="shisha"][data-shisha-sahifa] [data-sana-oraligi]:hover { background-color: rgb(255 255 255 / 0.16); }
+/* Aylantirish chiziqlari (jadvallar va bloklar) — brend ko'ki o'rniga xira oq. */
+html[data-theme="shisha"][data-shisha-sahifa] .app-shell * { scrollbar-color: rgb(255 255 255 / 0.28) transparent; }
+html[data-theme="shisha"][data-shisha-sahifa] .app-shell ::-webkit-scrollbar-thumb { background-color: rgb(255 255 255 / 0.28); }
+html[data-theme="shisha"][data-shisha-sahifa] .app-shell ::-webkit-scrollbar-track { background-color: transparent; }
+
+/* ---------- Asosiy tugma (theme-primary-gradient): oq "pill", to'q matn ---------- */
+html[data-theme="shisha"][data-shisha-sahifa] .theme-primary-gradient {
+  background-image: linear-gradient(135deg, #FFFFFF, #E9E3DA) !important;
+  color: var(--s-pill-matn) !important;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.25);
+}
+html[data-theme="shisha"][data-shisha-sahifa] .theme-primary-gradient [class*="text-white"] { color: var(--s-pill-matn) !important; }
+html[data-theme="shisha"][data-shisha-sahifa] .theme-primary-gradient:disabled {
+  background-color: rgb(255 255 255 / 0.12) !important;
+  background-image: none !important;
+  color: rgb(255 255 255 / 0.62) !important;
+  box-shadow: none;
+}
+html[data-theme="shisha"][data-shisha-sahifa] .theme-search:focus-within { box-shadow: 0 0 0 4px var(--theme-focus); }
+html[data-theme="shisha"][data-shisha-sahifa] .scrollbar-orange { scrollbar-color: rgb(255 255 255 / 0.22) transparent; }
+html[data-theme="shisha"][data-shisha-sahifa] ::placeholder { color: rgb(255 255 255 / 0.6); }
+
+/* ---------- Maxsus komponent klasslari (index.css: @apply bg-white yoki literal och fon) ---------- */
+html[data-theme="shisha"][data-shisha-sahifa] .input { background-color: var(--s-karta-2); border-color: var(--s-chegara); color: var(--s-matn); }
+html[data-theme="shisha"][data-shisha-sahifa] .input:focus { border-color: rgb(255 255 255 / 0.5); }
+html[data-theme="shisha"][data-shisha-sahifa] .input:disabled { background-color: rgb(255 255 255 / 0.05); color: var(--s-xira); }
+/* O'chiq select/maydon matni shishada ham o'qilsin. */
+html[data-theme="shisha"][data-shisha-sahifa] :is(select, input, textarea):disabled { color: rgb(255 255 255 / 0.62); -webkit-text-fill-color: rgb(255 255 255 / 0.62); }
+html[data-theme="shisha"][data-shisha-sahifa] .product-modal-fields:disabled :is(input, textarea, select) { color: var(--s-matn-2); -webkit-text-fill-color: var(--s-matn-2); }
+html[data-theme="shisha"][data-shisha-sahifa] .product-modal-fields:disabled [data-app-select] button { background-color: var(--s-karta-2); }
+html[data-theme="shisha"][data-shisha-sahifa] .stock-take-details [data-stock-take-activity] p.text-center { background: var(--s-ichki); border-color: var(--s-chegara-toq); }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(svg.lucide-eye):hover { background-color: rgb(255 255 255 / 0.14); }
+
+/* ---------- To'lov turlari: tanlangan — oq pill (ikonka o'z rangida), qolganlari ikonkasi ochroq jufti ---------- */
+html[data-theme="shisha"][data-shisha-sahifa] [data-tolov-tanlangan] {
+  background: var(--s-pill) !important;
+  border-color: transparent !important;
+  color: var(--s-pill-matn) !important;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.22);
+}
+html[data-theme="shisha"][data-shisha-sahifa] :not([data-tolov-tanlangan]) > [data-tolov-ikonka] { color: var(--tolov-matn-q) !important; }
+html[data-theme="shisha"][data-shisha-sahifa] [data-tolov-tanlangan] kbd { background: rgb(0 0 0 / 0.08); color: var(--s-pill-matn); }
+
+/* ---------- Jadvallar (umumiy tipografiya literal ranglarda: #1E293B, #475569, #E2E8F0, ikonka tugmalari) ---------- */
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) { background-color: transparent; }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) thead th { color: var(--s-xira) !important; border-bottom-color: var(--s-chegara); }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) :is(thead, tbody, tr, th, td) { border-color: var(--s-chegara); }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) tbody { color: var(--s-matn-2); }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) tbody :is(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500):not([class*="bg-"]) { color: var(--s-xira); }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) tbody :is(.text-slate-600, .text-slate-700, .text-slate-800, .text-slate-900, .text-slate-950, .text-gray-600, .text-gray-700, .text-gray-800, .text-gray-900, .text-gray-950):not([class*="bg-"]) { color: var(--s-matn); }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(svg.lucide-eye) { background-color: rgb(255 255 255 / 0.08); color: var(--s-matn-2); }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(:is(svg.lucide-pen-line, svg.lucide-pencil, svg.lucide-square-pen)) { background-color: rgb(255 255 255 / 0.12); color: #FFFFFF; }
+html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(:is(svg.lucide-trash-2, svg.lucide-trash)) { background-color: rgb(239 68 68 / 0.18); color: #FCA5A5; }
+@media (hover: hover) {
+  html[data-theme="shisha"][data-shisha-sahifa] table:not(:where(.font-serif *)) tbody tr[class*="hover:bg-"]:hover { background-color: rgb(255 255 255 / 0.06); }
+}
+html[data-theme="shisha"][data-shisha-sahifa] .table-pagination { color: var(--s-xira); }
+html[data-theme="shisha"][data-shisha-sahifa] .table-pagination button[class*="border"] { border-color: var(--s-chegara); }
+html[data-theme="shisha"][data-shisha-sahifa] .savdo-table-typography table:not(:where(.font-serif *)) :is(thead, thead tr) { background: transparent !important; }
+html[data-theme="shisha"][data-shisha-sahifa] .savdo-table-typography table:not(:where(.font-serif *)) thead th { background: var(--s-sarlavha) !important; }
+html[data-theme="shisha"][data-shisha-sahifa] .savdo-section-title { color: var(--s-matn); }
+html[data-theme="shisha"][data-shisha-sahifa] :is(.smart-table-frame, .smart-table-settings) {
+  --smart-surface: var(--s-karta);
+  --smart-header: var(--s-sarlavha);
+  --smart-hover: rgb(255 255 255 / 0.06);
+  --smart-accent: var(--s-pill);
+}
+
+/* ---------- Grafiklar (recharts): o'q yozuvlari, to'r, tooltip, legenda — SVG atribut/inline ranglar ---------- */
+html[data-theme="shisha"][data-shisha-sahifa] :is(.recharts-cartesian-axis-tick-value, .recharts-label, .recharts-polar-angle-axis-tick-value) { fill: var(--s-xira); }
+html[data-theme="shisha"][data-shisha-sahifa] :is(.recharts-cartesian-grid line, .recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line, .recharts-polar-grid line, .recharts-polar-grid path) { stroke: rgb(255 255 255 / 0.12); }
+html[data-theme="shisha"][data-shisha-sahifa] .recharts-default-tooltip {
+  background: var(--s-ochiluvchi) !important;
+  border-color: var(--s-chegara) !important;
+  color: var(--s-matn) !important;
+}
+html[data-theme="shisha"][data-shisha-sahifa] :is(.recharts-tooltip-label, .recharts-legend-item-text) { color: var(--s-matn-2) !important; }
+html[data-theme="shisha"][data-shisha-sahifa] .recharts-tooltip-cursor { fill: rgb(255 255 255 / 0.06); stroke: rgb(255 255 255 / 0.2); }
+
+/* ---------- Telefon: pastki dock va menyu varag'i (mobile.css literal chegaralari) ---------- */
+html[data-theme="shisha"][data-shisha-sahifa] .mobile-dock {
+  background: var(--s-yaltiroq), var(--s-panel);
+  border-color: rgb(255 255 255 / 0.22);
+  backdrop-filter: var(--s-blur);
+  -webkit-backdrop-filter: var(--s-blur);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.3), var(--s-qirra);
+}
+html[data-theme="shisha"][data-shisha-sahifa] .mobile-dock-item { color: #EAE4DC; }
+html[data-theme="shisha"][data-shisha-sahifa] .mobile-dock-item[data-active] { color: var(--s-pill-matn); background: var(--s-pill); }
+html[data-theme="shisha"][data-shisha-sahifa] .mobile-menu-sheet { background: var(--s-ochiluvchi); color: var(--s-matn); }
+html[data-theme="shisha"][data-shisha-sahifa] :is(.mobile-menu-search, .mobile-menu-tile, .mobile-section-link) { border-color: var(--s-chegara); }
+html[data-theme="shisha"][data-shisha-sahifa] :is(.mobile-menu-tile-icon, .mobile-section-icon) { color: var(--s-xira); }
+html[data-theme="shisha"][data-shisha-sahifa] :is(.mobile-menu-tile, .mobile-section-link)[data-active] :is(.mobile-menu-tile-icon, .mobile-section-icon) { color: var(--s-pill-matn); }
+
+@layer utilities {
+/* Kartalar (oq yumaloq blok) — shisha ustida shisha: yorug' qirra. Qatlam ichida — o'z shadow klasslari ustun. */
+:where(html[data-theme="shisha"][data-shisha-sahifa]) .app-main-surface :is(div, section, article, aside)[class~="bg-white"][class*="rounded-"] {
+  box-shadow: inset 1px 1px 0 rgb(255 255 255 / 0.16), inset -1px -1px 0 rgb(255 255 255 / 0.05);
+}
+/* Tanlangan segment naqshi (oq fon + brend rangli matn, masalan "Chakana narx") — oq pill. Qatlam ichida — hover ustun qoladi. */
+:where(html[data-theme="shisha"][data-shisha-sahifa]) [class~="bg-white"]:is([class~="text-gold-600"], [class~="text-blue-600"], [class~="text-[#2563EB]"]) {
+  background-color: var(--s-pill);
+  border-color: transparent;
+  color: var(--s-pill-matn);
+  text-shadow: none;
+}
+/*GENERATSIYA*/
+}

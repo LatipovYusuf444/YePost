@@ -5,11 +5,13 @@ import { readFileSync } from 'node:fs';
 
 const manba = (yol) => readFileSync(new URL(`../${yol}`, import.meta.url), 'utf8').split(String.fromCharCode(13)).join('');
 
-test('sutli fon: bg-white/slate-50 o\'zgaruvchi orqali, uchala mavzuda o\'z tusi, chop etishda oq', () => {
+test('sutli fon: bg-white/slate-50 o\'zgaruvchi orqali, asosiy mavzuda sutli tus, chop etishda oq', () => {
   const css = manba('src/index.css');
   const blok = css.slice(css.indexOf('"Sutli" fon'));
   assert.ok(blok.length > 100, 'sutli fon bloki bor');
-  for (const tema of [':root {', 'html[data-theme="green"] {', 'html[data-theme="purple"] {']) {
+  // 27.11: yashil va binafsha mavzular olib tashlangan (ikkinchi rejim — "Shisha", alohida blokda).
+  assert.doesNotMatch(css, /data-theme="(green|purple)"/);
+  for (const tema of [':root {']) {
     const i = blok.indexOf(tema);
     assert.ok(i >= 0, tema);
     assert.match(blok.slice(i, i + 200), /--yp-sut: #[0-9A-F]{6};/);
@@ -20,7 +22,7 @@ test('sutli fon: bg-white/slate-50 o\'zgaruvchi orqali, uchala mavzuda o\'z tusi
   assert.match(blok, /--theme-surface: var\(--yp-sut\);/);
   assert.match(blok, /@media print \{[\s\S]*--yp-sut: #FFFFFF;/);
   // Hover holatlari buzilmasin: qo'lda yozilgan oq fonlar faqat utilities qatlamida (!important yo'q).
-  const qatlam = blok.slice(blok.indexOf('@layer utilities'), blok.indexOf('/* Yashil/binafsha mavzularda'));
+  const qatlam = blok.slice(blok.indexOf('@layer utilities'), blok.indexOf('/* Chop etishda'));
   assert.doesNotMatch(qatlam, /!important/);
   assert.match(manba('src/Components/common/smart-table/smart-table.css'), /--smart-surface: var\(--color-white, #fff\);/);
 });
@@ -34,8 +36,6 @@ test('chegaralar va tugmalar sutli fonda ko\'rinadi: iliq/to\'q chegara, tugma k
   assert.match(blok, /html \[class~="border-orange-100"\],[\s\S]*?\{ border-color: var\(--yp-chegara-rang\); \}/);
   assert.match(blok, /html \[class~="ring-orange-100"\],[\s\S]*?--tw-ring-color: var\(--yp-chegara-rang\);/);
   assert.match(blok, /html button\[class~="bg-white"\],[\s\S]*?\{ background-color: var\(--yp-sut-tugma\); \}/);
-  assert.match(css, /html\[data-theme="green"\] \[class~="bg-white"\]:not\(\[style\*="background"\]\)/);
-  assert.match(blok, /:is\(button, input, textarea, select\)\[class~="bg-white"\]:not\(\[style\*="background"\]\)/);
   assert.match(manba('src/Components/common/smart-table/smart-table.css'), /--smart-cell-border: var\(--yp-chegara, #d5dde8\);/);
   assert.match(manba('src/Pages/BoshSahifa/index.tsx'), /rounded-xl border border-gray-200 bg-white text-xs font-bold text-\[#475569\] shadow-sm/);
 });
