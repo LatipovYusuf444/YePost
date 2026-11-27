@@ -149,8 +149,11 @@ test('rejim qoralama o\'zgarishlariga kirmaydi va Tozalash uni tegmaydi; oyna ha
 
 test('ko\'rib chiqish tuzatishlari: Enter tartibi, chegirma xatosi qatori, bitta banner, ochiq qoluvchi maydonlar, tannarx ogohlantirishi, telefon footeri', () => {
   const kod = readFileSync(new URL('../src/Pages/Savdo/YangiSotuvModal.tsx', import.meta.url), 'utf8').split(String.fromCharCode(13)).join('');
-  assert.match(kod, /if \(qisqa\) keyingiQatorgaOtish\(index\);\n\s+else fokusSoralish\(index, "miqdor"\);/, 'Qisqa: narx → keyingi qator');
-  assert.match(kod, /if \(qisqa && fokusQoyish\(index, "narx"\)\) return;\n\s+keyingiQatorgaOtish\(index\);/, 'Qisqa: miqdor → narx');
+  // Enter ko'ringan tartibga mos: Qisqa (miqdor · narx) doim narx miqdordan keyin; To'liq — foydalanuvchi ustun tartibi bo'yicha.
+  assert.match(kod, /const korinadiganUstunlar: SotuvUstuni\[\] = qisqa \? \["mahsulot", "miqdor", "sotuvNarxi", "chegirma"\]/);
+  assert.match(kod, /const narxMiqdordanKeyin = korinadiganUstunlar\.indexOf\("sotuvNarxi"\) > korinadiganUstunlar\.indexOf\("miqdor"\);/);
+  assert.match(kod, /if \(narxMiqdordanKeyin\) keyingiQatorgaOtish\(index\);\n\s+else fokusSoralish\(index, "miqdor"\);/, 'narx → keyingi qator (Qisqa)');
+  assert.match(kod, /if \(narxMiqdordanKeyin && fokusQoyish\(index, "narx"\)\) return;\n\s+keyingiQatorgaOtish\(index\);/, 'miqdor → narx (Qisqa)');
   assert.match(kod, /qisqa && "sm:col-span-2 @min-\[900px\]:order-last @min-\[900px\]:col-span-full"/);
   assert.match(kod, /\{tepaXatosi && !\(qisqa && qisqaYashirinXatolar\.length > 0 && tepaXatosi === fx\.tepadagi\) && \(/);
   assert.match(kod, /const qisqaKorsat = \(yol: string\) => !qisqa \|\| Boolean\(fx\.xato\(yol\)\) \|\| qisqaOchiqMaydonlar\.includes\(yol\);/);
@@ -210,4 +213,25 @@ test('Ko\'rinishni sozlash: Qisqa\'da kartani yoqish/o\'chirish qiymatni o\'zgar
   s.rejim('toliq');
   assert.ok(matnlar(s.tree()).includes('labels.availableStock'));
   assert.deepEqual(kartalar().sort(), ['narxTuri', 'umumiyChegirma', 'xulosa']);
+});
+
+test('ustunlar tartibi: foydalanuvchi tartibi sarlavhada ham, qatorda ham (DOM tartibi); Qisqa tartibi o\'zgarmaydi; Enter ko\'rinishga mos', () => {
+  const saqlangan = [];
+  const tartib = ['miqdor', 'mahsulot', 'chegirma', 'sotuvNarxi', 'katalog'];
+  const s = sotuv({ '@/hooks/useSotuvUstunTartibi': { useSotuvUstunTartibi: () => ({ tartib, standartmi: false, saqlash: (yangi) => saqlangan.push(yangi) }) } });
+  const sarlavha = s.find((n) => n.props?.['data-sotuv-sarlavha'] !== undefined);
+  const yorliqlar = matnlar(sarlavha).filter((m) => m.startsWith('table.'));
+  assert.deepEqual(yorliqlar, ['table.number', 'table.quantity', 'table.product', 'table.discount', 'table.salePrice', 'table.catalogPrice', 'table.total']);
+  // Qatordagi kataklar ham shu tartibda: miqdor maydoni mahsulot tanlovidan oldin, katalog narxi oxirida.
+  const tartibli = nodes(s.tree()).filter((n) => n.props?.['data-sotuv-miqdor'] === 0 || n.props?.['data-sotuv-mahsulot'] === 0 || n.props?.['data-sotuv-chegirma'] === 0 || n.props?.['data-sotuv-narx'] === 0 || n.props?.['aria-label'] === 'table.catalogPrice / common.unit');
+  const nomi = (n) => (n.props['data-sotuv-miqdor'] === 0 ? 'miqdor' : n.props['data-sotuv-mahsulot'] === 0 ? 'mahsulot' : n.props['data-sotuv-chegirma'] === 0 ? 'chegirma' : n.props['data-sotuv-narx'] === 0 ? 'sotuvNarxi' : 'katalog');
+  assert.deepEqual(tartibli.map(nomi), tartib);
+  // "Standart tartib" tugmasi (tartib standart emas) standartni saqlaydi.
+  s.find((n) => n.props?.['data-ustun-standart'] !== undefined).props.onClick();
+  assert.deepEqual(JSON.parse(JSON.stringify(saqlangan.at(-1))), ['mahsulot', 'katalog', 'sotuvNarxi', 'miqdor', 'chegirma']);
+  // Qisqa: tartib o'zgarmas — mahsulot, miqdor, narx; sarlavhada sudrash yo'q.
+  s.rejim('qisqa');
+  const qisqaTartib = nodes(s.tree()).filter((n) => n.props?.['data-sotuv-miqdor'] === 0 || n.props?.['data-sotuv-mahsulot'] === 0 || n.props?.['data-sotuv-narx'] === 0).map(nomi);
+  assert.deepEqual(qisqaTartib, ['mahsulot', 'miqdor', 'sotuvNarxi']);
+  assert.equal(s.find((n) => n.props?.['data-sotuv-sarlavha'] !== undefined), undefined);
 });

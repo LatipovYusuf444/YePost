@@ -288,7 +288,10 @@
     "discount": "Скидка",
     "total": "Итого",
     "currencySuffix": "сум",
-    "currencySuffixUsd": "$"
+    "currencySuffixUsd": "$",
+    "dragColumn": "Перетащите, чтобы изменить порядок столбцов",
+    "moveColumn": "Переместить столбец «{{nom}}» (← / →)",
+    "resetColumns": "Вернуть стандартный порядок столбцов"
   },
   "comment": {
     "label": "Комментарий (необязательно)",

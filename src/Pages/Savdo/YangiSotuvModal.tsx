@@ -1,5 +1,5 @@
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
-import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type UIEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type UIEvent } from "react";
 import {
   BadgeCheck,
   Bell,
@@ -30,6 +30,7 @@ import {
   Plus,
   Printer,
   RotateCcw,
+  GripVertical,
   ScanLine,
   Send,
   Settings,
@@ -41,6 +42,9 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { useSotuvUstunTartibi } from "@/hooks/useSotuvUstunTartibi";
+import { ustunShabloni, type SotuvUstuni } from "@/lib/sotuvUstunlari";
+import { useUstunSudrash } from "./useUstunSudrash";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
@@ -638,6 +642,14 @@ export default function YangiSotuvModal({
   // Qisqa ko'rinishdagi ixtiyoriy kartalar va matnlar — foydalanuvchi tanlovi ("⚙ Ko'rinishni sozlash"), Sotuv tafsiloti bilan bitta.
   // Faqat ko'rinish: yashirilgan karta/matn qiymatlari formada qoladi, hisob va saqlash o'zgarmaydi. To'liq rejimda hammasi ko'rinadi.
   const qisqaSozlama = useQisqaSozlamasi() ?? null;
+  // Mahsulotlar jadvali ustunlari tartibi (To'liq rejim): foydalanuvchi sarlavhadan sudrab o'zgartiradi, o'zi bo'yicha saqlanadi.
+  // Qisqa rejim tartibi o'zgarmas: Mahsulot · Miqdor · Sotuv narxi (· xato bo'lsa chegirma).
+  const ustunSozlamasi = useSotuvUstunTartibi() ?? null;
+  const ustunTartibi: SotuvUstuni[] = ustunSozlamasi?.tartib ?? ["mahsulot", "katalog", "sotuvNarxi", "miqdor", "chegirma"];
+  const ustunSudrash = useUstunSudrash<SotuvUstuni>({ tartib: ustunTartibi, onKochir: (yangi) => ustunSozlamasi?.saqlash(yangi) }) ?? null;
+  const korinadiganUstunlar: SotuvUstuni[] = qisqa ? ["mahsulot", "miqdor", "sotuvNarxi", "chegirma"] : (ustunSudrash?.korinadigan ?? ustunTartibi);
+  // Enter tartibi ko'rinishga mos: sotuv narxi miqdordan keyin tursa — miqdordan narxga, narxdan keyingi qatorga (va aksincha).
+  const narxMiqdordanKeyin = korinadiganUstunlar.indexOf("sotuvNarxi") > korinadiganUstunlar.indexOf("miqdor");
   const kartaKor = (kalit: QisqaKarta) => !qisqa || Boolean(qisqaSozlama?.korinish.kartalar[kalit]);
   const matnKor = (kalit: QisqaMatn) => !qisqa || Boolean(qisqaSozlama?.korinish.matnlar[kalit]);
   // Qisqa rejimda kompaniya maydoni faqat kerak bo'lganda (tanlangan/xato) yoki "+ Kompaniya" bosilganda chiqadi.
@@ -2627,7 +2639,7 @@ export default function YangiSotuvModal({
                   <SotuvJadvali>
                   {matnKor("klaviatura") && <p className="mt-3 hidden text-xs font-medium leading-5 text-slate-400 @min-[900px]:block">{t("products.keyboardHint")}</p>}
 
-                  <div className="mt-4">
+                  <div className="mt-4" style={qisqa ? undefined : ({ "--sotuv-ustunlar": ustunShabloni(korinadiganUstunlar) } as CSSProperties)}>
                     {qisqa ? (
                       // Qisqa: Mahsulot · Miqdor · Sotuv narxi · Jami (katalog narxi va chegirma ustunlari yo'q).
                       <div className={`hidden rounded-t-2xl border-2 border-slate-300 bg-slate-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-slate-500 @min-[900px]:grid ${qisqaQatorUstunlari} @min-[900px]:gap-3`}>
@@ -2639,15 +2651,49 @@ export default function YangiSotuvModal({
                         <span />
                       </div>
                     ) : (
-                    <div className={`hidden rounded-t-2xl border-2 border-slate-300 bg-slate-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-slate-500 @min-[900px]:grid ${qatorUstunlari} @min-[900px]:gap-3`}>
-                      <span>{t("table.number")}</span>
-                      <span>{t("table.product")}</span>
-                      <span>{t("table.catalogPrice")}</span>
-                      <span>{t("table.salePrice")}</span>
-                      <span>{t("table.quantity")}</span>
-                      <span>{t("table.discount")}</span>
-                      <span className="text-right">{t("table.total")}</span>
-                      <span />
+                    // To'liq: ustunlarni sarlavhadan sudrab (yoki ⋮⋮ tutqichda ←/→) joyini o'zgartirish; № , Jami va o'chirish joyida qoladi.
+                    <div data-sotuv-sarlavha className={`hidden items-center rounded-t-2xl border-2 border-slate-300 bg-slate-50 px-4 py-2 text-[11px] font-black uppercase tracking-wide text-slate-500 @min-[900px]:grid ${qatorUstunlari} @min-[900px]:gap-3`}>
+                      <span style={{ order: 0 }}>{t("table.number")}</span>
+                      {/* Kataklar DOM'da saqlangan tartibda qoladi (sudralayotgan katak ko'chirilsa brauzer pointer capture'ni yo'qotadi),
+                          sudrash paytidagi oldindan ko'rish CSS `order` bilan. */}
+                      {ustunTartibi.map((kalit) => (
+                        <div
+                          key={kalit}
+                          {...ustunSudrash?.katakProps(kalit)}
+                          style={{ order: korinadiganUstunlar.indexOf(kalit) + 1 }}
+                          title={t("table.dragColumn")}
+                          className={cn(
+                            "group/ustun relative -mx-1.5 flex min-w-0 cursor-grab touch-pan-y select-none items-center rounded-lg px-1.5 py-1 transition hover:bg-white active:cursor-grabbing",
+                            ustunSudrash?.sudralayotgan === kalit && "bg-white text-[#2563EB] shadow-md ring-2 ring-blue-200"
+                          )}
+                        >
+                          <button
+                            type="button"
+                            {...ustunSudrash?.tutqichProps(kalit)}
+                            aria-label={t("table.moveColumn", { nom: t(USTUN_YORLIQLARI[kalit]) })}
+                            // Tutqich ustunlar orasidagi bo'shliqda turadi — tor ustun nomi ("Miqdor") kesilmaydi.
+                            className="absolute -left-2.5 top-1/2 flex h-6 w-3.5 -translate-y-1/2 items-center justify-center rounded text-slate-300 transition group-hover/ustun:text-slate-500 focus-visible:text-[#2563EB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                          >
+                            <GripVertical size={13} aria-hidden />
+                          </button>
+                          <span className="truncate">{t(USTUN_YORLIQLARI[kalit])}</span>
+                        </div>
+                      ))}
+                      <span className="text-right" style={{ order: 98 }}>{t("table.total")}</span>
+                      <span className="flex justify-end" style={{ order: 99 }}>
+                        {ustunSozlamasi && !ustunSozlamasi.standartmi && (
+                          <button
+                            type="button"
+                            data-ustun-standart
+                            onClick={() => ustunSozlamasi.saqlash(["mahsulot", "katalog", "sotuvNarxi", "miqdor", "chegirma"])}
+                            title={t("table.resetColumns")}
+                            aria-label={t("table.resetColumns")}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-[#2563EB]"
+                          >
+                            <RotateCcw size={14} aria-hidden />
+                          </button>
+                        )}
+                      </span>
                     </div>
                     )}
 
@@ -2679,7 +2725,7 @@ export default function YangiSotuvModal({
                         const qatorXatosi = fx.xato(`items.${index}`);
                         // Sotuv narxi va miqdor kataklari: To'liq — narx, miqdor; Qisqa — miqdor, narx (DOM va Tab tartibi ham).
                         const narxKatagi = (
-                                <div className="min-w-0">
+                                <div key="sotuvNarxi" className="min-w-0">
                                   <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.salePriceUsd" : "labels.salePrice")}</p>
                                   <XatoliMaydon xato={fx.xato(`items.${index}.price`)}>
                                   <SummaMaydoni
@@ -2694,8 +2740,8 @@ export default function YangiSotuvModal({
                                       if (qatorKlavishlari(event, index, "narx")) return;
                                       if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                                       event.preventDefault();
-                                      // Qisqa rejimda narx qatordagi oxirgi maydon: Enter keyingi qatorga o'tadi.
-                                      if (qisqa) keyingiQatorgaOtish(index);
+                                      // Narx miqdordan keyin tursa (Qisqa doim) — keyingi qatorga, aks holda shu qatorning miqdoriga.
+                                      if (narxMiqdordanKeyin) keyingiQatorgaOtish(index);
                                       else fokusSoralish(index, "miqdor");
                                     }}
                                     onChange={(qiymat) => {
@@ -2724,7 +2770,7 @@ export default function YangiSotuvModal({
                                 </div>
                         );
                         const miqdorKatagi = (
-                                <div className="min-w-0">
+                                <div key="miqdor" className="min-w-0">
                                   <p className={mobilYorliqKlassi}>{t("labels.quantity")}</p>
                                   <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}>
                                   <input
@@ -2741,8 +2787,8 @@ export default function YangiSotuvModal({
                                       if (qatorKlavishlari(event, index, "miqdor")) return;
                                       if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                                       event.preventDefault();
-                                      // Qisqa rejimda miqdordan keyin shu qatorning sotuv narxi (narx o'chiq bo'lsa — keyingi qator).
-                                      if (qisqa && fokusQoyish(index, "narx")) return;
+                                      // Narx miqdordan keyin tursa (Qisqa doim) — shu qatorning sotuv narxi (narx o'chiq bo'lsa — keyingi qator).
+                                      if (narxMiqdordanKeyin && fokusQoyish(index, "narx")) return;
                                       keyingiQatorgaOtish(index);
                                     }}
                                     className={cn(maydonKlassi, qoldiqOgohlantirishlari.has(index) && "border-amber-300 focus:border-amber-500 focus:ring-amber-100")}
@@ -2784,29 +2830,10 @@ export default function YangiSotuvModal({
                                   )}
                                 </div>
                         );
-
-                        return (
-                          <div
-                            key={index}
-                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 @min-[900px]:items-start @min-[900px]:rounded-none @min-[900px]:border-0 @min-[900px]:border-b-2 @min-[900px]:border-slate-200 @min-[900px]:px-4 @min-[900px]:py-3 @min-[900px]:last:border-b-0 ${qisqa ? qisqaQatorUstunlari : qatorUstunlari} ${qatorXatosi ? xatoRamkasi : ""}`}
-                          >
-                            <div className="flex items-center justify-between sm:col-span-2 @min-[900px]:col-span-1 @min-[900px]:block @min-[900px]:pt-3">
-                              <span className="text-sm font-black text-slate-400">
-                                <span className="@min-[900px]:hidden">#</span>
-                                {index + 1}
-                              </span>
-                              <button
-                                type="button"
-                                disabled={mahsulotlar.length === 1}
-                                onClick={() => qatorniOchirish(index)}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30 @min-[900px]:hidden"
-                                aria-label={t("products.removeRowAriaLabel")}
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-
-                            <div className="min-w-0 sm:col-span-2 @min-[900px]:col-span-1">
+                        // Ustun kataklari: qatorda foydalanuvchi tartibida chiziladi (DOM va Tab tartibi ham ko'ringanidek).
+                        const kataklar: Record<SotuvUstuni, ReactNode> = {
+                          mahsulot: (
+<div key="mahsulot" className="min-w-0 sm:col-span-2 @min-[900px]:col-span-1">
                               <p className={mobilYorliqKlassi}>{t("labels.product")}</p>
                               <div className="flex items-start gap-2">
                                 {!qisqa && (
@@ -2863,9 +2890,9 @@ export default function YangiSotuvModal({
                                 </div>
                               </div>
                             </div>
-
-                            {!qisqa && (
-                            <div className="min-w-0">
+                          ),
+                          katalog: qisqa ? null : (
+<div key="katalog" className="min-w-0">
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.priceUsd" : "labels.price")}</p>
                               <input
                                 type="number"
@@ -2893,22 +2920,11 @@ export default function YangiSotuvModal({
                                 </p>
                               )}
                             </div>
-                            )}
-
-                            {qisqa ? (
-                              <>
-                                {miqdorKatagi}
-                                {narxKatagi}
-                              </>
-                            ) : (
-                              <>
-                                {narxKatagi}
-                                {miqdorKatagi}
-                              </>
-                            )}
-
-                            {qisqaKorsat(`items.${index}.discount`) && (
-                            <div className={cn("min-w-0", qisqa && "sm:col-span-2 @min-[900px]:order-last @min-[900px]:col-span-full")}>
+                          ),
+                          sotuvNarxi: narxKatagi,
+                          miqdor: miqdorKatagi,
+                          chegirma: qisqaKorsat(`items.${index}.discount`) ? (
+<div key="chegirma" className={cn("min-w-0", qisqa && "sm:col-span-2 @min-[900px]:order-last @min-[900px]:col-span-full")}>
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.discountUsd" : "labels.discount")}</p>
                               <XatoliMaydon xato={fx.xato(`items.${index}.discount`)}>
                               <div className="relative">
@@ -2963,7 +2979,31 @@ export default function YangiSotuvModal({
                                 <p className="mt-1 text-[11px] font-semibold text-emerald-600">= {pulniFormatlash(chegirma, sotuvVal)}</p>
                               )}
                             </div>
-                            )}
+                          ) : null,
+                        };
+
+                        return (
+                          <div
+                            key={index}
+                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 @min-[900px]:items-start @min-[900px]:rounded-none @min-[900px]:border-0 @min-[900px]:border-b-2 @min-[900px]:border-slate-200 @min-[900px]:px-4 @min-[900px]:py-3 @min-[900px]:last:border-b-0 ${qisqa ? qisqaQatorUstunlari : qatorUstunlari} ${qatorXatosi ? xatoRamkasi : ""}`}
+                          >
+                            <div className="flex items-center justify-between sm:col-span-2 @min-[900px]:col-span-1 @min-[900px]:block @min-[900px]:pt-3">
+                              <span className="text-sm font-black text-slate-400">
+                                <span className="@min-[900px]:hidden">#</span>
+                                {index + 1}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={mahsulotlar.length === 1}
+                                onClick={() => qatorniOchirish(index)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30 @min-[900px]:hidden"
+                                aria-label={t("products.removeRowAriaLabel")}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+
+                            {korinadiganUstunlar.map((kalit) => kataklar[kalit])}
 
                             <div className="min-w-0 @min-[900px]:pt-3 @min-[900px]:text-right">
                               <p className={mobilYorliqKlassi}>{t("labels.rowTotal")}</p>
@@ -3560,11 +3600,18 @@ function umumiyNarxTuri(qatorlar: MahsulotQatori[]): SotuvNarxTuri {
 // ── UI qismlari (faqat ko'rinish; mantiq YangiSotuvModal ichida) ──────────────────────────────
 
 const IZOH_MAKS_UZUNLIK = 500;
-// Mahsulot jadvali ustunlari (katta ekranda): №, mahsulot, katalog narxi, sotuv narxi, miqdor, chegirma, jami, o'chirish.
+// Mahsulot jadvali ustunlari (katta ekranda): №, [mahsulot, katalog narxi, sotuv narxi, miqdor, chegirma — foydalanuvchi tartibida], jami, o'chirish.
 // Mahsulot ustuni eng keng — uzun nomlar ("DANMI [G] Goldfish ...") tanlangach ham ko'rinsin. Jadval ko'rinishi ekran emas,
 // mahsulotlar kartasi (@container) kengligiga bog'liq: 900px dan tor bo'lsa (1280px da oyna ikki ustunli) qatorlar kartochka ko'rinishida.
-const qatorUstunlari =
-  "@min-[900px]:grid-cols-[32px_minmax(0,2.4fr)_minmax(150px,1.2fr)_minmax(88px,1fr)_minmax(64px,0.7fr)_minmax(150px,1.25fr)_minmax(96px,0.9fr)_40px]";
+// Tartib foydalanuvchi bo'yicha (lib/sotuvUstunlari: ustunShabloni) — jadval o'ramidagi `--sotuv-ustunlar` o'zgaruvchisidan olinadi.
+const qatorUstunlari = "@min-[900px]:grid-cols-(--sotuv-ustunlar)";
+const USTUN_YORLIQLARI: Record<SotuvUstuni, string> = {
+  mahsulot: "table.product",
+  katalog: "table.catalogPrice",
+  sotuvNarxi: "table.salePrice",
+  miqdor: "table.quantity",
+  chegirma: "table.discount",
+};
 // Qisqa rejim: №, mahsulot, miqdor, sotuv narxi, jami, o'chirish (katalog narxi va chegirma ustunlari yo'q).
 const qisqaQatorUstunlari =
   "@min-[900px]:grid-cols-[32px_minmax(0,2.6fr)_minmax(110px,0.9fr)_minmax(130px,1fr)_minmax(110px,0.9fr)_40px]";

@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { STANDART_SOTUV_USTUNLARI, ustunShabloni } from '../src/lib/sotuvUstunlari.ts';
 
 const manba = (yol) => readFileSync(new URL(`../${yol}`, import.meta.url), 'utf8').split(String.fromCharCode(13)).join('');
 
@@ -35,7 +36,12 @@ test('SavdoSelect: ro\'yxat kengligi chaqiruvchining min-w-[Npx] sinfini hisobga
 test('Yangi sotuv / qoralama: qatorlar konteyner kengligi bo\'yicha, mahsulot ustuni keng, narx turi va chegirma sig\'adi', () => {
   const kod = manba('src/Pages/Savdo/YangiSotuvModal.tsx');
   assert.match(kod, /<section ref=\{mahsulotKartasiRef\} className=\{cn\(kartaKlassi, "@container"\)\}>/);
-  assert.match(kod, /"@min-\[900px\]:grid-cols-\[32px_minmax\(0,2\.4fr\)_minmax\(150px,1\.2fr\)_minmax\(88px,1fr\)_minmax\(64px,0\.7fr\)_minmax\(150px,1\.25fr\)_minmax\(96px,0\.9fr\)_40px\]"/);
+  // Ustunlar tartibi foydalanuvchi bo'yicha: shablon CSS o'zgaruvchidan, kengliklar lib/sotuvUstunlari da (standart tartibda avvalgidek).
+  assert.match(kod, /const qatorUstunlari = "@min-\[900px\]:grid-cols-\(--sotuv-ustunlar\)";/);
+  assert.equal(
+    ustunShabloni(STANDART_SOTUV_USTUNLARI),
+    '32px minmax(0,2.4fr) minmax(150px,1.2fr) minmax(88px,1fr) minmax(64px,0.7fr) minmax(150px,1.25fr) minmax(96px,0.9fr) 40px'
+  );
   assert.match(kod, /const mobilYorliqKlassi = "[^"]*@min-\[900px\]:hidden/);
   assert.match(kod, /dropdownClassName="\[&>div>div\]:text-center min-w-\[600px\] max-w-\[min\(720px,calc\(100vw-32px\)\)\]"/);
   assert.match(kod, /sm:flex @min-\[900px\]:hidden @min-\[1100px\]:flex/);

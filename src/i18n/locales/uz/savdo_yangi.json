@@ -288,7 +288,10 @@
     "discount": "Chegirma",
     "total": "Jami",
     "currencySuffix": "so'm",
-    "currencySuffixUsd": "$"
+    "currencySuffixUsd": "$",
+    "dragColumn": "Sudrab ustun joyini o'zgartiring",
+    "moveColumn": "{{nom}} ustunini ko'chirish (← / →)",
+    "resetColumns": "Ustunlarni standart tartibga qaytarish"
   },
   "comment": {
     "label": "Izoh (ixtiyoriy)",
