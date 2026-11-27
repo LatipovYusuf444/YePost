@@ -33,15 +33,62 @@ export function kanalTuri(kanal?: string | null): "BUSINESS" | "BOT" {
   return kanal === "TELEGRAM_BUSINESS" ? "BUSINESS" : "BOT";
 }
 
-export type XabarMuallifi = "mijoz" | "xodim" | "akkaunt";
+export type XabarMuallifi = "mijoz" | "xodim" | "akkaunt" | "agent" | "shablon";
+
+const MUALLIFLAR: Record<string, XabarMuallifi> = {
+  CUSTOMER: "mijoz",
+  MANAGER: "xodim",
+  SHOP_ACCOUNT: "akkaunt",
+  AGENT: "agent",
+  TEMPLATE: "shablon",
+};
 
 /**
- * IN — mijoz yozgan. OUT va `sentById === null` — do'kon akkaunti egasi Telegram ilovasidan yozgan
- * (tizim orqali emas). OUT va xodim id'si (yoki maydon umuman kelmagan eski javob) — tizimdagi xodim.
+ * Xabarni kim yozgan. Backend `author` beradi: CUSTOMER — mijoz, MANAGER — YePost'dan xodim, SHOP_ACCOUNT — do'kon akkaunti egasi
+ * Telegram ilovasidan, AGENT — savdo agenti, TEMPLATE — buyurtma tasdiqlangan/rad etilgandagi tayyor xabar.
+ * `author` yo'q (eski xabar): IN — mijoz; OUT va `sentById === null` — do'kon akkaunti; OUT va xodim id'si (yoki maydonsiz) — xodim.
  */
-export function xabarMuallifi(xabar: { direction?: string | null; sentById?: string | null }): XabarMuallifi {
+export function xabarMuallifi(xabar: { direction?: string | null; sentById?: string | null; author?: unknown }): XabarMuallifi {
+  const muallif = typeof xabar.author === "string" ? MUALLIFLAR[xabar.author.toUpperCase()] : undefined;
+  if (muallif) return muallif;
   if (xabar.direction !== "OUT") return "mijoz";
   return xabar.sentById === null ? "akkaunt" : "xodim";
+}
+
+export type SuhbatRejimi = "AGENT" | "MANAGER" | "NEEDS_MANAGER" | "PAUSED";
+const REJIMLAR: SuhbatRejimi[] = ["AGENT", "MANAGER", "NEEDS_MANAGER", "PAUSED"];
+
+/**
+ * Kim javob beradi: faqat Telegram Business suhbatida ma'noli (bot suhbatida doim AGENT — belgi ko'rsatilmaydi, null).
+ * `mode` kelmagan (eski backend) yoki noma'lum bo'lsa ham null — belgi va tugmalar chiqmaydi.
+ */
+export function suhbatRejimi(suhbat: { channel?: string | null; mode?: unknown } | null | undefined): SuhbatRejimi | null {
+  if (!suhbat || kanalTuri(suhbat.channel) !== "BUSINESS" || typeof suhbat.mode !== "string") return null;
+  const rejim = suhbat.mode.toUpperCase() as SuhbatRejimi;
+  return REJIMLAR.includes(rejim) ? rejim : null;
+}
+
+/** Menejer yozgani uchun agent jim turgan vaqt chegarasi (kelajakda bo'lsa), aks holda null. */
+export function agentJimTurishi(managerActiveUntil: unknown, hozir: number = Date.now()): string | null {
+  if (typeof managerActiveUntil !== "string" || !managerActiveUntil) return null;
+  const ms = Date.parse(managerActiveUntil);
+  return Number.isFinite(ms) && ms > hozir ? managerActiveUntil : null;
+}
+
+/** Rejim bo'yicha tugmalar: AGENT — "Suhbatni olish"; MANAGER/PAUSED — "Agentga qaytarish"; NEEDS_MANAGER — ikkalasi. */
+export function rejimAmallari(rejim: SuhbatRejimi | null): { olish: boolean; qaytarish: boolean } {
+  if (!rejim) return { olish: false, qaytarish: false };
+  return { olish: rejim === "AGENT" || rejim === "NEEDS_MANAGER", qaytarish: rejim !== "AGENT" };
+}
+
+/** Bildirishnoma suhbatga tegishli bo'lsa (agent menejerni chaqirdi: refType ChatThread) — suhbat id'si. */
+export function bildirishnomaSuhbatiId(bildirishnoma: unknown): string | null {
+  if (!bildirishnoma || typeof bildirishnoma !== "object") return null;
+  const { kind, refType, refId } = bildirishnoma as { kind?: unknown; refType?: unknown; refId?: unknown };
+  const tur = typeof refType === "string" ? refType.toLowerCase() : "";
+  const id = typeof refId === "string" ? refId.trim() : "";
+  if (!id) return null;
+  return tur === "chatthread" || kind === "AGENT_NEEDS_MANAGER" ? id : null;
 }
 
 type VaqtliXabar = { id?: string; createdAt?: string };

@@ -2,6 +2,7 @@ import apiClient from "./axios";
 import { apiData, apiList, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   Activity,
+  AgentAmali,
   ActivityFilter,
   ActivitySaqlash,
   ActivityYangilash,
@@ -175,6 +176,21 @@ export const crmApi = {
           `/crm/chat/threads/${threadId}/messages`,
           { params: tozaParams(params), xatoniYashirish: fon }
         )
+      ).data
+    ),
+  // Savdo agenti rejimi (faqat TELEGRAM_BUSINESS): olish — agent umuman javob bermaydi; qaytarish — agent yana javob beradi (NEEDS_MANAGER ham).
+  // `/chat/` yo'llari global toastsiz: xatoni chaqiruvchi ko'rsatadi. Javob — yangilangan suhbat.
+  chatThreadniOlish: async (threadId: string) =>
+    apiData((await apiClient.post<ChatThread | ApiEnvelope<ChatThread>>(`/crm/chat/threads/${threadId}/takeover`)).data),
+  chatThreadniAgentgaQaytarish: async (threadId: string) =>
+    apiData((await apiClient.post<ChatThread | ApiEnvelope<ChatThread>>(`/crm/chat/threads/${threadId}/release`)).data),
+  // Agent amallari: { items, nextCursor }, eng yangisi birinchi; limit 1–100.
+  agentAmallari: async (threadId: string, params?: { cursor?: string; limit?: number }) =>
+    apiData(
+      (
+        await apiClient.get<CursorJavobi<AgentAmali> | ApiEnvelope<CursorJavobi<AgentAmali>>>(`/crm/chat/threads/${threadId}/agent-calls`, {
+          params: tozaParams(params),
+        })
       ).data
     ),
   // Suhbatga javob: TELEGRAM_BUSINESS suhbatda javob do'kon akkauntidan boradi.

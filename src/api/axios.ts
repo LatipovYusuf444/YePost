@@ -63,6 +63,8 @@ function fonSozlamaXatosiMi(error: unknown) {
 declare module "axios" {
   interface AxiosRequestConfig {
     xatoniYashirish?: boolean;
+    /** Sahifa o'zining aniqroq muvaffaqiyat xabarini ko'rsatadi: umumiy "Saqlandi/Yaratildi" toasti chiqmaydi (xato toasti qoladi). */
+    muvaffaqiyatniYashirish?: boolean;
   }
 }
 
@@ -110,7 +112,7 @@ apiClient.interceptors.response.use(
       else toast.success(message.text, options);
     }
     const toastKaliti = muvaffaqiyatKaliti(response.config.method, response.config.url);
-    if (toastKaliti && toastKerakmi(response.config.url)) {
+    if (toastKaliti && toastKerakmi(response.config.url) && !response.config.muvaffaqiyatniYashirish) {
       muvaffaqiyatXabari(i18n.t(`common:toast.${toastKaliti}`));
     }
     return response;

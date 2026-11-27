@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
+  Bot,
+  CircleAlert,
+  Hand,
+  History,
   LoaderCircle,
   MessagesSquare,
   Paperclip,
   RefreshCw,
   Search,
+  ShieldCheck,
   Send,
   Smartphone,
   Target,
@@ -15,14 +20,20 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import AgentAmallariPaneli from "./AgentAmallariPaneli";
 import { crmApi, lidlarApi, royxatniAjratish } from "@/api/crmApi";
 import { xodimlar as xodimlarniOlish } from "@/api/omborApi";
+import { savdoAgentiApi } from "@/api/savdoAgentiApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { kunMatni, vaqtMatni } from "@/lib/hujjatSanasi";
-import { xatolikXabari } from "@/lib/toast";
+import { muvaffaqiyatXabari, xatolikXabari } from "@/lib/toast";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import {
+  agentJimTurishi,
   kanalTuri,
   oynaniYangilash,
+  rejimAmallari,
+  suhbatRejimi,
   suhbatBoshHarflari,
   suhbatNomi,
   xabarMuallifi,
@@ -75,12 +86,17 @@ export default function Suhbatlar() {
   const [biriktirishOchiq, setBiriktirishOchiq] = useState(false);
   // Ochiq suhbatning eng so'nggi lidi (undefined — yuklanmoqda, null — lid yo'q) va uning paneli.
   const [lid, setLid] = useState<Lid | null | undefined>(undefined);
+  // Shu suhbatda agent ochgan, menejer tasdig'ini kutayotgan buyurtmalar soni (0 — belgi yo'q).
+  const [kutayotganBuyurtmalar, setKutayotganBuyurtmalar] = useState(0);
   const [lidOchiq, setLidOchiq] = useState(false);
   const lidOchiqRef = useRef(false);
   lidOchiqRef.current = lidOchiq;
   // Xabar ro'yxatiga yuborish/eski sahifa qo'shilganda oshadi: undan oldin yuborilgan davriy so'rov javobi xabar o'chirmaydi.
   const yozuvRaqami = useRef(0);
   const [xodimlar, setXodimlar] = useState<LidXodimi[] | null>(null);
+  // Savdo agenti rejimi: "Suhbatni olish" / "Agentga qaytarish" so'rovi ketayotganda tugmalar band; agent amallari paneli.
+  const [rejimBand, setRejimBand] = useState<"olish" | "qaytarish" | null>(null);
+  const [amallarOchiq, setAmallarOchiq] = useState(false);
 
   const joriyId = useRef<string | null>(null);
   const oynaRef = useRef<HTMLDivElement>(null);
@@ -153,11 +169,26 @@ export default function Suhbatlar() {
     }
   }, []);
 
+  // Tasdiq kutayotgan agent buyurtmalari (fon so'rovi: xato bo'lsa belgi shunchaki chiqmaydi).
+  const buyurtmalarniYuklash = useCallback((suhbatId: string) => {
+    savdoAgentiApi
+      .qoralamalar({ threadId: suhbatId, page: 1, pageSize: 1 }, true)
+      .then((natija) => {
+        if (joriyId.current === suhbatId) setKutayotganBuyurtmalar(natija.total);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     setLid(undefined);
     setLidOchiq(false);
-    if (tanlanganId) void lidniYuklash(tanlanganId);
-  }, [lidniYuklash, tanlanganId]);
+    setAmallarOchiq(false);
+    setKutayotganBuyurtmalar(0);
+    if (tanlanganId) {
+      void lidniYuklash(tanlanganId);
+      buyurtmalarniYuklash(tanlanganId);
+    }
+  }, [buyurtmalarniYuklash, lidniYuklash, tanlanganId]);
 
   // Mas'ul tayinlash ro'yxati — panel birinchi ochilganda (kassirga backend bermaydi: bo'sh, "Menga" qoladi).
   useEffect(() => {
@@ -175,6 +206,7 @@ export default function Suhbatlar() {
       const suhbatId = joriyId.current;
       if (!suhbatId) return;
       void lidniYuklash(suhbatId, true);
+      buyurtmalarniYuklash(suhbatId);
       const boshlanganda = yozuvRaqami.current;
       crmApi
         .chatThreadXabarlari(suhbatId, { limit: XABAR_LIMIT }, true)
@@ -198,7 +230,7 @@ export default function Suhbatlar() {
         .catch(() => {});
     }, YANGILASH_MS);
     return () => window.clearInterval(id);
-  }, [lidniYuklash, royxatniYuklash]);
+  }, [buyurtmalarniYuklash, lidniYuklash, royxatniYuklash]);
 
   useLayoutEffect(() => {
     const oyna = oynaRef.current;
@@ -246,6 +278,36 @@ export default function Suhbatlar() {
       if (joriyId.current === suhbatId) setYuborishXatosi(getApiErrorMessage(error));
     } finally {
       setYuborilmoqda(false);
+    }
+  }
+
+  // takeover/release: javob — yangilangan suhbat (ro'yxat va keshga qo'shiladi). `/chat/` so'rovlari global toastsiz — xato shu yerda.
+  async function rejimniOzgartirish(amal: "olish" | "qaytarish") {
+    const suhbatId = tanlanganId;
+    if (!suhbatId || rejimBand) return;
+    setRejimBand(amal);
+    try {
+      const yangi = amal === "olish" ? await crmApi.chatThreadniOlish(suhbatId) : await crmApi.chatThreadniAgentgaQaytarish(suhbatId);
+      const eski = suhbatlar.find((suhbat) => suhbat.id === suhbatId) ?? kesh.current.get(suhbatId);
+      if (eski && yangi && typeof yangi === "object") {
+        // Javobda faqat suhbat ustunlari bor: ism, mas'ul obyekti va oxirgi xabar ro'yxatdagisidan qoladi.
+        const birlashgan: ChatThread = {
+          ...eski,
+          mode: yangi.mode ?? eski.mode,
+          managerActiveUntil: yangi.managerActiveUntil ?? null,
+          assignedToId: yangi.assignedToId ?? eski.assignedToId,
+          // Mas'ul almashgan bo'lsa ro'yxatdagi eski mas'ul nomi ko'rsatilmasin (keyingi yangilash to'g'risini beradi).
+          assignedTo: (yangi.assignedToId ?? eski.assignedToId) === eski.assignedToId ? eski.assignedTo : undefined,
+        };
+        kesh.current.set(suhbatId, birlashgan);
+        setSuhbatlar((joriy) => joriy.map((suhbat) => (suhbat.id === suhbatId ? birlashgan : suhbat)));
+      }
+      muvaffaqiyatXabari(t(amal === "olish" ? "agentRejim.takenOver" : "agentRejim.released"));
+      void royxatniYuklash(true);
+    } catch (error) {
+      xatolikXabari(getApiErrorMessage(error));
+    } finally {
+      setRejimBand(null);
     }
   }
 
@@ -356,6 +418,7 @@ export default function Suhbatlar() {
                         </span>
                         <span className="mt-1 flex flex-wrap items-center gap-1.5">
                           <KanalBelgisi kanal={suhbat.channel} ixcham />
+                          <RejimBelgisi suhbat={suhbat} />
                           {biriktirilmagan && (
                             <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-100">
                               {t("suhbat.unassigned")}
@@ -415,6 +478,19 @@ export default function Suhbatlar() {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                {kutayotganBuyurtmalar > 0 && tanlanganId && (
+                  <Link
+                    to={`/savdo-agenti/tasdiq-kutayotganlar?thread=${encodeURIComponent(tanlanganId)}`}
+                    data-suhbat-tasdiq={kutayotganBuyurtmalar}
+                    title={t("suhbat.pendingOrders", { count: kutayotganBuyurtmalar })}
+                    aria-label={t("suhbat.pendingOrders", { count: kutayotganBuyurtmalar })}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-amber-50 px-3 text-xs font-bold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                  >
+                    <ShieldCheck size={14} />
+                    <span className="hidden sm:inline">{t("suhbat.pendingOrdersShort")}</span>
+                    <span>{kutayotganBuyurtmalar}</span>
+                  </Link>
+                )}
                 {lid ? (
                   <button
                     type="button"
@@ -445,6 +521,16 @@ export default function Suhbatlar() {
                 )}
               </div>
             </header>
+
+            {tanlangan && suhbatRejimi(tanlangan) && (
+              <AgentRejimChizigi
+                suhbat={tanlangan}
+                band={rejimBand}
+                onOlish={() => void rejimniOzgartirish("olish")}
+                onQaytarish={() => void rejimniOzgartirish("qaytarish")}
+                onAmallar={() => setAmallarOchiq(true)}
+              />
+            )}
 
             <div ref={oynaRef} className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-slate-50 via-white to-blue-50/40">
               <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-5 sm:px-6">
@@ -552,6 +638,10 @@ export default function Suhbatlar() {
         />
       )}
 
+      {amallarOchiq && tanlanganId && (
+        <AgentAmallariPaneli suhbatId={tanlanganId} suhbatNomi={tanlanganNomi} onYopish={() => setAmallarOchiq(false)} />
+      )}
+
       {biriktirishOchiq && tanlangan && (
         <MijozBiriktirish
           suhbatId={tanlangan.id}
@@ -565,6 +655,118 @@ export default function Suhbatlar() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+const REJIM_RANGLARI: Record<string, string> = {
+  AGENT: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  MANAGER: "bg-blue-50 text-blue-700 ring-blue-100",
+  NEEDS_MANAGER: "bg-red-50 text-red-700 ring-red-200",
+  PAUSED: "bg-slate-100 text-slate-600 ring-slate-200",
+};
+const REJIM_BELGILARI: Record<string, string> = { AGENT: "🤖", MANAGER: "👤", NEEDS_MANAGER: "🔴", PAUSED: "⏸" };
+
+/** Ro'yxatda kim javob beradi (faqat Telegram Business suhbatida): 🤖 agent / 👤 menejer / 🔴 menejer kerak; agent jim bo'lsa vaqti bilan. */
+function RejimBelgisi({ suhbat }: { suhbat: ChatThread }) {
+  const { t } = useTranslation("savdo_agenti");
+  const rejim = suhbatRejimi(suhbat);
+  if (!rejim) return null;
+  const jim = rejim === "AGENT" ? agentJimTurishi(suhbat.managerActiveUntil) : null;
+  return (
+    <span
+      data-suhbat-rejimi={rejim}
+      title={jim ? t("agentRejim.text.quiet", { vaqt: soatMatni(jim) }) : t(`agentRejim.text.${rejim}`)}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold ring-1 ${REJIM_RANGLARI[rejim]}`}
+    >
+      <span aria-hidden>{REJIM_BELGILARI[rejim]}</span>
+      {jim ? t("agentRejim.quietShort", { vaqt: soatMatni(jim) }) : t(`agentRejim.mode.${rejim}`)}
+    </span>
+  );
+}
+
+/** Suhbat sarlavhasi ostida: kim javob beradi va "Suhbatni olish" / "Agentga qaytarish" / "Agent amallari". */
+function AgentRejimChizigi({
+  suhbat,
+  band,
+  onOlish,
+  onQaytarish,
+  onAmallar,
+}: {
+  suhbat: ChatThread;
+  band: "olish" | "qaytarish" | null;
+  onOlish: () => void;
+  onQaytarish: () => void;
+  onAmallar: () => void;
+}) {
+  const { t } = useTranslation("savdo_agenti");
+  const profilId = useAuthProfileStore((state) => state.profil?.id);
+  const rejim = suhbatRejimi(suhbat);
+  if (!rejim) return null;
+  const jim = rejim === "AGENT" ? agentJimTurishi(suhbat.managerActiveUntil) : null;
+  const amallar = rejimAmallari(rejim);
+  const menMi = Boolean(profilId && suhbat.assignedToId === profilId);
+  // Mas'ul nomi faqat obyekt shu mas'ulga tegishli bo'lsa (takeover javobida faqat id keladi).
+  const masul = !suhbat.assignedTo?.id || suhbat.assignedTo.id === suhbat.assignedToId ? suhbat.assignedTo?.fullName || suhbat.assignedTo?.username : undefined;
+  const izoh =
+    rejim === "AGENT"
+      ? jim
+        ? t("agentRejim.text.quiet", { vaqt: soatMatni(jim) })
+        : t("agentRejim.text.AGENT")
+      : rejim === "MANAGER" && menMi
+        ? t("agentRejim.text.MANAGER_me")
+        : rejim === "MANAGER" && masul
+          ? t("agentRejim.text.MANAGER_named", { nom: masul })
+          : t(`agentRejim.text.${rejim}`);
+  return (
+    <div
+      data-agent-rejim-chizigi={rejim}
+      role={rejim === "NEEDS_MANAGER" ? "alert" : undefined}
+      className={`flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2 sm:px-5 ${
+        rejim === "NEEDS_MANAGER" ? "border-red-100 bg-red-50" : rejim === "AGENT" ? "border-emerald-100 bg-emerald-50/50" : "border-slate-100 bg-slate-50"
+      }`}
+    >
+      <span className="flex min-w-0 flex-1 items-center gap-2">
+        {rejim === "NEEDS_MANAGER" ? <CircleAlert size={16} className="shrink-0 text-red-600" /> : <span aria-hidden className="text-sm">{REJIM_BELGILARI[rejim]}</span>}
+        <span className={`min-w-0 text-xs font-bold leading-5 ${rejim === "NEEDS_MANAGER" ? "text-red-700" : "text-slate-700"}`}>{izoh}</span>
+      </span>
+      <span className="flex shrink-0 flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onAmallar}
+          data-agent-amallar-tugmasi
+          aria-label={t("agentRejim.calls.button")}
+          title={t("agentRejim.calls.button")}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-white"
+        >
+          <History size={13} />
+          <span className="hidden sm:inline">{t("agentRejim.calls.button")}</span>
+        </button>
+        {amallar.qaytarish && (
+          <button
+            type="button"
+            onClick={onQaytarish}
+            disabled={Boolean(band)}
+            data-agentga-qaytarish
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-white px-2.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 transition hover:bg-emerald-50 disabled:opacity-50"
+          >
+            {band === "qaytarish" ? <LoaderCircle size={13} className="animate-spin" /> : <Bot size={13} />}
+            {t("agentRejim.release")}
+          </button>
+        )}
+        {amallar.olish && (
+          <button
+            type="button"
+            onClick={onOlish}
+            disabled={Boolean(band)}
+            data-suhbatni-olish
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 text-xs font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 disabled:opacity-50"
+          >
+            {band === "olish" ? <LoaderCircle size={13} className="animate-spin" /> : <Hand size={13} />}
+            {t("agentRejim.takeover")}
+          </button>
+        )}
+      </span>
     </div>
   );
 }
@@ -623,21 +825,37 @@ function XabarPufagi({ xabar }: { xabar: ChatMessage }) {
   return (
     <div className={`flex ${chiquvchi ? "justify-end" : "justify-start"}`}>
       <div
+        data-xabar-muallifi={muallif}
         className={`max-w-[85%] rounded-[20px] px-3.5 py-2.5 shadow-sm sm:max-w-[75%] ${
           muallif === "mijoz"
             ? "rounded-bl-md bg-white text-slate-800 ring-1 ring-slate-100"
             : muallif === "akkaunt"
               ? "rounded-br-md bg-violet-600 text-white"
-              : "rounded-br-md bg-blue-600 text-white"
+              : muallif === "agent"
+                ? "rounded-br-md bg-emerald-600 text-white"
+                : muallif === "shablon"
+                  ? "rounded-br-md bg-slate-600 text-white"
+                  : "rounded-br-md bg-blue-600 text-white"
         }`}
       >
         {chiquvchi && (
           <p
-            className={`mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-wide ${muallif === "akkaunt" ? "text-violet-100" : "text-blue-100"}`}
-            title={muallif === "akkaunt" ? t("suhbat.akkauntIzoh") : undefined}
+            className={`mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-wide ${
+              muallif === "akkaunt" ? "text-violet-100" : muallif === "agent" ? "text-emerald-100" : muallif === "shablon" ? "text-slate-200" : "text-blue-100"
+            }`}
+            title={muallif === "akkaunt" ? t("suhbat.akkauntIzoh") : muallif === "shablon" ? t("suhbat.shablonIzoh") : undefined}
           >
             {muallif === "akkaunt" && <Smartphone size={11} />}
-            {muallif === "akkaunt" ? t("suhbat.author.akkaunt") : xodimNomi || t("suhbat.author.xodim")}
+            {muallif === "agent" && <Bot size={12} />}
+            {muallif === "akkaunt"
+              ? t("suhbat.author.akkaunt")
+              : muallif === "agent"
+                ? t("suhbat.author.agent")
+                : muallif === "shablon"
+                  ? xodimNomi
+                    ? `${t("suhbat.author.shablon")} · ${xodimNomi}`
+                    : t("suhbat.author.shablon")
+                  : xodimNomi || t("suhbat.author.xodim")}
           </p>
         )}
         {xabar.text && <p className="whitespace-pre-wrap break-words text-sm leading-5">{xabar.text}</p>}

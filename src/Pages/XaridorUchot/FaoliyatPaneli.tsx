@@ -12,6 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { xabarMuallifi } from "@/lib/savdoAgenti";
 import { crmApi, royxatniAjratish } from "@/api/crmApi";
 import { profilApi } from "@/api/authProfileApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -56,9 +57,21 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
     return { id: item.id, turi: "izoh", sarlavha: t("faoliyatPaneli.commentSubject"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
   }, [t]);
 
-  // OUT va sentById === null — do'kon akkaunti egasi Telegram ilovasidan yozgan (Telegram Business).
+  // Kim yozgan — backend `author` (mijoz, xodim, do'kon akkaunti Telegram ilovasidan, savdo agenti, buyurtma haqidagi tayyor xabar);
+  // eski xabarlarda direction/sentById bo'yicha.
   const chatYozuvi = useCallback((item: ChatMessage, index: number): FaoliyatYozuvi => {
-    return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha: item.direction === "IN" ? t("faoliyatPaneli.chatFromCustomer") : item.sentById === null ? t("faoliyatPaneli.chatFromAccount") : t("faoliyatPaneli.chatSent"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
+    const muallif = xabarMuallifi(item);
+    const sarlavha =
+      muallif === "mijoz"
+        ? t("faoliyatPaneli.chatFromCustomer")
+        : muallif === "akkaunt"
+          ? t("faoliyatPaneli.chatFromAccount")
+          : muallif === "agent"
+            ? t("faoliyatPaneli.chatFromAgent")
+            : muallif === "shablon"
+              ? t("faoliyatPaneli.chatTemplate")
+              : t("faoliyatPaneli.chatSent");
+    return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha, matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
   }, [t]);
 
   const yozishTablari = yozishTabKalitlari.map((kalit) => ({ kalit, nom: t(`faoliyatPaneli.tabs.${kalit}`) }));

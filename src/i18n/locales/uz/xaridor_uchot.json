@@ -149,6 +149,8 @@
     "chatFromCustomer": "Mijozdan xabar",
     "chatSent": "Xabar yuborildi",
     "chatFromAccount": "Telegram akkauntdan yozildi",
+    "chatFromAgent": "Savdo agenti yozdi",
+    "chatTemplate": "Avtomatik xabar (buyurtma)",
     "errors": {
       "noPartnerId": "CRM faoliyatini saqlash uchun real partner ID mavjud emas.",
       "noAssignee": "Joriy mas'ul foydalanuvchi aniqlanmadi."

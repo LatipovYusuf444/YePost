@@ -16,6 +16,7 @@ import {
 } from "@/Components/ui/dropdown-menu";
 import { crmApi } from "@/api/crmApi";
 import { bildirishnomaSotuviId } from "@/lib/telegramXabarnoma";
+import { bildirishnomaSuhbatiId } from "@/lib/savdoAgenti";
 import MahsulotTanlashModal from "./MahsulotTanlashModal";
 import HeaderMahsulotQidiruvi from "./HeaderMahsulotQidiruvi";
 import { Checkbox } from "@/Components/ui/checkbox";
@@ -481,25 +482,32 @@ function BildirishnomaTugmasi({
                               const tur = bildirishnomaTuri(`${sarlavha} ${matn}`);
                               const Ikonka = tur.icon;
                               // Mijoz botda nakladnoyga javob bergan (CUSTOMER_FEEDBACK): bosilsa sotuv kartasi ochiladi.
+                              // Agent menejerni chaqirgan (AGENT_NEEDS_MANAGER, refType ChatThread): bosilsa o'sha suhbat ochiladi.
                               const sotuvId = bildirishnomaSotuviId(item);
+                              const suhbatId = sotuvId ? null : bildirishnomaSuhbatiId(item);
+                              const manzil = sotuvId
+                                ? `/savdo?sotuv=${encodeURIComponent(sotuvId)}`
+                                : suhbatId
+                                  ? `/savdo-agenti/suhbatlar?thread=${encodeURIComponent(suhbatId)}`
+                                  : null;
                               return (
                                 <li key={item.id}>
                                   <label
                                     onClick={
-                                      sotuvId
+                                      manzil
                                         ? (event) => {
                                             // Belgi (o'qildi) katagi o'zining amalini bajaradi, qolgan joy sotuvni ochadi.
                                             if ((event.target as HTMLElement).closest('[role="checkbox"]')) return;
                                             event.preventDefault();
                                             if (!oqilgan) onRead(item.id);
                                             setOchiq(false);
-                                            navigate(`/savdo?sotuv=${encodeURIComponent(sotuvId)}`);
+                                            navigate(manzil);
                                           }
                                         : undefined
                                     }
                                     className={`group flex items-start gap-3 rounded-2xl border p-3 transition ${
                                       oqilgan
-                                        ? sotuvId
+                                        ? manzil
                                           ? "cursor-pointer border-slate-100 bg-white hover:bg-slate-50"
                                           : "cursor-default border-slate-100 bg-white"
                                         : "cursor-pointer border-gold-200 bg-gold-50/60 shadow-[0_6px_18px_rgba(37,99,235,.08)] hover:bg-gold-50"

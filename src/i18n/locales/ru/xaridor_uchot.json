@@ -149,6 +149,8 @@
     "chatFromCustomer": "Сообщение от клиента",
     "chatSent": "Сообщение отправлено",
     "chatFromAccount": "Написано из Telegram-аккаунта",
+    "chatFromAgent": "Написал торговый агент",
+    "chatTemplate": "Автосообщение (заказ)",
     "errors": {
       "noPartnerId": "Нет реального partner ID для сохранения активности CRM.",
       "noAssignee": "Текущий ответственный пользователь не определён."

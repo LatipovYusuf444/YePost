@@ -178,6 +178,8 @@ export type ChatMessage = {
   sender?: CrmUser;
   // OUT: qaysi xodim yozdi; `null` — do'kon akkaunti egasi Telegram ilovasidan yozgan (Telegram Business).
   sentById?: string | null;
+  // Kim yozgan: CUSTOMER | MANAGER | SHOP_ACCOUNT | AGENT | TEMPLATE; eski xabarlarda null bo'lishi mumkin (direction bo'yicha).
+  author?: "CUSTOMER" | "MANAGER" | "SHOP_ACCOUNT" | "AGENT" | "TEMPLATE" | string | null;
   attachments?: Attachment[];
   [key: string]: unknown;
 };
@@ -202,8 +204,22 @@ export type ChatThread = {
   telegramUsername?: string;
   displayName?: string;
   lastMessageAt?: string | null;
+  // Savdo agenti (faqat TELEGRAM_BUSINESS): kim javob beradi va menejer yozgani uchun agent shu vaqtgacha jim.
+  mode?: "AGENT" | "MANAGER" | "NEEDS_MANAGER" | "PAUSED" | string;
+  managerActiveUntil?: string | null;
   createdAt?: string;
   updatedAt?: string;
+};
+
+/** Agent shu suhbatda nima qilgani (GET /crm/chat/threads/:id/agent-calls). */
+export type AgentAmali = {
+  id: string;
+  tool: string;
+  input?: unknown;
+  result?: unknown;
+  error?: string | null;
+  durationMs?: number | null;
+  createdAt?: string;
 };
 
 /** Lid bosqichi (voronka): SALE va LOST lidni yopadi. */

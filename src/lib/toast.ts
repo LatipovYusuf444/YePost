@@ -11,3 +11,7 @@ export function muvaffaqiyatXabari(matn: string) {
 export function xatolikXabari(matn: string) {
   toast.error(matn, { id: matn });
 }
+
+export function ogohlantirishXabari(matn: string) {
+  toast.warning(matn, { id: matn });
+}

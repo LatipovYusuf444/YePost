@@ -7,12 +7,6 @@
     "suhbatlar": "Suhbatlar",
     "sozlamalar": "Sozlamalar"
   },
-  "tezOrada": {
-    "badge": "Tez orada",
-    "tasdiq": "Agent tayyorlagan javoblar shu yerda tasdiqlanadi. Bu bo'lim keyingi bosqichda ishga tushadi.",
-    "sozlamalar": "Savdo agentining sozlamalari (ish vaqti, javob uslubi va boshqalar) keyingi bosqichda qo'shiladi.",
-    "hozir": "Hozir ishlaydi: Suhbatlar va Lidlar"
-  },
   "kanal": {
     "BOT": "Bot",
     "BUSINESS": "Telegram akkaunt"
@@ -38,7 +32,9 @@
     "author": {
       "mijoz": "Mijoz",
       "xodim": "Xodim",
-      "akkaunt": "Telegram akkauntdan"
+      "akkaunt": "Telegram akkauntdan",
+      "agent": "Agent",
+      "shablon": "Avtomatik xabar"
     },
     "akkauntIzoh": "Do'kon akkaunti egasi Telegram ilovasidan yozgan",
     "placeholder": "Javob yozing...",
@@ -63,7 +59,10 @@
     "today": "Bugun",
     "yesterday": "Kecha",
     "leadStage": "Lid",
-    "noLead": "Lid yo'q"
+    "noLead": "Lid yo'q",
+    "pendingOrders": "Tasdiq kutayotgan buyurtmalar: {{count}}",
+    "pendingOrdersShort": "Tasdiq kutmoqda",
+    "shablonIzoh": "Buyurtma tasdiqlangan yoki rad etilganda yuboriladigan tayyor xabar"
   },
   "lid": {
     "stage": {
@@ -194,6 +193,153 @@
       "assign": "Mas'ul tayinlash",
       "pickOwner": "Xodimni tanlang",
       "noOwnerOption": "— Mas'ulsiz —"
+    }
+  },
+  "tasdiq": {
+    "title": "Tasdiq kutayotgan buyurtmalar",
+    "subtitle": "Agent Telegram suhbatida ochgan qoralamalar. Tasdiqlasangiz sotuv qoralama bo'lib qoladi va kassir odatdagidek tasdiqlaydi; rad etsangiz qoralama o'chadi.",
+    "subtitleReadOnly": "Agent Telegram suhbatida ochgan qoralamalar. Tasdiqlash yoki rad etishni administrator yoki direktor qiladi.",
+    "threadFilter": "Faqat shu suhbat",
+    "clearThread": "Suhbat filtrini olib tashlash",
+    "refresh": "Yangilash",
+    "loading": "Buyurtmalar yuklanmoqda...",
+    "loadError": "Buyurtmalarni yuklab bo'lmadi.",
+    "retry": "Qayta urinish",
+    "empty": "Tasdiq kutayotgan buyurtma yo'q",
+    "emptyText": "Savdo agenti mijoz bilan Telegram suhbatida buyurtma ochganda u shu yerda paydo bo'ladi.",
+    "pageOf": "{{page}} / {{pages}} sahifa",
+    "unknownCustomer": "Noma'lum mijoz",
+    "walkIn": "Bazada yo'q mijoz",
+    "linkedCustomer": "Mijoz kartasi",
+    "debtWarning": "Mijozning qarzi agent uchun belgilangan qarz chegarasidan oshgan — tasdiqlashdan oldin tekshiring.",
+    "address": "Manzil",
+    "recipient": "Oluvchi",
+    "note": "Izoh",
+    "openChat": "Suhbatni ochish",
+    "approve": "Tasdiqlash",
+    "approved": "Buyurtma tasdiqlandi. Sotuv qoralama bo'lib qoldi — kassir uni Savdo → Buyurtmalar bo'limida tasdiqlaydi.",
+    "rejected": "Buyurtma rad etildi, qoralama o'chirildi.",
+    "notNotified": "Mijozga Telegram'da xabar yuborilmadi (mijoz oxirgi marta 24 soatdan oldin yozgan). U bilan o'zingiz bog'laning.",
+    "managerOnly": "Tasdiqlash — administrator yoki direktor",
+    "reject": {
+      "button": "Rad etish",
+      "title": "Buyurtmani rad etish",
+      "text": "Qoralama o'chiriladi, suhbat lidi \"Yo'qotildi\" bo'ladi (suhbatda boshqa buyurtma bo'lmasa).",
+      "reason": "Sabab",
+      "reasonRequired": "Rad etish sababini tanlang",
+      "note": "Mijozga izoh (ixtiyoriy)",
+      "notePlaceholder": "Masalan: Bu o'lcham tugagan",
+      "noteHint": "Izoh mijozga Telegram'da yuboriladi",
+      "cancel": "Bekor qilish",
+      "submit": "Rad etish"
+    },
+    "lineQty": "{{miqdor}} × {{narx}}",
+    "items": "Mahsulotlar"
+  },
+  "sozlama": {
+    "loading": "Sozlamalar yuklanmoqda...",
+    "loadError": "Sozlamalarni yuklab bo'lmadi.",
+    "adminOnlyTitle": "Faqat administrator va direktor uchun",
+    "adminOnly": "Savdo agenti sozlamalarini administrator yoki direktor o'zgartiradi.",
+    "notSelected": "Tanlanmagan",
+    "inactive": "nofaol",
+    "status": {
+      "title": "Savdo agenti",
+      "subtitle": "Agent Telegram Business suhbatlarida mijozlarga javob beradi va buyurtma qoralamasini ochadi.",
+      "on": "Agent yoqilgan",
+      "off": "Agent o'chiq",
+      "hint": "O'chirsangiz agent yangi xabarlarga javob bermaydi; ochilgan qoralamalar o'z joyida qoladi.",
+      "needs": "Yoqish uchun avval quyida ombor va qoralama egasini tanlang."
+    },
+    "drafts": {
+      "title": "Buyurtma qoralamalari",
+      "subtitle": "Agent ochadigan qoralamalar uchun narx, ombor va xodim.",
+      "priceType": "Narx turi",
+      "priceTypeHint": "Agent aytadigan va qoralamaga yoziladigan narx (sotuv sozlamalarida yoqilgan turlar).",
+      "warehouse": "Ombor",
+      "warehouseHint": "Qoldiq va qoralamalar shu ombordan.",
+      "owner": "Qoralama egasi",
+      "ownerHint": "Qoralamalar shu xodim nomidan yaratiladi (faol xodim)."
+    },
+    "priceTypes": {
+      "RETAIL": "Chakana narx",
+      "WHOLESALE": "Ulgurji narx"
+    },
+    "debt": {
+      "title": "Qarz chegarasi",
+      "subtitle": "Mijozning qarzi chegaradan oshsa, buyurtmada ⚠️ belgisi chiqadi.",
+      "uzs": "So'mdagi qarz chegarasi",
+      "usd": "Dollardagi qarz chegarasi",
+      "unlimited": "Chegarasiz",
+      "hint": "Bo'sh qoldirilsa — chegara yo'q. Belgi faqat ogohlantirish: buyurtmani tasdiqlash yoki rad etishni menejer hal qiladi."
+    },
+    "behavior": {
+      "title": "Agent ish tartibi",
+      "subtitle": "Ish vaqti, menejer aralashganda jim turish, cheklovlar va qo'shimcha ko'rsatma.",
+      "workStart": "Ish vaqti boshi",
+      "workEnd": "Ish vaqti oxiri",
+      "workHint": "Ikkalasi bo'sh — kun bo'yi. Ish vaqtidan tashqarida ham agent javob beradi va buyurtma oladi, tasdiqni ertalab menejer qilishini aytadi. Oxiri boshidan oldin bo'lsa — tun orqali (22:00–06:00).",
+      "managerQuietMinutes": "Menejer yozgandan keyin jim turish (daqiqa)",
+      "customerMessagesPerHour": "Bitta suhbatda soatiga mijoz xabari",
+      "agentRunsPerDay": "Kuniga agent ishga tushishi",
+      "range": "{{min}}–{{max}}",
+      "instructions": "Agentga qo'shimcha ko'rsatma",
+      "instructionsHint": "Masalan: yetkazib berish shartlari, to'lov usullari.",
+      "instructionsPlaceholder": "Masalan: Yetkazib berish faqat Toshkent bo'ylab"
+    },
+    "errors": {
+      "requiredToEnable": "Agentni yoqish uchun tanlang",
+      "priceType": "Bu narx turi sotuv sozlamalarida yoqilmagan",
+      "amount": "Summa noto'g'ri",
+      "range": "{{min}} dan {{max}} gacha butun son kiriting",
+      "workHoursPair": "Ish vaqtining boshi va oxiri birga kiritiladi (yoki ikkalasi bo'sh)",
+      "time": "Vaqt noto'g'ri",
+      "tooLong": "{{max}} belgidan oshmasin"
+    },
+    "unsaved": "Saqlanmagan o'zgarishlar bor",
+    "upToDate": "O'zgarish yo'q",
+    "reset": "Bekor qilish",
+    "save": "Saqlash",
+    "saved": "Savdo agenti sozlamalari saqlandi"
+  },
+  "agentRejim": {
+    "mode": {
+      "AGENT": "Agent",
+      "MANAGER": "Menejer",
+      "NEEDS_MANAGER": "Menejer kerak",
+      "PAUSED": "Pauza"
+    },
+    "quietShort": "Jim {{vaqt}} gacha",
+    "text": {
+      "AGENT": "Agent javob beradi",
+      "quiet": "Agent {{vaqt}} gacha jim — menejer yozgan",
+      "MANAGER": "Suhbatni menejer olgan — agent javob bermaydi",
+      "MANAGER_named": "Suhbatni {{nom}} olgan — agent javob bermaydi",
+      "NEEDS_MANAGER": "Agent menejerni chaqirdi — mijozga javob bering yoki agentga qaytaring",
+      "PAUSED": "Agent to'xtatilgan",
+      "MANAGER_me": "Suhbat sizda — agent javob bermaydi"
+    },
+    "takeover": "Suhbatni olish",
+    "release": "Agentga qaytarish",
+    "takenOver": "Suhbat sizda — agent bu suhbatga javob bermaydi",
+    "released": "Suhbat agentga qaytarildi",
+    "calls": {
+      "button": "Agent amallari",
+      "title": "Agent amallari",
+      "hint": "Agent shu suhbatda nimalarni qilgani: qidiruv, qoldiq va narx tekshiruvi, qoralama, menejerga o'tkazish. 90 kundan keyin o'chadi.",
+      "loading": "Yuklanmoqda...",
+      "empty": "Agent bu suhbatda hali hech narsa qilmagan",
+      "details": "Kirish va natija",
+      "loadMore": "Eskilarini ko'rsatish"
+    },
+    "tools": {
+      "search_products": "Mahsulot qidirdi",
+      "check_stock": "Qoldiqni tekshirdi",
+      "get_price": "Narxni hisobladi",
+      "order_status": "Buyurtma holatini ko'rdi",
+      "create_order": "Qoralama ochdi",
+      "add_lead_note": "Lidga izoh yozdi",
+      "handoff": "Menejerga o'tkazdi"
     }
   }
 }

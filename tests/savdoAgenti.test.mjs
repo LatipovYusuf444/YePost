@@ -108,7 +108,10 @@ test('uz va ru tarjimalari bir xil kalitlarga ega', () => {
 
 test('mijoz faoliyati: OUT + sentById null "Telegram akkauntdan" deb yoziladi', () => {
   const panel = manba('src/Pages/XaridorUchot/FaoliyatPaneli.tsx');
-  assert.match(panel, /item\.sentById === null \? t\("faoliyatPaneli\.chatFromAccount"\)/);
+  // Muallif umumiy yordamchidan (author, bo'lmasa direction/sentById): akkaunt — "Telegram akkauntdan".
+  assert.match(panel, /const muallif = xabarMuallifi\(item\);/);
+  assert.match(panel, /muallif === "akkaunt"\s*\? t\("faoliyatPaneli\.chatFromAccount"\)/);
+  assert.equal(lib.xabarMuallifi({ direction: 'OUT', sentById: null }), 'akkaunt');
   for (const til of ['uz', 'ru']) assert.ok(JSON.parse(manba(`src/i18n/locales/${til}/xaridor_uchot.json`)).faoliyatPaneli.chatFromAccount);
 });
 

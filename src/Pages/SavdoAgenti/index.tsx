@@ -1,21 +1,48 @@
+import { useCallback, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bot, MessagesSquare, ShieldCheck, SlidersHorizontal, Sparkles, Target, type LucideIcon } from "lucide-react";
+import { Bot, MessagesSquare, ShieldCheck, SlidersHorizontal, Target, type LucideIcon } from "lucide-react";
+import { savdoAgentiApi } from "@/api/savdoAgentiApi";
+import { foydalanuvchiAdminmi } from "@/lib/roles";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import Suhbatlar from "./Suhbatlar";
 import Lidlar from "./Lidlar";
+import TasdiqKutayotganlar from "./TasdiqKutayotganlar";
+import AgentSozlamalari from "./AgentSozlamalari";
 
 export type SavdoAgentiBolimi = "tasdiq" | "lidlar" | "suhbatlar" | "sozlamalar";
 
-// Tartib spetsifikatsiya (11-bo'lim) bo'yicha. `tayyor: false` — backend keyingi bosqichda keladi.
-const TABLAR: Array<{ bolim: SavdoAgentiBolimi; yol: string; icon: LucideIcon; tayyor: boolean }> = [
-  { bolim: "tasdiq", yol: "/savdo-agenti/tasdiq-kutayotganlar", icon: ShieldCheck, tayyor: false },
-  { bolim: "lidlar", yol: "/savdo-agenti/lidlar", icon: Target, tayyor: true },
-  { bolim: "suhbatlar", yol: "/savdo-agenti/suhbatlar", icon: MessagesSquare, tayyor: true },
-  { bolim: "sozlamalar", yol: "/savdo-agenti/sozlamalar", icon: SlidersHorizontal, tayyor: false },
+// Tartib spetsifikatsiya (11-bo'lim) bo'yicha. Sozlamalar — faqat ADMIN/DIREKTOR (backend ham faqat ularga beradi).
+const TABLAR: Array<{ bolim: SavdoAgentiBolimi; yol: string; icon: LucideIcon; faqatRahbar?: boolean }> = [
+  { bolim: "tasdiq", yol: "/savdo-agenti/tasdiq-kutayotganlar", icon: ShieldCheck },
+  { bolim: "lidlar", yol: "/savdo-agenti/lidlar", icon: Target },
+  { bolim: "suhbatlar", yol: "/savdo-agenti/suhbatlar", icon: MessagesSquare },
+  { bolim: "sozlamalar", yol: "/savdo-agenti/sozlamalar", icon: SlidersHorizontal, faqatRahbar: true },
 ];
+
+const BELGI_YANGILASH_MS = 60_000;
 
 export default function SavdoAgenti({ bolim }: { bolim: SavdoAgentiBolimi }) {
   const { t } = useTranslation("savdo_agenti");
+  const profil = useAuthProfileStore((state) => state.profil);
+  const rahbar = foydalanuvchiAdminmi(profil);
+  const [kutayotganSoni, setKutayotganSoni] = useState<number | null>(null);
+
+  // Tab belgisi: tasdiq kutayotgan agent buyurtmalari soni (fon so'rovi, xato bo'lsa belgi yo'q). Tasdiq tabida ro'yxatning o'zi beradi.
+  const soniniYuklash = useCallback(() => {
+    savdoAgentiApi
+      .qoralamalar({ page: 1, pageSize: 1 }, true)
+      .then((natija) => setKutayotganSoni(natija.total))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (bolim === "tasdiq") return;
+    soniniYuklash();
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") soniniYuklash();
+    }, BELGI_YANGILASH_MS);
+    return () => window.clearInterval(id);
+  }, [bolim, soniniYuklash]);
 
   return (
     <div className="space-y-4">
@@ -34,8 +61,9 @@ export default function SavdoAgenti({ bolim }: { bolim: SavdoAgentiBolimi }) {
         aria-label={t("title")}
         className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm [scrollbar-width:none]"
       >
-        {TABLAR.map(({ bolim: tabBolimi, yol, icon: Icon, tayyor }) => {
+        {TABLAR.filter((tab) => !tab.faqatRahbar || rahbar).map(({ bolim: tabBolimi, yol, icon: Icon }) => {
           const faol = tabBolimi === bolim;
+          const soni = tabBolimi === "tasdiq" ? kutayotganSoni : null;
           return (
             <NavLink
               key={tabBolimi}
@@ -48,13 +76,12 @@ export default function SavdoAgenti({ bolim }: { bolim: SavdoAgentiBolimi }) {
             >
               <Icon size={16} className="shrink-0" />
               <span>{t(`tabs.${tabBolimi}`)}</span>
-              {!tayyor && (
+              {soni !== null && soni > 0 && (
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${
-                    faol ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"
-                  }`}
+                  data-tasdiq-soni={soni}
+                  className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-[11px] font-black leading-4 ${faol ? "bg-white/25 text-white" : "bg-rose-500 text-white"}`}
                 >
-                  {t("tezOrada.badge")}
+                  {soni > 99 ? "99+" : soni}
                 </span>
               )}
             </NavLink>
@@ -62,26 +89,15 @@ export default function SavdoAgenti({ bolim }: { bolim: SavdoAgentiBolimi }) {
         })}
       </nav>
 
-      {bolim === "suhbatlar" ? <Suhbatlar /> : bolim === "lidlar" ? <Lidlar /> : <TezOrada bolim={bolim} />}
+      {bolim === "suhbatlar" ? (
+        <Suhbatlar />
+      ) : bolim === "lidlar" ? (
+        <Lidlar />
+      ) : bolim === "tasdiq" ? (
+        <TasdiqKutayotganlar onSoni={setKutayotganSoni} />
+      ) : (
+        <AgentSozlamalari />
+      )}
     </div>
-  );
-}
-
-function TezOrada({ bolim }: { bolim: "tasdiq" | "sozlamalar" }) {
-  const { t } = useTranslation("savdo_agenti");
-  const Icon = bolim === "tasdiq" ? ShieldCheck : SlidersHorizontal;
-  return (
-    <section className="flex min-h-[420px] flex-col items-center justify-center gap-3 rounded-[26px] border border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
-      <span className="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-amber-50 to-orange-100 text-amber-600 ring-1 ring-amber-100">
-        <Icon size={34} />
-      </span>
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
-        <Sparkles size={13} />
-        {t("tezOrada.badge")}
-      </span>
-      <h2 className="text-lg font-black text-slate-900">{t(`tabs.${bolim}`)}</h2>
-      <p className="max-w-md text-sm leading-6 text-slate-500">{t(`tezOrada.${bolim}`)}</p>
-      <p className="text-xs font-bold text-slate-400">{t("tezOrada.hozir")}</p>
-    </section>
   );
 }

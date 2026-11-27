@@ -104,6 +104,8 @@ export function sahifagaRuxsatBormi(user: RoleLike | null | undefined, pathname:
   if (yolPrefiksiMosmi(pathname, "/ishlab-chiqarish")) return ishlabChiqarishYoliRuxsati(user, pathname);
   const rol = foydalanuvchiRoli(user);
   if (rol === "ADMIN" || rol === "DIREKTOR") return true;
+  // Savdo agenti sozlamalari: backend GET/PATCH /settings/sales-agent ni faqat ADMIN va DIRECTOR'ga beradi.
+  if (yolPrefiksiMosmi(pathname, "/savdo-agenti/sozlamalar")) return false;
 
   const kassirRuxsati = KASSIR_YOLLARI.some((yol) => yolPrefiksiMosmi(pathname, yol));
   if (rol === "KASSIR") return kassirRuxsati;
