@@ -163,6 +163,8 @@ type SotuvTafsilotlariModalProps = {
   onBekorQilish: (sotuvId: string) => void;
   // Qoralamalar ro'yxatidagi "Tahrirlash" oynani to'g'ridan-to'g'ri "Tovarlar" bo'limida ochadi.
   boshlangichTab?: "Umumiy" | "Tovarlar" | "Tarix";
+  // Kanban sudrashi: ochilganda ombordan chiqarish yoki to'lov oynasi o'zi ochiladi; u yopilsa butun oyna yopiladi.
+  boshlangichAmal?: "ombordanChiqarish" | "tolov";
 };
 
 type SotuvItem = NonNullable<Sotuv["items"]>[number];
@@ -498,6 +500,7 @@ function OddiySotuvTafsilotlariModal({
   onTolovQoshish,
   onBekorQilish,
   boshlangichTab,
+  boshlangichAmal,
   ajratilganQator,
   hisobotManbasi,
   qoldiqYuklanmoqda = false,
@@ -522,10 +525,22 @@ function OddiySotuvTafsilotlariModal({
   const [tovarOzgarishlari, setTovarOzgarishlari] = useState(0);
   const [chiqishSorovi, setChiqishSorovi] = useState(false);
   const [yetkazishOchiq, setYetkazishOchiq] = useState(false);
-  const [ombordanChiqarishOchiq, setOmbordanChiqarishOchiq] = useState(false);
+  // Avtomatik ochiladigan amal faqat holat mos bo'lsa: chiqarish — qoralamada, to'lov — qarzi bor tasdiqlangan sotuvda.
+  const [avtoAmal] = useState<"ombordanChiqarish" | "tolov" | null>(() => {
+    const boshHolat = sotuvHolati(sotuv);
+    if (boshlangichAmal === "ombordanChiqarish" && boshHolat === "DRAFT") return "ombordanChiqarish";
+    if (boshlangichAmal === "tolov" && boshHolat === "CONFIRMED" && sotuvQarzdorlikSummasi(sotuv) > 0) return "tolov";
+    return null;
+  });
+  const [ombordanChiqarishOchiq, setOmbordanChiqarishOchiq] = useState(avtoAmal === "ombordanChiqarish");
   // Shu sotuv bilan ombordan chiqarilgan mahsulotlar oynasi (sotuv kartasidagi havoladan ochiladi).
   const [chiqarilganlarOchiq, setChiqarilganlarOchiq] = useState(false);
   const [tolovModalOchiq, setTolovModalOchiq] = useState(false);
+  // To'lov oynasi o'z portalida: sotuv oynasi bilan bir vaqtda mount bo'lsa, uning DOM tuguni sotuv oynasidan OLDIN qo'shiladi va
+  // bir xil z-indexda orqada qolib ketadi. Shuning uchun avtomatik to'lov sotuv oynasi chizilgandan keyin ochiladi.
+  useEffect(() => {
+    if (avtoAmal === "tolov") setTolovModalOchiq(true);
+  }, [avtoAmal]);
   const [hujjatMenuOchiq, setHujjatMenuOchiq] = useState(false);
   const [hujjatGeneratorOchiq, setHujjatGeneratorOchiq] = useState(false);
   const [tanlanganHujjatTuri, setTanlanganHujjatTuri] = useState<HujjatTuri>("Nakladnoy");
@@ -738,7 +753,7 @@ function OddiySotuvTafsilotlariModal({
           </QisqaKorinishBeruvchi>
         </div>
         {yetkazishOchiq && <YetkazishPanel sotuv={sotuv} jami={jami} onClose={() => setYetkazishOchiq(false)} />}
-        {ombordanChiqarishOchiq && <OmbordanChiqarishPanel sotuv={sotuv} jami={jami} onClose={() => setOmbordanChiqarishOchiq(false)} onOzgarish={setTovarOzgarishlari} />}
+        {ombordanChiqarishOchiq && <OmbordanChiqarishPanel sotuv={sotuv} jami={jami} onClose={() => (avtoAmal === "ombordanChiqarish" ? onYopish() : setOmbordanChiqarishOchiq(false))} onOzgarish={setTovarOzgarishlari} />}
         {chiqarilganlarOchiq && <OmbordanChiqqanlarOynasi sotuv={sotuv} onYopish={() => setChiqarilganlarOchiq(false)} />}
         {tolovModalOchiq && (
           <TolovQabulQilishModal
@@ -748,7 +763,7 @@ function OddiySotuvTafsilotlariModal({
             amalBajarilmoqda={amalBajarilmoqda}
             onYangilash={onYangilash}
             onTolovQoshish={onTolovQoshish}
-            onYopish={() => setTolovModalOchiq(false)}
+            onYopish={() => (avtoAmal === "tolov" ? onYopish() : setTolovModalOchiq(false))}
           />
         )}
         {hujjatGeneratorOchiq && (
@@ -887,12 +902,14 @@ function YukXatiGeneratorModal({
     if (typeof window === "undefined") return;
     const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1000,height=800");
     if (!printWindow) return;
+    // Mijoz/mahsulot/ombor nomlari foydalanuvchi kiritgan matn: HTML sifatida emas, oddiy matn sifatida chiqadi (Android ilovada bu oyna bajariladigan sahifa).
+    const h = (qiymat: unknown) => nakladnoyHtmlMatni(String(qiymat ?? ""));
     const rows = mahsulotlar
       .map(
         (item, index) => `
           <tr>
             <td>${index + 1}</td>
-            <td>${mahsulotNomi(item, t)}</td>
+            <td>${h(mahsulotNomi(item, t))}</td>
             <td>${nakladnoyHtmlMatni(nakladnoyQatori(item, t("common.dona")).birlik)}</td>
             <td>${nakladnoyQatori(item).miqdor}</td>
             <td>${pulniFormatlash(nakladnoyQatori(item).narx, qatorValyutasi(item, sotuv))}</td>
@@ -905,7 +922,7 @@ function YukXatiGeneratorModal({
     printWindow?.document.write(`
       <html>
         <head>
-          <title>${t("nakladnoy.printTitle", { raqam: hujjatRaqam })}</title>
+          <title>${t("nakladnoy.printTitle", { raqam: h(hujjatRaqam) })}</title>
           <style>
             body { font-family: "Times New Roman", Arial, sans-serif; color: #000; padding: 36px 46px; }
             h1 { margin: 0 0 18px; text-align: center; font-size: 24px; font-weight: 800; }
@@ -923,15 +940,15 @@ function YukXatiGeneratorModal({
           </style>
         </head>
         <body>
-          <h1>${t("nakladnoy.sarlavha", { raqam: hujjatRaqam, sana: qisqaSana })}</h1>
+          <h1>${t("nakladnoy.sarlavha", { raqam: h(hujjatRaqam), sana: h(qisqaSana) })}</h1>
           <table class="info">
             <tr>
               <td class="label">${t("nakladnoy.yetkazuvchi")}</td>
-              <td>${yetkazuvchi}, ${yetkazuvchiManzil}</td>
+              <td>${h(yetkazuvchi)}, ${h(yetkazuvchiManzil)}</td>
             </tr>
             <tr>
               <td class="label">${t("nakladnoy.xaridor")}</td>
-              <td style="text-align:center;font-size:20px;font-weight:800;">${mijoz} ${t("nakladnoy.tel")} ${xaridorTelefon}</td>
+              <td style="text-align:center;font-size:20px;font-weight:800;">${h(mijoz)} ${t("nakladnoy.tel")} ${h(xaridorTelefon)}</td>
             </tr>
             <tr class="pay">
               <td class="label">${t("nakladnoy.tolovTuri")}</td>
@@ -946,7 +963,7 @@ function YukXatiGeneratorModal({
             <thead><tr><th>${t("nakladnoy.jadval.raqam")}</th><th>${t("nakladnoy.jadval.nomi")}</th><th>${t("nakladnoy.jadval.birlik")}</th><th>${t("nakladnoy.jadval.miqdor")}</th><th>${t("nakladnoy.jadval.narx")}</th><th>${t("nakladnoy.jadval.summa")}</th></tr></thead>
             <tbody>${rows || `<tr><td colspan="6">${t("nakladnoy.mahsulotYoq")}</td></tr>`}</tbody>
             <tfoot>
-              <tr class="total-row"><td colspan="5" style="text-align:right;">${t("nakladnoy.jami")}</td><td style="text-align:center;">${jami}</td></tr>
+              <tr class="total-row"><td colspan="5" style="text-align:right;">${t("nakladnoy.jami")}</td><td style="text-align:center;">${h(jami)}</td></tr>
             </tfoot>
           </table>
           <div class="signs">
@@ -963,7 +980,7 @@ function YukXatiGeneratorModal({
     printWindow?.document.write(`
       <html>
         <head>
-          <title>Yuk xati ${hujjatRaqam}</title>
+          <title>Yuk xati ${h(hujjatRaqam)}</title>
           <style>
             body { font-family: Arial, sans-serif; color: #1f2937; padding: 32px; }
             h1 { margin: 0 0 8px; font-size: 28px; }
@@ -978,18 +995,18 @@ function YukXatiGeneratorModal({
         </head>
         <body>
           <h1>Yuk xati</h1>
-          <div class="meta">Hujjat raqami: ${hujjatRaqam} · Sana: ${sananiFormatlash(sotuv.date ?? sotuv.createdAt)}</div>
+          <div class="meta">Hujjat raqami: ${h(hujjatRaqam)} · Sana: ${sananiFormatlash(sotuv.date ?? sotuv.createdAt)}</div>
           <div class="grid">
-            <div class="box"><b>Mijoz:</b><br/>${mijoz}</div>
-            <div class="box"><b>Mas'ul:</b><br/>${masulNomi(sotuv)}</div>
-            <div class="box"><b>Telefon:</b><br/>${mijozTelefon(sotuv)}</div>
-            <div class="box"><b>Manzil:</b><br/>${mijozManzili(sotuv)}</div>
+            <div class="box"><b>Mijoz:</b><br/>${h(mijoz)}</div>
+            <div class="box"><b>Mas'ul:</b><br/>${h(masulNomi(sotuv))}</div>
+            <div class="box"><b>Telefon:</b><br/>${h(mijozTelefon(sotuv))}</div>
+            <div class="box"><b>Manzil:</b><br/>${h(mijozManzili(sotuv))}</div>
           </div>
           <table>
             <thead><tr><th>#</th><th>Mahsulot</th><th>Miqdor</th><th>Narx</th><th>Jami</th></tr></thead>
             <tbody>${rows || `<tr><td colspan="5">Mahsulotlar mavjud emas</td></tr>`}</tbody>
           </table>
-          <div class="total">Umumiy summa: ${jami}</div>
+          <div class="total">Umumiy summa: ${h(jami)}</div>
           <script>window.onload = () => window.print();</script>
         </body>
       </html>
@@ -4822,7 +4839,11 @@ function QoshimchaMalumotCard({
     }
   }
 
-  const izohQatorlari = izohniQatorlarga(sotuv.note);
+  // Tugash sanasi endi alohida maydon (dueDate): o'z qatorida ko'rsatiladi; eski sotuv izohida qolgan "Tugash sanasi" qatori takrorlanmaydi.
+  const tugashSanasi = sotuv.dueDate?.slice(0, 10) || "";
+  const izohQatorlari = izohniQatorlarga(sotuv.note).filter(
+    (qator) => !(tugashSanasi && qator.kalit && ["tugash sanasi", "дата окончания"].includes(qator.kalit.toLowerCase()))
+  );
   const kalitliQatorlar = izohQatorlari.filter((qator) => qator.kalit);
   const erkinMatn = izohQatorlari.filter((qator) => !qator.kalit);
 
@@ -4866,6 +4887,9 @@ function QoshimchaMalumotCard({
             <KontaktQatori icon={<CalendarDays size={17} />} label={t("umumiyTab.sana")} value={sananiFormatlash(sotuv.date ?? sotuv.createdAt)} />
             <KiritilganBelgisi date={sotuv.date} createdAt={sotuv.createdAt} className="-mt-2 pb-2 pl-16" />
           </div>
+        )}
+        {tugashSanasi && (
+          <KontaktQatori icon={<CalendarDays size={17} />} label={t("note.endDateLabel", { ns: "savdo_yangi" })} value={kunMatni(tugashSanasi)} />
         )}
       </div>
 

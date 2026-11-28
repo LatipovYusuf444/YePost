@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { subMonths } from "date-fns";
 import {
   CheckCircle2,
@@ -6,13 +6,20 @@ import {
   Plus,
   Search,
   ShoppingCart,
+  SquareKanban,
+  Table2,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { katalogniOldindanIsitish, sotuvTafsilotiniOlish, sotuvlarSahifasiniOlish, sotuvlarXulosasiniOlish, type SotuvlarXulosasi } from "@/api/savdoApi";
 import { useShallow } from "zustand/react/shallow";
 import { useSavdoStore } from "@/store/savdoStore";
-import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
+import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TaxtaKartochkasi, TolovQoshishMalumoti, TolovTuri } from "@/types/savdo";
+import { useAuthProfileStore } from "@/store/authProfileStore";
+import { rolniNormallashtirish } from "@/lib/roles";
+import { bekorQilishRuxsatiBormi } from "@/lib/hujjatRuxsati";
+import type { TaxtaAmali, TaxtaRuxsatlari } from "@/lib/sotuvTaxtasi";
+import SotuvKanban from "./SotuvKanban";
 import BekorQilinganlar from "./BekorQilinganlar";
 import Buyurtmalar from "./Buyurtmalar";
 import MahsulotQaytarishModal from "./MahsulotQaytarishModal";
@@ -42,6 +49,8 @@ type SavdoTabi =
   | "qaytarish"
   | "buyurtmalar"
   | "bekor-qilingan";
+
+const KORINISH_KALITI = "yepost-savdo-korinish";
 
 export default function Savdo() {
   const { t } = useTranslation("savdo_bosh");
@@ -130,6 +139,28 @@ export default function Savdo() {
   // Qoralamalar ro'yxatidagi "Tahrirlash" tafsilot oynasini "Tovarlar" bo'limida ochadi; boshqa joydan ochilganda odatdagidek.
   const [tahrirRejimi, setTahrirRejimi] = useState(false);
   const [xabar, setXabar] = useState("");
+  // "Barcha sotuvlar" ko'rinishi: Jadval yoki Kanban (tanlov brauzerda eslab qolinadi).
+  const [korinish, setKorinish] = useState<"jadval" | "kanban">(() => {
+    try {
+      return window.localStorage.getItem(KORINISH_KALITI) === "kanban" ? "kanban" : "jadval";
+    } catch {
+      return "jadval";
+    }
+  });
+  // Kanban sudrashidan ochilgan sotuv oynasi: ombordan chiqarish yoki to'lov oynasi darrov ochiladi.
+  const [boshlangichAmal, setBoshlangichAmal] = useState<"ombordanChiqarish" | "tolov" | undefined>(undefined);
+  const [kanbanYangilanish, setKanbanYangilanish] = useState(0);
+  // Kanban amali oyna yopilganda yakunlanadi: natija (true — tasdiqlandi yoki to'lov qo'shildi) shu yerda kutiladi.
+  const kanbanAmalYakuni = useRef<((natija: boolean) => void) | null>(null);
+  const kanbanAmalBajarildi = useRef(false);
+  const profil = useAuthProfileStore((holat) => holat.profil);
+  const kanbanRuxsati = useMemo<TaxtaRuxsatlari>(() => {
+    const rol = rolniNormallashtirish(profil?.role);
+    return {
+      amal: rol === "KASSIR" || rol === "OMBORCHI" || rol === "ADMIN" || rol === "DIREKTOR",
+      bekor: bekorQilishRuxsatiBormi(profil, "savdo"),
+    };
+  }, [profil]);
 
   const tablar = useMemo<Array<{ id: SavdoTabi; nomi: string }>>(
     () => [
@@ -179,6 +210,16 @@ export default function Savdo() {
         : t("savdoSahifasi.titles.barchasi");
   const statusFilterKorinsin = faolTab !== "tarix" && faolTab !== "bekor-qilingan";
   const yangiSotuvKorinsin = faolTab === "barchasi";
+  const kanbanRejimi = faolTab === "barchasi" && korinish === "kanban";
+
+  function korinishniTanlash(yangi: "jadval" | "kanban") {
+    setKorinish(yangi);
+    try {
+      window.localStorage.setItem(KORINISH_KALITI, yangi);
+    } catch {
+      // Saqlab bo'lmasa ham tanlov shu sessiyada ishlaydi.
+    }
+  }
 
   useEffect(() => {
     void boshlangichMalumotlarniYuklash();
@@ -211,6 +252,7 @@ export default function Savdo() {
   useEffect(() => {
     if (!havolaSotuvi) return;
     setTahrirRejimi(false);
+    setBoshlangichAmal(undefined);
     setSearchParams(
       (joriy) => {
         const yangi = new URLSearchParams(joriy);
@@ -286,7 +328,8 @@ export default function Savdo() {
   const serverSahifa = serverSahifaTanlovi.kalit === serverFiltrKaliti ? serverSahifaTanlovi.page : 1;
 
   useEffect(() => {
-    if (!serverRejimi) return;
+    // Kanban ko'rinishida jadval so'rovi yuborilmaydi (taxta o'z ma'lumotini oladi).
+    if (!serverRejimi || kanbanRejimi) return;
     let faol = true;
     setServerYuklanmoqda(true);
     void sotuvlarSahifasiniOlish({
@@ -314,7 +357,7 @@ export default function Savdo() {
     };
     // sotuvlarniBoyitish store'da barqaror funksiya.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverRejimi, sanaDan, sanaGacha, statusFilteri, qidiruvKechiktirilgan, serverSahifa, serverHajm, serverYangilanish]);
+  }, [serverRejimi, kanbanRejimi, sanaDan, sanaGacha, statusFilteri, qidiruvKechiktirilgan, serverSahifa, serverHajm, serverYangilanish]);
 
   useEffect(() => {
     if (faolTab !== "barchasi") return;
@@ -394,6 +437,7 @@ export default function Savdo() {
 
   async function sotuvniYuklabOchish(sotuv: Sotuv, tahrirlash: boolean) {
     setTahrirRejimi(tahrirlash);
+    setBoshlangichAmal(undefined);
     await Promise.all([
       sotuvTafsilotiniYuklash(sotuv.id),
       qoldiqlarniYuklash(sotuv.warehouseId, { kesh: true }),
@@ -432,6 +476,7 @@ export default function Savdo() {
 
   async function tasdiqlash(sotuvId: string) {
     const muvaffaqiyatli = await sotuvniTasdiqlash(sotuvId);
+    if (muvaffaqiyatli) kanbanAmalBajarildi.current = true;
     if (muvaffaqiyatli) setXabar("savdoSahifasi.messages.paymentConfirmed");
     return muvaffaqiyatli;
   }
@@ -439,10 +484,78 @@ export default function Savdo() {
   async function bekorQilish(sotuvId: string) {
     // Tasdiqlash oynasida ixtiyoriy sabab ham so'raladi (backend `cancelReason` sifatida saqlaydi); bo'sh qoldirilsa sababsiz bekor qilinadi.
     const { rozi, sabab } = await tasdiqSorash(t("savdoSahifasi.confirmCancel"), { ohang: "qizil", sabab: true });
-    if (!rozi) return;
+    if (!rozi) return false;
 
     const muvaffaqiyatli = await sotuvniBekorQilish(sotuvId, sabab);
     if (muvaffaqiyatli) setXabar("savdoSahifasi.messages.saleCancelled");
+    return muvaffaqiyatli;
+  }
+
+  function kanbanniYangilash() {
+    if (kanbanRejimi) setKanbanYangilanish((joriy) => joriy + 1);
+  }
+
+  // Kutilayotgan Kanban amalini yakunlaydi (bir marta).
+  function kanbanAmaliniYakunlash(natija: boolean) {
+    const yakun = kanbanAmalYakuni.current;
+    kanbanAmalYakuni.current = null;
+    if (!yakun) return;
+    setBoshlangichAmal(undefined);
+    yakun(natija);
+  }
+
+  // Sotuv oynasi (yoki uning yuklanishi) yopilganda: Kanban amali yakunlanadi va taxta qayta olinadi.
+  function sotuvOynasiniYopish() {
+    const amalKutilmoqda = kanbanAmalYakuni.current !== null;
+    // Ombordan chiqarish oynasi do'kon orqali tasdiqlaydi: natija sotuv holatidan olinadi.
+    if (amalKutilmoqda && boshlangichAmal === "ombordanChiqarish" && tanlanganSotuv && sotuvHolati(tanlanganSotuv) !== "DRAFT") kanbanAmalBajarildi.current = true;
+    tanlanganSotuvniTozalash();
+    // Amal kutilayotgan bo'lsa taxtani kanbanAmali o'zi yangilaydi.
+    if (amalKutilmoqda) kanbanAmaliniYakunlash(kanbanAmalBajarildi.current);
+    else kanbanniYangilash();
+  }
+
+  async function tolovQoshish(sotuvId: string, tolov: TolovQoshishMalumoti) {
+    const natija = await sotuvgaTolovQoshish(sotuvId, tolov);
+    if (natija) kanbanAmalBajarildi.current = true;
+    return natija;
+  }
+
+  function kanbanKartochkasiniOchish(sotuvId: string) {
+    setTahrirRejimi(false);
+    setBoshlangichAmal(undefined);
+    void (async () => {
+      const sotuv = await sotuvTafsilotiniYuklash(sotuvId);
+      if (sotuv) await qoldiqlarniYuklash(sotuv.warehouseId, { kesh: true });
+    })();
+  }
+
+  // Kanban sudrash amali: tasdiqlash/to'lov — sotuv oynasi kerakli bo'lim bilan ochiladi va u yopilganda yakunlanadi;
+  // bekor qilish — mavjud sabab so'rovi orqali.
+  async function kanbanAmali(amal: TaxtaAmali, kartochka: TaxtaKartochkasi): Promise<boolean> {
+    if (amal === "bekor") {
+      const natija = await bekorQilish(kartochka.id);
+      setKanbanYangilanish((joriy) => joriy + 1);
+      return natija;
+    }
+    kanbanAmaliniYakunlash(false);
+    const natija = await new Promise<boolean>((resolve) => {
+      kanbanAmalYakuni.current = resolve;
+      kanbanAmalBajarildi.current = false;
+      setTahrirRejimi(false);
+      setBoshlangichAmal(amal === "tasdiqlash" ? "ombordanChiqarish" : "tolov");
+      void (async () => {
+        const sotuv = await sotuvTafsilotiniYuklash(kartochka.id);
+        // Yuklab bo'lmadi yoki yuklash bekor qilindi — kartochka joyiga qaytadi.
+        if (!sotuv) {
+          kanbanAmaliniYakunlash(false);
+          return;
+        }
+        await qoldiqlarniYuklash(sotuv.warehouseId, { kesh: true });
+      })();
+    });
+    setKanbanYangilanish((joriy) => joriy + 1);
+    return natija;
   }
 
   return (
@@ -512,6 +625,8 @@ export default function Savdo() {
               onQarzniKorsatish={() => {
                 setStatusFilteri("barchasi");
                 setTolovFilteri("DEBT");
+                // Qarz filtri jadvalda ko'rinadi.
+                if (kanbanRejimi) korinishniTanlash("jadval");
               }}
             />
           )}
@@ -520,9 +635,32 @@ export default function Savdo() {
             <section className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
               <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-6 sm:px-10 sm:py-7">
                 <h1 className="savdo-section-title">{sahifaSarlavhasi}</h1>
-                <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-orange-50 px-2.5 text-xs font-black tabular-nums text-[#2563EB] ring-1 ring-orange-100">
-                  {serverRejimi && serverYuklanganKalit === serverFiltrKaliti ? serverJami : qidirilganSotuvlar.length}
-                </span>
+                {!kanbanRejimi && (
+                  <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-orange-50 px-2.5 text-xs font-black tabular-nums text-[#2563EB] ring-1 ring-orange-100">
+                    {serverRejimi && serverYuklanganKalit === serverFiltrKaliti ? serverJami : qidirilganSotuvlar.length}
+                  </span>
+                )}
+                {faolTab === "barchasi" && (
+                  <div role="group" aria-label={t("korinish.label")} className="ml-auto inline-flex shrink-0 rounded-xl bg-gray-100 p-1">
+                    {([
+                      { id: "jadval", Belgi: Table2 },
+                      { id: "kanban", Belgi: SquareKanban },
+                    ] as const).map(({ id, Belgi }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={korinish === id}
+                        onClick={() => korinishniTanlash(id)}
+                        className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition ${
+                          korinish === id ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"
+                        }`}
+                      >
+                        <Belgi size={16} />
+                        {t(`korinish.${id}`)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Tor ekranda (yon panel ochiq) filtrlar keyingi qatorga o'tadi va qidiruv torayadi — sana filtri kesilib qolmaydi. */}
@@ -552,6 +690,8 @@ export default function Savdo() {
                   </label>
                 </div>
 
+                {/* Kanban o'z filtrlariga ega: holat, to'lov turi va sana filtrlari faqat jadvalda. */}
+                {!kanbanRejimi && (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:ml-auto lg:shrink-0">
                   {statusFilterKorinsin && (
                     <div className="w-full sm:w-[160px]">
@@ -584,9 +724,10 @@ export default function Savdo() {
                     />
                   </div>
                 </div>
+                )}
               </div>
 
-              {qarzXulosasi && (
+              {!kanbanRejimi && qarzXulosasi && (
                 <div className="mx-5 mb-2 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl bg-rose-50 px-5 py-3.5 ring-1 ring-rose-100 sm:mx-10">
                   <CircleAlert size={18} className="shrink-0 text-rose-500" />
                   <span className="text-sm font-bold text-rose-700">
@@ -608,8 +749,20 @@ export default function Savdo() {
                 </div>
               )}
 
-              {((yuklanmoqda && sotuvlar.length === 0) || (faolTab === "barchasi" && serverRejimi && serverYuklanganKalit === "")) && <JadvalYuklanmoqda />}
-              {!(yuklanmoqda && sotuvlar.length === 0) && !(faolTab === "barchasi" && serverRejimi && serverYuklanganKalit === "") && faolTab === "barchasi" && (
+              {kanbanRejimi && (
+                <SotuvKanban
+                  qidiruv={qidiruv}
+                  omborlar={omborlar}
+                  xodimlar={xodimlar}
+                  yangilanish={kanbanYangilanish + serverYangilanish}
+                  toxtatilgan={Boolean(tanlanganSotuv) || tafsilotYuklanmoqda || yangiSotuvOchiq || Boolean(qaytarishModalSotuv)}
+                  ruxsat={kanbanRuxsati}
+                  onKartochkaOchish={kanbanKartochkasiniOchish}
+                  onAmal={kanbanAmali}
+                />
+              )}
+              {!kanbanRejimi && (((yuklanmoqda && sotuvlar.length === 0) || (faolTab === "barchasi" && serverRejimi && serverYuklanganKalit === "")) && <JadvalYuklanmoqda />)}
+              {!kanbanRejimi && !(yuklanmoqda && sotuvlar.length === 0) && !(faolTab === "barchasi" && serverRejimi && serverYuklanganKalit === "") && faolTab === "barchasi" && (
                 <SotuvlarJadvali tableId="Savdo/index/sotuvlarjadvali-1"
                   sotuvlar={serverRejimi ? serverQatorlar : qidirilganSotuvlar}
                   serverSahifalash={
@@ -714,11 +867,14 @@ export default function Savdo() {
           amalBajarilmoqda={amalBajarilmoqda}
           onOmborTanlash={(omborId) => void qoldiqlarniYuklash(omborId, { kesh: true })}
           onSaqlash={yangiSotuvniSaqlash}
-          onYopish={() => setYangiSotuvOchiq(false)}
+          onYopish={() => {
+            setYangiSotuvOchiq(false);
+            kanbanniYangilash();
+          }}
         />
       )}
 
-      {tafsilotYuklanmoqda && <ModalYuklanmoqda onClose={tanlanganSotuvniTozalash} />}
+      {tafsilotYuklanmoqda && <ModalYuklanmoqda onClose={sotuvOynasiniYopish} />}
       {tanlanganSotuv && !tafsilotYuklanmoqda && (
         <SotuvTafsilotlariModal
           key={tanlanganSotuv.id}
@@ -727,15 +883,16 @@ export default function Savdo() {
           xodimlar={xodimlar}
           amalBajarilmoqda={amalBajarilmoqda || qoldiqYuklanmoqda}
           qoldiqYuklanmoqda={qoldiqYuklanmoqda}
-          onYopish={tanlanganSotuvniTozalash}
+          onYopish={sotuvOynasiniYopish}
           onYangilash={sotuvniYangilash}
-          onTolovQoshish={sotuvgaTolovQoshish}
+          onTolovQoshish={tolovQoshish}
           onTasdiqlash={async (sotuvId) => {
             const muvaffaqiyatli = await tasdiqlash(sotuvId);
-            if (muvaffaqiyatli) tanlanganSotuvniTozalash();
+            if (muvaffaqiyatli) sotuvOynasiniYopish();
           }}
           onBekorQilish={(sotuvId) => void bekorQilish(sotuvId)}
           boshlangichTab={tahrirRejimi ? "Tovarlar" : undefined}
+          boshlangichAmal={boshlangichAmal}
         />
       )}
 

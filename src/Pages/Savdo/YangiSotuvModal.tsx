@@ -773,7 +773,7 @@ export default function YangiSotuvModal({
       bosqich ? `${t("note.stageLabel")}: ${bosqich}` : "",
       `${t("note.currencyLabel")}: ${valyutalar.find((item) => item.value === valyuta)?.label ?? valyuta}`,
       boshlanishSanasi ? `${t("note.startDateLabel")}: ${boshlanishSanasi}` : "",
-      tugashSanasi ? `${t("note.endDateLabel")}: ${tugashSanasi}` : "",
+      // Tugash sanasi izohga yozilmaydi: alohida `dueDate` maydonida yuboriladi.
       izoh.trim() ? `${t("note.commentLabel")}: ${izoh.trim()}` : "",
     ].filter(Boolean);
 
@@ -1429,6 +1429,7 @@ export default function YangiSotuvModal({
         responsibleId: responsibleId || undefined,
         saleType: customerId || clientCompanyId ? "CLIENT" : "QUICK",
         note: backendIzohiniYigish() || undefined,
+        dueDate: tugashSanasi || undefined,
         // Tanlangan sotuv valyutasi har doim aniq yuboriladi (berilmasa backend mijozli savdoni USD deb oladi).
         currency: sotuvVal,
         items: yuboriladiganQatorlar,

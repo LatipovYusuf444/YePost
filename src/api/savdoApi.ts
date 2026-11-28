@@ -26,7 +26,12 @@ import type {
   YetkazishMalumoti,
   YetkazishPayload,
   SaleAuditLog,
+  TaxtaFiltri,
+  TaxtaKartochkasi,
+  TaxtaUstunKaliti,
+  TaxtaUstuni,
 } from "@/types/savdo";
+import { taxtaParametrlari } from "../lib/sotuvTaxtasi.ts";
 import { tolovNatijasi, type TolovNatijasi } from "../lib/tolovOrtiqchasi.ts";
 import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
 import { katalogNarxiniQoldiqqaMoslash, katalogOmborQoldiqlari, katalogQidiruvQatoriniMoslash, katalogQidiruvQoldigi } from "./catalogSearch";
@@ -161,6 +166,34 @@ export async function sotuvTafsilotiniOlish(sotuvId: string) {
 export async function sotuvTafsilotiniFondaOlish(sotuvId: string) {
   const response = await apiClient.get<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}`, { xatoniYashirish: true });
   return apiData(response.data);
+}
+
+// ---- Savdo Kanban: GET /sales/board (ustunlar, har birida 20 tagacha kartochka) va GET /sales/board/:column?cursor=… ----
+// Ustunlar tartibi doim: draft, shipped, partial, closed, cancelled (cancelled yig'ilgan: items bo'sh, count/totals bor).
+export async function sotuvTaxtasiniOlish(filtr: TaxtaFiltri = {}, signal?: AbortSignal): Promise<TaxtaUstuni[]> {
+  const response = await apiClient.get<{ columns?: TaxtaUstuni[] } | ApiEnvelope<{ columns?: TaxtaUstuni[] }>>("/sales/board", {
+    params: taxtaParametrlari(filtr),
+    signal,
+    xatoniYashirish: true,
+  });
+  const malumot = apiData(response.data) as { columns?: TaxtaUstuni[] } | null;
+  return (malumot?.columns ?? []).map((ustun) => ({
+    ...ustun,
+    count: Number(ustun.count) || 0,
+    totals: Array.isArray(ustun.totals) ? ustun.totals : [],
+    items: Array.isArray(ustun.items) ? ustun.items : [],
+    nextCursor: ustun.nextCursor ?? null,
+  }));
+}
+
+// Ustun ichida keyingi sahifa (yoki yig'ilgan "cancelled" ni ochish: kursorsiz). Kursor o'zgartirilmaydi; filtrlar taxta bilan bir xil.
+export async function taxtaUstuniniOlish(ustun: TaxtaUstunKaliti | string, filtr: TaxtaFiltri = {}, cursor?: string | null, signal?: AbortSignal) {
+  const response = await apiClient.get<{ items?: TaxtaKartochkasi[]; nextCursor?: string | null } | ApiEnvelope<{ items?: TaxtaKartochkasi[]; nextCursor?: string | null }>>(
+    `/sales/board/${encodeURIComponent(ustun)}`,
+    { params: { ...taxtaParametrlari(filtr), ...(cursor ? { cursor } : {}) }, signal, xatoniYashirish: true }
+  );
+  const malumot = apiData(response.data) as { items?: TaxtaKartochkasi[]; nextCursor?: string | null } | null;
+  return { items: Array.isArray(malumot?.items) ? malumot.items : [], nextCursor: malumot?.nextCursor ?? null };
 }
 
 // Savdo/index.tsx: yangi sotuvni qoralama holatida yaratadi.

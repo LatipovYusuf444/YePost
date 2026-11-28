@@ -35,8 +35,10 @@ function izohniOqish(note = "") {
 
 export function qoralamaFormasi(sotuv: Sotuv) {
   const { values } = izohniOqish(sotuv.note);
+  // Tugash sanasi `dueDate` maydonidan; u bo'lmasa (eski sotuv) izohdagi "Tugash sanasi: …" qatoridan.
+  const tugash = typeof sotuv.dueDate === "string" && sotuv.dueDate ? sotuv.dueDate.slice(0, 10) : values.tugash;
   return {
-    nom: mijozgaMosSotuvNomi(values.nom, sotuvSarlavhaMijozi(sotuv)), bosqich: values.bosqich, boshlanish: values.boshlanish, tugash: values.tugash, izoh: values.izoh,
+    nom: mijozgaMosSotuvNomi(values.nom, sotuvSarlavhaMijozi(sotuv)), bosqich: values.bosqich, boshlanish: values.boshlanish, tugash, izoh: values.izoh,
     warehouseId: sotuv.warehouseId ?? sotuv.warehouse?.id ?? "",
     customerId: sotuv.customerId ?? sotuv.customer?.id ?? "",
     clientCompanyId: sotuv.clientCompanyId ?? sotuv.clientCompany?.id ?? "",
@@ -209,16 +211,24 @@ export function qoralamaPatch(sotuv: Sotuv, forma: QoralamaForma): Partial<Sotuv
     if (forma[key] !== asl[key]) patch[key] = forma[key];
   }
   if (!asl.customerId && !asl.clientCompanyId && (forma.customerId || forma.clientCompanyId)) patch.saleType = "CLIENT";
-  const metadataOzgarish = (["nom", "bosqich", "boshlanish", "tugash", "izoh"] as const).some((key) => forma[key].trim() !== asl[key].trim());
-  const eskiAvtomatikNom = izohniOqish(sotuv.note).values.nom.trim() !== forma.nom.trim();
-  if (metadataOzgarish || eskiAvtomatikNom || forma.currency !== asl.currency) {
-    const { values, labels, qolgan } = izohniOqish(sotuv.note);
-    const keys: IzohKaliti[] = ["nom", "bosqich", "currency", "boshlanish", "tugash"];
+  const oqilgan = izohniOqish(sotuv.note);
+  const tugashOzgardi = forma.tugash.trim() !== asl.tugash.trim();
+  if (tugashOzgardi) patch.dueDate = forma.tugash.trim() || null;
+  const metadataOzgarish = (["nom", "bosqich", "boshlanish", "izoh"] as const).some((key) => forma[key].trim() !== asl[key].trim());
+  const eskiAvtomatikNom = oqilgan.values.nom.trim() !== forma.nom.trim();
+  // Sana o'zgarganda izohdagi eski "Tugash sanasi: …" qatori ham olib tashlanadi (eskirib qolmasin).
+  const eskiTugashQatori = tugashOzgardi && Boolean(oqilgan.labels.tugash);
+  if (metadataOzgarish || eskiAvtomatikNom || eskiTugashQatori || forma.currency !== asl.currency) {
+    const { values, labels, qolgan } = oqilgan;
+    // Tugash sanasi izohga yozilmaydi: `dueDate` da ketadi.
+    const keys: IzohKaliti[] = ["nom", "bosqich", "currency", "boshlanish"];
     const metadata = keys.map((key) => {
       const value = key === "currency" && forma.currency === asl.currency ? values.currency : forma[key];
       return value.trim() ? `${labels[key] ?? kalitlar[key][0]}: ${value.trim()}` : "";
     }).filter(Boolean);
     patch.note = [...metadata, ...qolgan, ...(forma.izoh.trim() ? [`${labels.izoh ?? "Izoh"}: ${forma.izoh.trim()}`] : [])].join("\n");
+    // Izoh yuborilsa sana ham doim yuboriladi: backend uni izohdan qayta chiqarmasin.
+    patch.dueDate = forma.tugash.trim() || null;
   }
   return patch;
 }

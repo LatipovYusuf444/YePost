@@ -136,6 +136,8 @@ export type TolovQoshishMalumoti = Pick<SotuvTolovi, "paymentType" | "amount" | 
 export type Sotuv = {
   warnings?: NegativeStockWarning[];
   id: string;
+  // Tugash sanasi (YYYY-MM-DD) yoki null. Eski sotuvlarda izohdagi "Tugash sanasi: …" qatoridan ko'chirilgan.
+  dueDate?: string | null;
   // Tovarsiz boshlang'ich qarz: qarzdorlikda qatnashadi, savdo aylanmasi va foydaga kirmaydi.
   isOpeningDebt?: boolean;
   // Sotuv valyutasi: jami, qarz va foyda shu valyutada (UZS/USD). Berilmasa — so'm.
@@ -224,6 +226,8 @@ export type SotuvYaratishMalumoti = {
   // Mijozli savdoda ortiqcha pul avval mijozning eski qarzlarini yopadi (backend standart true); false — qaytim bo'lib qaytadi.
   applyExcessToDebt?: boolean;
   note?: string;
+  // Tugash sanasi (YYYY-MM-DD). PATCH da null — sanani o'chiradi. Hozircha faqat qoralamada o'zgartiriladi.
+  dueDate?: string | null;
   // Donalik savdo uchun mijoz ismi (≤200 belgi) va telefoni (≤50 belgi). Qarzga sotish uchun baribir customerId kerak.
   walkInCustomerName?: string;
   walkInCustomerPhone?: string;
@@ -415,4 +419,48 @@ export type QoldiqTanlovi = {
     };
   };
   warehouse?: OmborTanlovi;
+};
+
+// ---- Savdo Kanban (GET /sales/board) ----
+export type TaxtaUstunKaliti = "draft" | "shipped" | "partial" | "closed" | "cancelled";
+export type TaxtaJami = { currency: string; total: string; paid: string; debt: string };
+export type TaxtaKartochkasi = {
+  id: string;
+  docNumber?: string | null;
+  date?: string | null;
+  status?: SotuvHolati | string;
+  saleType?: SotuvTuri | string;
+  currency?: string | null;
+  // Summalar satr ko'rinishida keladi. priceIncomplete=true bo'lsa (kurs yo'q) totalAmount null.
+  totalAmount?: string | null;
+  paidAmount?: string | null;
+  debtAmount?: string | null;
+  priceIncomplete?: boolean;
+  itemsCount?: number | null;
+  customer?: { id: string; name?: string | null } | null;
+  clientCompany?: { id: string; name?: string | null } | null;
+  walkInCustomerName?: string | null;
+  responsible?: { id: string; name?: string | null } | null;
+  dueDate?: string | null;
+  overdue?: boolean;
+  debtDays?: number | null;
+  draftDays?: number | null;
+  hasReturns?: boolean;
+};
+export type TaxtaUstuni = {
+  key: TaxtaUstunKaliti | string;
+  count: number;
+  totals: TaxtaJami[];
+  items: TaxtaKartochkasi[];
+  nextCursor?: string | null;
+};
+export type TaxtaFiltri = {
+  search?: string;
+  responsibleId?: string;
+  warehouseId?: string;
+  currency?: string;
+  saleType?: SotuvTuri | string;
+  overdue?: boolean;
+  dateFrom?: string;
+  dateTo?: string;
 };

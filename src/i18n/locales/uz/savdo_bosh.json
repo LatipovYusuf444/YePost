@@ -1,4 +1,9 @@
 {
+  "korinish": {
+    "label": "Ko'rinish",
+    "jadval": "Jadval",
+    "kanban": "Kanban"
+  },
   "savdoSahifasi": {
     "tabs": {
       "barchasi": "Barcha sotuvlar",
@@ -171,5 +176,73 @@
       "cancelled": "Qoralama bekor qilindi.",
       "deleted": "Qoralama o'chirildi yoki bekor qilindi."
     }
+  },
+  "kanban": {
+    "ustunlar": {
+      "draft": "Zakaz olindi",
+      "shipped": "Jo'natildi",
+      "partial": "Qisman to'langan",
+      "closed": "Yopildi",
+      "cancelled": "Bekor qilindi"
+    },
+    "filtr": {
+      "masulBarchasi": "Mas'ul: barchasi",
+      "omborBarchasi": "Ombor: barchasi",
+      "valyutaBarchasi": "Valyuta: barchasi",
+      "turiBarchasi": "Turi: barchasi",
+      "turiQuick": "Tezkor savdo",
+      "turiClient": "Mijozli savdo",
+      "muddatiOtgan": "Muddati o'tgan",
+      "tozalash": "Filtrlarni tozalash",
+      "sanaIzohi": "Sana faqat \"Yopildi\" va \"Bekor qilindi\" ustunlariga ta'sir qiladi; sana tanlanmasa — oxirgi 7 kun.",
+      "qidirish": "Qidirish"
+    },
+    "jami": {
+      "jami": "Jami",
+      "tolangan": "To'langan",
+      "qarz": "Qarz",
+      "yoq": "Summa yo'q"
+    },
+    "karta": {
+      "qoralama": "Qoralama",
+      "donalik": "Donalik mijoz",
+      "masul": "Mas'ul",
+      "kursYoq": "kurs kiritilmagan",
+      "tovarlar": "{{soni}} ta tovar",
+      "muddat": "Muddat: {{sana}}",
+      "kunQarz": "{{soni}} kun qarz",
+      "kunQoralama": "{{soni}} kun qoralama",
+      "qaytarishBor": "Qaytarish bor",
+      "muddatiOtgan": "Muddati o'tgan",
+      "bajarilmoqda": "Bajarilmoqda…",
+      "amallar": "Amallar",
+      "ochish": "Sotuvni ochish"
+    },
+    "amal": {
+      "tasdiqlash": "Jo'natish (ombordan chiqarish)",
+      "tolov": "To'lov qabul qilish",
+      "bekor": "Bekor qilish"
+    },
+    "sudrash": {
+      "mumkinEmas": "Bu yerga o'tkazib bo'lmaydi",
+      "sababi": {
+        "ruxsat": "Bu amalga ruxsatingiz yo'q.",
+        "bekorRuxsat": "Bekor qilishga ruxsat yo'q (admin RETURN_CANCEL ruxsati bilan yoki direktor).",
+        "bekorQilingan": "Bekor qilingan sotuvni boshqa ustunga o'tkazib bo'lmaydi.",
+        "avvalJonatish": "Avval qoralamani \"Jo'natildi\" ustuniga o'tkazing (ombordan chiqarish), keyin to'lov qabul qilinadi.",
+        "hisoblanadi": "\"Jo'natildi\", \"Qisman to'langan\" va \"Yopildi\" ustunlari hujjat holati va to'lovlardan hisoblanadi — qo'lda o'rnatib bo'lmaydi."
+      },
+      "yordam": "Kartochkani sudrab boshqa ustunga tashlang (planshetda — bosib turing)."
+    },
+    "bosh": "Bo'sh",
+    "yanaYuklash": "Yana yuklash ({{soni}}/{{jami}})",
+    "korsatish": "Ko'rsatish",
+    "yigish": "Yig'ish",
+    "yuklanmoqda": "Yuklanmoqda…",
+    "qaytaUrinish": "Qayta urinish",
+    "xato": "Taxtani yuklab bo'lmadi.",
+    "yangilashXatosi": "Taxtani yangilab bo'lmadi — oxirgi ma'lumot ko'rsatilmoqda.",
+    "yangilash": "Yangilash",
+    "taxta": "Savdo kanban taxtasi"
   }
 }
