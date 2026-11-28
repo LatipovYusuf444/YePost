@@ -1,6 +1,7 @@
 import { oziValyutadaMatn, pulMatni, yagonaValyuta, type Valyuta } from "@/lib/valyuta";
 import type { MahsulotModifikatsiyasi, OmborQoldigi } from "@/types/ombor";
 import { RAQAM_YOQ } from "@/lib/hujjatRaqamiMatni";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 
 export function sana(value?: string) {
   if (!value) return "—";
@@ -57,7 +58,8 @@ export function modifikatsiyaQidiruvi<T>(
     const nom = modificationNomi(modifikatsiya);
     const barcode = kichik(modifikatsiya?.barcode);
     const artikul = kichik(modifikatsiya?.article);
-    if (!nom.toLowerCase().includes(q) && !barcode.includes(q) && !artikul.includes(q)) continue;
+    // Har bir so'z alohida (istalgan tartibda), nom/shtrix-kod/artikul bo'yicha.
+    if (!sozlarMos([nom, barcode, artikul], q)) continue;
     const nomAniq = [nom, modifikatsiya?.product?.name, modifikatsiya?.name].some((qiymat) => kichik(qiymat) === q);
     natija.push({ element, daraja: barcode === q || artikul === q ? 0 : nomAniq ? 1 : 2, nom });
   }

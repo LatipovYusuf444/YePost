@@ -1,5 +1,6 @@
 import { toshkentKuni } from "../../lib/hujjatSanasi.ts";
 import { movementStockTotals } from "../../lib/negativeStock.ts";
+import { sozlarMos } from "../../lib/sozlabQidirish.ts";
 import type { Maxsulot, Tanlov, TovarHarakati, TovarHarakatiFilter } from "./types.ts";
 
 const matn = (value: unknown) => typeof value === "string" ? value.trim() : "";
@@ -101,7 +102,8 @@ export function harakatGuruhlari(rows: TovarHarakati[], products: Maxsulot[], fi
     if (day && (day < filter.dateFrom || day > filter.dateTo)) continue;
     const haystack = [row.productName, row.modificationName, names.get(row.productId), row.hujjatRaqam, row.refId,
       harakatTuriNomi(row), harakatKontragenti(row, mijozlar, yetkazib), row.warehouseName, omborlar.find(item => item.id === row.warehouseId)?.nomi].join(" ").toLocaleLowerCase();
-    if (kalit && !haystack.includes(kalit)) continue;
+    // Har bir so'z alohida (istalgan tartibda).
+    if (kalit && !sozlarMos(haystack, kalit)) continue;
     const id = row.productId || `variant:${row.xarakteristikaId || row.productName || row.id}`;
     if (!groups.has(id)) groups.set(id, []);
     groups.get(id)!.push(row);

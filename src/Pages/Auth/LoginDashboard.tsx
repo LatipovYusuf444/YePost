@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { BarChart3, Boxes, LayoutDashboard, Package, ShoppingCart, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -30,7 +30,7 @@ function useSigdirish() {
   return { ref, masshtab };
 }
 
-export default function LoginDashboard() {
+export default function LoginDashboard({ brendNomi, brendBelgisi }: { brendNomi: string; brendBelgisi: ReactNode }) {
   const { t } = useTranslation("auth");
   const { ref, masshtab } = useSigdirish();
   const nav: Array<[string, typeof LayoutDashboard]> = [
@@ -56,8 +56,8 @@ export default function LoginDashboard() {
         <div className="lp-dash-body">
           <aside className="lp-dash-side">
             <div className="lp-dash-brand">
-              <span className="lp-logo lp-logo-xs">Y</span>
-              <b>YePost</b>
+              <span className="lp-logo lp-logo-xs">{brendBelgisi}</span>
+              <b>{brendNomi}</b>
             </div>
             {nav.map(([kalit, Icon], indeks) => (
               <div key={kalit} className={`lp-dash-nav${indeks === 0 ? " lp-dash-nav-active" : ""}`}>

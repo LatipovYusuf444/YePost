@@ -646,30 +646,6 @@
   box-shadow: 0 14px 34px rgba(16, 185, 129, 0.4);
 }
 .login-page .auth-spin { animation: lp-spin 0.9s linear infinite; }
-.login-page .auth-forgot-row { display: flex; align-items: center; justify-content: center; gap: 14px; }
-.login-page .auth-forgot-row::before,
-.login-page .auth-forgot-row::after { content: ""; flex: 1; height: 1px; background: linear-gradient(to right, transparent, rgba(147, 197, 253, 0.24)); }
-.login-page .auth-forgot-row::after { transform: rotate(180deg); }
-.login-page .auth-forgot-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-height: 46px;
-  padding: 6px 14px 6px 8px;
-  border: 1px solid rgba(147, 197, 253, 0.26);
-  border-radius: 14px;
-  background: rgba(16, 38, 80, 0.45);
-  color: #cbd8ee;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-.login-page .auth-forgot-icon { display: flex; width: 30px; height: 30px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9px; background: rgba(96, 165, 250, 0.14); color: var(--lp-light); }
-.login-page .auth-forgot-arrow { color: #60a5fa; opacity: 0.7; transition: transform 0.2s ease, opacity 0.2s ease; }
-.login-page .auth-forgot-action:hover { border-color: rgba(147, 197, 253, 0.5); background: rgba(37, 99, 235, 0.16); color: #fff; box-shadow: 0 6px 20px rgba(22, 133, 255, 0.16); }
-.login-page .auth-forgot-action:hover .auth-forgot-arrow { transform: translateX(2px); opacity: 1; }
 .login-page .auth-link { color: #bfdbfe; font-size: 14px; font-weight: 600; text-decoration: none; text-underline-offset: 4px; }
 .login-page .auth-link:hover { color: #fff; text-decoration: underline; }
 .login-page .auth-back-link { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 24px; }
@@ -796,7 +772,77 @@
   .login-page .lp-card-head { flex-wrap: wrap; }
   .login-page .lp-feature { padding: 0 8px; gap: 8px; }
   .login-page .lp-feature-icon { width: 34px; height: 34px; }
-  .login-page .auth-forgot-row::before, .login-page .auth-forgot-row::after { display: none; }
+}
+
+/* Aisa brendi va ixcham karta faqat /login yo'nalishida. */
+.login-page.lp-sign-in .lp-logo {
+  background: linear-gradient(150deg, #3683ef, #2359c4 52%, #123d93);
+}
+.login-page.lp-sign-in .lp-logo img {
+  display: block;
+  width: 68%;
+  height: auto;
+  filter: drop-shadow(0 2px 3px rgba(6, 27, 74, 0.55));
+}
+.login-page.lp-sign-in .lp-card-wrap { max-width: 480px; }
+.login-page.lp-sign-in .lp-card { padding-block: clamp(18px, 2.55vh, 32px); }
+.login-page.lp-sign-in .lp-card-title { margin-top: clamp(15px, 2vh, 21px); }
+.login-page.lp-sign-in .lp-card-sub { margin-top: 6px; }
+.login-page.lp-sign-in .auth-form {
+  gap: clamp(11px, 1.7vh, 16px);
+  margin-top: clamp(16px, 2.3vh, 24px);
+}
+.login-page.lp-sign-in .auth-input-wrap { height: 50px; }
+.login-page.lp-sign-in .auth-submit { min-height: 52px; }
+.login-page.lp-sign-in .auth-login-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 12px;
+}
+.login-page.lp-sign-in .auth-login-actions .auth-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+}
+.login-page.lp-sign-in .auth-workspace-help summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 32px;
+  margin-top: 4px;
+  list-style: none;
+  color: #b4cdef;
+  font-size: 13px;
+  cursor: pointer;
+}
+.login-page.lp-sign-in .auth-workspace-help summary::-webkit-details-marker { display: none; }
+.login-page.lp-sign-in .auth-workspace-help summary:hover { color: #fff; }
+.login-page.lp-sign-in .auth-workspace-help summary svg { flex-shrink: 0; color: var(--lp-light); }
+.login-page.lp-sign-in .auth-workspace-help-arrow { transition: transform 0.2s ease; }
+.login-page.lp-sign-in .auth-workspace-help[open] .auth-workspace-help-arrow { transform: rotate(180deg); }
+.login-page.lp-sign-in .auth-workspace-help p {
+  margin-bottom: 4px;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(147, 197, 253, 0.42);
+  color: var(--lp-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.login-page.lp-sign-in :is(.auth-workspace-help summary, .auth-login-actions .auth-link):focus-visible {
+  outline: 2px solid var(--lp-light);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+@media (min-width: 640px) {
+  .login-page.lp-sign-in .lp-card { padding-inline: clamp(20px, 2.2vw, 34px); }
+}
+@media (max-width: 639px) {
+  .login-page.lp-sign-in .auth-workspace-help summary,
+  .login-page.lp-sign-in .auth-login-actions :is(.auth-remember, .auth-link) { min-height: 44px; }
 }
 
 /* Harakatni kamaytirish: barcha davomiy va kirish animatsiyalari o'chadi, oxirgi holat darhol ko'rinadi. */

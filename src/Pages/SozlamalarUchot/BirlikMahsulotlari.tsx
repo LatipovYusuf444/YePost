@@ -8,6 +8,7 @@ import { stockBalanceReport, type StockBalanceItem, type StockBalanceParams } fr
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Mahsulot, OlchovBirligi } from "@/types/catalog";
 import { birlikdagiMahsulotlar, maydonKlass } from "./yordamchilar";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 
 // Sozlamalar → O'lchov birligi: birlik ustiga bosilganda shu birlikdagi barcha mahsulotlar va ularning
 // omborlardagi qoldig'i. Mahsulotlar ro'yxati (/catalog/products) birlik bo'yicha, qoldiq esa
@@ -164,7 +165,7 @@ export default function BirlikMahsulotlari({ birlik, mahsulotlar, onYopish }: Pr
     const matn = qidiruv.trim().toLowerCase();
     return korinadiganQatorlar.filter((qator) => {
       if (omborFiltri && qator.ombor !== omborFiltri) return false;
-      return !matn || [qator.nom, qator.variant, qator.shtrix, qator.ombor].join(" ").toLowerCase().includes(matn);
+      return !matn || sozlarMos([qator.nom, qator.variant, qator.shtrix, qator.ombor], matn);
     });
   }, [korinadiganQatorlar, qidiruv, omborFiltri]);
 

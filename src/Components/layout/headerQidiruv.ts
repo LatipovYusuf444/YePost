@@ -1,6 +1,7 @@
 import type { QoldiqTanlovi } from "../../types/savdo.ts";
 import { birlikTopish, shtrixBirligi, type TovarBirligi } from "../../lib/kopBirlik.ts";
 import { mahsulotNomi, qoldiqMiqdori, savatNomi, tanlovKaliti } from "./posMahsulotlari.ts";
+import { sozlarMos } from "../../lib/sozlabQidirish.ts";
 
 // Headerdagi tezkor qidiruvning toza qismi (UI'siz, testlanadi): qator turi va qidirish/saralash qoidasi.
 
@@ -47,10 +48,8 @@ export function qidirish(qatorlar: Qator[], soz: string, kategoriyaIdlari: Reado
     .filter((qator) => {
       if (kategoriyaIdlari && !kategoriyaIdlari.has(mahsulotIdsi(qator.item)) && !kodAniqMi(qator)) return false;
       if (!q) return true;
-      return [savatNomi(qator.item), qator.item.modification?.barcode, qator.item.modification?.article]
-        .join(" ")
-        .toLowerCase()
-        .includes(q);
+      // Har bir so'z alohida (istalgan tartibda): "akfix 705" — "AKFIX MDF 705 KLEY 200 gr".
+      return sozlarMos([savatNomi(qator.item), qator.item.modification?.barcode, qator.item.modification?.article], q);
     })
     .map((qator) => {
       const mod = qator.item.modification;

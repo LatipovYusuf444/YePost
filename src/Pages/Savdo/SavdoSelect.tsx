@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { optionlarniCheklash } from "@/lib/optionlarniCheklash";
 import { variantniKorsatish } from "@/lib/variantniKorsatish";
 import { sichqonchaliQurilma } from "@/lib/sichqonchaliQurilma";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 
 export type SavdoSelectOption = {
   value: string;
@@ -122,7 +123,8 @@ export default function SavdoSelect({
     korinadiganOptions = options.filter((option) => {
       if (qidiruvMosligi) return qidiruvMosligi(option, qidiruvMatni);
       const matn = (option.searchLabel ?? labelToText(option.label)).toLowerCase();
-      if (matn.includes(qidiruv)) return true;
+      // Har bir so'z alohida (istalgan tartibda) — backend qidiruvi bilan bir xil.
+      if (sozlarMos(matn, qidiruv)) return true;
       return klaviatura && Boolean(qidiruv) && (option.kodlar ?? []).some((kod) => kod.toLowerCase().includes(qidiruv));
     });
     if (klaviatura && qidiruv) korinadiganOptions = aniqMoslikTartibi(korinadiganOptions, qidiruv);

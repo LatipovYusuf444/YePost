@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
-import { ChevronRight, KeyRound, Store, UserRound } from "lucide-react";
+import { ChevronDown, CircleHelp, Store, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -174,30 +174,40 @@ export default function Login() {
   return (
     <AuthPanel title={t("sapphire.welcome")} subtitle={t("sapphire.welcomeText")}>
       <form className="auth-form" onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
-        <AuthField
-          id="workspace"
-          name="workspace"
-          label={t("workspaceLabel")}
-          tag={dokonKodiKerak ? t("workspaceRequiredTag") : t("workspaceOptional")}
-          ohang={dokonKodiKerak ? "ogohlantirish" : "oddiy"}
-          icon={<Store size={19} />}
-          inputRef={dokonKodiRef}
-          value={dokonKodi}
-          onChange={(event) => {
-            setDokonKodi(event.target.value);
-            setDokonKodiXatosi("");
-            setErrorMessage("");
-            fx.tozala("workspace");
-          }}
-          autoComplete="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          placeholder={t("workspacePlaceholder")}
-          readOnly={isSubmitting || kirildi}
-          error={kodMaydonXatosi}
-          hint={t("workspaceHint")}
-          data-maydon-xato={kodMaydonXatosi ? "true" : undefined}
-        />
+        <div>
+          <AuthField
+            id="workspace"
+            name="workspace"
+            label={t("workspaceLabel")}
+            tag={dokonKodiKerak ? t("workspaceRequiredTag") : t("workspaceOptional")}
+            ohang={dokonKodiKerak ? "ogohlantirish" : "oddiy"}
+            icon={<Store size={19} />}
+            inputRef={dokonKodiRef}
+            value={dokonKodi}
+            onChange={(event) => {
+              setDokonKodi(event.target.value);
+              setDokonKodiXatosi("");
+              setErrorMessage("");
+              fx.tozala("workspace");
+            }}
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder={t("workspacePlaceholder")}
+            readOnly={isSubmitting || kirildi}
+            error={kodMaydonXatosi}
+            aria-required={dokonKodiKerak}
+            data-maydon-xato={kodMaydonXatosi ? "true" : undefined}
+          />
+          <details className="auth-workspace-help">
+            <summary>
+              <CircleHelp size={15} aria-hidden="true" />
+              {t("workspaceHelpLabel")}
+              <ChevronDown size={14} className="auth-workspace-help-arrow" aria-hidden="true" />
+            </summary>
+            <p>{t("workspaceHint")}</p>
+          </details>
+        </div>
 
         <AuthField
           id="username"
@@ -241,23 +251,20 @@ export default function Login() {
         {holat?.passwordReset && <AuthMessage success>{t("reset.success")}</AuthMessage>}
         {tepaXatosi && <AuthMessage>{tepaXatosi}</AuthMessage>}
 
-        <label className="auth-remember">
-          <input type="checkbox" defaultChecked />
-          <span className="auth-remember-box" aria-hidden="true" />
-          <span>{t("sapphire.remember")}</span>
-        </label>
+        <div className="auth-login-actions">
+          <label className="auth-remember">
+            <input type="checkbox" defaultChecked />
+            <span className="auth-remember-box" aria-hidden="true" />
+            <span>{t("sapphire.remember")}</span>
+          </label>
+          <Link to="/forgot-password" state={{ workspace: dokonKodi, username, from: holat?.from }} className="auth-link">
+            {t("forgot.link")}
+          </Link>
+        </div>
 
         <SubmitButton busy={isSubmitting} done={kirildi}>
           {kirildi ? t("sapphire.signedIn") : isSubmitting ? t("submitting") : t("submit")}
         </SubmitButton>
-
-        <div className="auth-forgot-row">
-          <Link to="/forgot-password" state={{ workspace: dokonKodi, username, from: holat?.from }} className="auth-forgot-action">
-            <span className="auth-forgot-icon" aria-hidden="true"><KeyRound size={16} strokeWidth={1.8} /></span>
-            <span>{t("forgot.link")}</span>
-            <ChevronRight size={15} className="auth-forgot-arrow" aria-hidden="true" />
-          </Link>
-        </div>
       </form>
     </AuthPanel>
   );

@@ -3,6 +3,7 @@ import { Check, ChevronDown, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { variantniKorsatish } from "@/lib/variantniKorsatish";
 import { klaviaturaYonalishi } from "@/lib/royxatKlaviaturasi";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 
 export type TanlovVarianti = { value: string; label: string };
 
@@ -39,7 +40,8 @@ export default function Tanlov({
   const korinadigan = useMemo(() => {
     const q = soz.trim().toLowerCase();
     if (!q) return variantlar;
-    return variantlar.filter((v) => v.label.toLowerCase().includes(q));
+    // Har bir so'z alohida (istalgan tartibda).
+    return variantlar.filter((v) => sozlarMos(v.label, q));
   }, [variantlar, soz]);
 
   // Belgilangan variant ko'rinib tursin (uzun ro'yxatda ↓ bosilganda pastga aylanadi).

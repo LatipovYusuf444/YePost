@@ -23,6 +23,7 @@ import type { TFunction } from "i18next";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
 import { toshkentKuni } from "@/lib/hujjatSanasi";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import HujjatBekorQilish from "@/Components/common/HujjatBekorQilish";
@@ -283,7 +284,8 @@ export default function Kochirish() {
       if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
       if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
       if (!qiymat) return true;
-      return [
+      // Har bir so'z alohida (istalgan tartibda).
+      return sozlarMos([
         hujjatNomi(hujjat, t),
         holat(hujjat.status),
         yaratganNomi(hujjat),
@@ -293,11 +295,7 @@ export default function Kochirish() {
         hujjat.date ?? hujjat.createdAt,
         hujjat.updatedAt,
         hujjatSummasi(hujjat, modifikatsiyaMap),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLocaleLowerCase("uz")
-        .includes(qiymat);
+      ], qiymat);
     });
   }, [manbaOmborNomi, modifikatsiyaMap, ozgartirganNomi, qabulOmborNomi, qidiruv, sanaDan, sanaGacha, store.kochirishlar, t, yaratganNomi]);
   const sahifadagiHujjatlar = useMemo(() => filtrlangan.slice((page - 1) * pageSize, page * pageSize), [filtrlangan, page, pageSize]);

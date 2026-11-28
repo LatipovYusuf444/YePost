@@ -14,13 +14,16 @@ export function katalogFiltrlash(
   p: { qidiruv: string; faqatQoldiq: boolean; kategoriya: ReadonlySet<string> | null; qoldiqSoni: (kalit: string) => number; modificationId: (kalit: string) => string }
 ) {
   const soz = qidiruvKorinishi(p.qidiruv);
+  // Har bir so'z alohida (istalgan tartibda): "akfix 705" — "AKFIX MDF 705 KLEY 200 gr" (backend qidiruvi bilan bir xil).
+  const sozlar = soz ? soz.split(" ") : [];
   return variantlar
     .map((option) => ({ option, nom: option.searchLabel ?? (typeof option.label === "string" ? option.label : option.value) }))
     .filter(({ option, nom }) => {
       if (p.kategoriya && !p.kategoriya.has(p.modificationId(option.value))) return false;
       if (p.faqatQoldiq && !(p.qoldiqSoni(option.value) > 0)) return false;
       if (!soz) return true;
-      return [nom, ...(option.nomlar ?? []), ...(option.kodlar ?? [])].some((matn) => qidiruvKorinishi(matn).includes(soz));
+      const manba = qidiruvKorinishi([nom, ...(option.nomlar ?? []), ...(option.kodlar ?? [])].join(" "));
+      return sozlar.every((bitta) => manba.includes(bitta));
     })
     .sort((a, b) => Number(Boolean(a.option.disabled)) - Number(Boolean(b.option.disabled)));
 }

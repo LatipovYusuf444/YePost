@@ -11,6 +11,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { StockBalanceItem } from "@/api/reportsApi";
 import type { Kategoriya, Mahsulot, OlchovBirligi } from "@/types/catalog";
 import { kategoriyaMahsulotlariniBirlashtirish, kategoriyaMiqdorJamilari, kategoriyaQatorlari } from "@/lib/kategoriyaQoldigi";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 
 type Props = { kategoriya: Kategoriya; mahsulotlar: Mahsulot[]; birliklar: OlchovBirligi[]; onYopish: () => void; onMahsulotOchish: (id: string) => void; yashirin?: boolean };
 const sonMatni = (son: number) => stockQuantity(son);
@@ -54,7 +55,7 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
   const omborlar = useMemo(() => Array.from(new Map(qatorlar.filter(item => item.omborId).map(item => [item.omborId!, item.omborNomi])).entries()).sort((a, b) => a[1].localeCompare(b[1], "uz")), [qatorlar]);
   const filtrlangan = useMemo(() => {
     const matn = qidiruv.trim().toLocaleLowerCase();
-    return qatorlar.filter(item => (!omborId || item.omborId === omborId) && (!matn || [item.nom, item.variant, item.shtrix, item.artikul, item.omborNomi].join(" ").toLocaleLowerCase().includes(matn)));
+    return qatorlar.filter(item => (!omborId || item.omborId === omborId) && (!matn || sozlarMos([item.nom, item.variant, item.shtrix, item.artikul, item.omborNomi], matn)));
   }, [qatorlar, qidiruv, omborId]);
   const mahsulotSoni = new Set(filtrlangan.map(item => item.mahsulotId)).size;
   const omborSoni = new Set(filtrlangan.flatMap(item => item.omborId ? [item.omborId] : [])).size;

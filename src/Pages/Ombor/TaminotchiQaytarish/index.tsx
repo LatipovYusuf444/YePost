@@ -21,6 +21,7 @@ import QaytarishOynasi from "./QaytarishOynasi";
 import QaytarishTafsilot from "./QaytarishTafsilot";
 import HolatBelgisi from "./HolatBelgisi";
 import { mahsulotlarMatni, yetkazibBeruvchiNomi } from "./yordamchi";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 
 // Ombor → Yetkazib beruvchiga qaytarish: kirimda kelgan nuqsonli yoki ortiqcha tovar yetkazib beruvchiga qaytariladi (VOZ-…).
 export default function TaminotchiQaytarish() {
@@ -71,8 +72,7 @@ export default function TaminotchiQaytarish() {
       if (sanaDan && !(kun && kun >= sanaDan)) return false;
       if (sanaGacha && !(kun && kun <= sanaGacha)) return false;
       if (!q) return true;
-      return [hujjatRaqami(hujjat), yetkazibBeruvchiNomi(hujjat, store.yetkazibBeruvchilar), mahsulotlarMatni(hujjat), hujjat.note]
-        .join(" ").toLocaleLowerCase().includes(q);
+      return sozlarMos([hujjatRaqami(hujjat), yetkazibBeruvchiNomi(hujjat, store.yetkazibBeruvchilar), mahsulotlarMatni(hujjat), hujjat.note], q);
     });
   }, [hammasi, qidiruv, statusFiltri, supplierFiltri, sanaDan, sanaGacha, store.yetkazibBeruvchilar]);
   const statistika = useMemo(() => {

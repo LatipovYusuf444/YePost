@@ -68,6 +68,7 @@ import { modifikatsiyalarApi } from "@/api/catalogApi";
 import { variatsiyaAtributlari, variatsiyaNomi, variatsiyaPatchi, variatsiyaQiymatlari, variatsiyalarniTekshirish, variatsiyalimi, yangiVariatsiyaParams, type VariatsiyaXatosi } from "@/lib/mahsulotVariatsiyalari";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { serverXatoMaydonlari, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 
 // Mahsulot formasi: server xatosi (validatsiya maydoni, kod yoki xabar so'zi) qaysi maydonga tushadi. Kalitlar — so'rov tanasidagi nomlar.
 // Asosiy variant narxi va min. qoldig'i (variant tanasida price.*, /price tanasida to'g'ridan-to'g'ri).
@@ -271,7 +272,7 @@ export default function Mahsulotlar() {
     const q = qidiruv.trim().toLowerCase();
     return q
       ? store.mahsulotlar.filter((item) =>
-          [item.name, item.barcode, item.article].join(" ").toLowerCase().includes(q)
+          sozlarMos([item.name, item.barcode, item.article], q)
         )
       : store.mahsulotlar;
   }, [qidiruv, store.mahsulotlar]);

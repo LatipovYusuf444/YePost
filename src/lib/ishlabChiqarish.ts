@@ -18,6 +18,7 @@ import type {
   TozaxtashSababi,
 } from "../types/ishlabChiqarish.ts";
 import { serverXatoMaydonlari as maydonlarniOqish, type FormaXatosi } from "./maydonXatolari.ts";
+import { sozlarMos } from "./sozlabQidirish.ts";
 
 // Forma maydon xatolari butun loyiha uchun umumiy (lib/maydonXatolari): eski importlar uchun shu yerdan ham beriladi.
 export { serverXatoMaydonlari, type FormaXatosi, type XatoMaydonQoidasi } from "./maydonXatolari.ts";
@@ -467,11 +468,12 @@ export function smenaTanasiniYigish(forma: SmenaFormasi): { tana: SmenaTanasi } 
   };
 }
 
-/** Ro'yxat qidiruvi: so'z berilgan qiymatlardan birida uchrasa mos (katta-kichik harf farqsiz). Bo'sh so'z — hammasi mos. */
+/**
+ * Ro'yxat qidiruvi: har bir so'z berilgan qiymatlarda uchrasa mos (istalgan tartibda, katta-kichik harf farqsiz).
+ * Bo'sh so'z — hammasi mos.
+ */
 export function qidiruvgaMos(soz: string, qiymatlar: ReadonlyArray<unknown>) {
-  const qidiruv = soz.trim().toLocaleLowerCase();
-  if (!qidiruv) return true;
-  return qiymatlar.some((qiymat) => qiymat !== null && qiymat !== undefined && String(qiymat).toLocaleLowerCase().includes(qidiruv));
+  return sozlarMos(qiymatlar.filter((qiymat) => qiymat !== null && qiymat !== undefined).map(String), soz);
 }
 
 /** Holat filtri (bitta holat yoki holatlar guruhi): `null` — hammasi. */

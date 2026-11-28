@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Tanlov } from "./types";
+import { sozlarMos } from "@/lib/sozlabQidirish";
 
 // Ko'p tanlovli maydon — yozib qidiriladi (combobox). Hisobot filtrlari uchun umumiy.
 export default function KopTanlovli({
@@ -26,7 +27,7 @@ export default function KopTanlovli({
   const tanlangan = options.filter((o) => selected.includes(o.id));
   const kalit = qidiruv.trim().toLowerCase();
   const qolgan = options.filter(
-    (o) => !selected.includes(o.id) && o.nomi.toLowerCase().includes(kalit)
+    (o) => !selected.includes(o.id) && sozlarMos(o.nomi, kalit)
   );
 
   useEffect(() => {
