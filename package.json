@@ -8,9 +8,17 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test:tables": "node --test tests/smartTable.test.mjs tests/smartTableComponent.test.mjs tests/smartTableCoverage.test.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android:sync": "cap sync android",
+    "android:apk:debug": "cap sync android && cd android && .\\gradlew.bat assembleDebug",
+    "android:apk:release": "set YEPOST_ILOVA_URL=&& cap sync android && cd android && .\\gradlew.bat assembleRelease"
   },
   "dependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.2",
+    "@capacitor/network": "8.0.1",
+    "@capacitor/splash-screen": "8.0.2",
     "@fontsource-variable/geist": "^5.2.9",
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",
@@ -43,6 +51,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.2",
     "@eslint/js": "^9.29.0",
     "@types/node": "^25.9.1",
     "@types/react": "^19.1.8",

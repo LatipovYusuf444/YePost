@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Aisa</string>
+    <string name="title_activity_main">Aisa</string>
+    <string name="package_name">uz.yepost.app</string>
+    <string name="custom_url_scheme">uz.yepost.app</string>
+</resources>

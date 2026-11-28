@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Aisa brendi (public/aisa-favicon.svg) -->
+    <color name="colorPrimary">#245CC8</color>
+    <color name="colorPrimaryDark">#123D93</color>
+    <color name="colorAccent">#2563EB</color>
+    <!-- Ochilish ekrani foni -->
+    <color name="splashBackground">#245CC8</color>
+    <!-- Tizim panellari ortidagi fon: ilovaning sutli sahifa foni (yp-sut-fon tokeni) -->
+    <color name="windowBackground">#E6E3DC</color>
+</resources>

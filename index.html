@@ -16,6 +16,17 @@
     } catch {
       document.documentElement.dataset.theme = "default";
     }
+    // Android ilovasi (Capacitor, User-Agent "YePostAndroid"): sahifa tizim panellari (soat/batareya, pastki navigatsiya) orasiga
+    // joylanadi — viewport-fit=cover olib tashlanadi, aks holda sarlavha va pastki tugmalar panellar ostida qolardi.
+    try {
+      if (navigator.userAgent.indexOf("YePostAndroid") !== -1) {
+        const meta = document.querySelector('meta[name="viewport"]');
+        if (meta) meta.setAttribute("content", meta.getAttribute("content").replace(/,\s*viewport-fit=cover/, ""));
+        document.documentElement.classList.add("nativ-ilova");
+      }
+    } catch {
+      // Viewport o'zgarmasa ham ilova ishlaydi.
+    }
     // iPhone/iPad (iPadOS o'zini Mac deb ko'rsatadi): 16px dan kichik maydonga bosilganda Safari sahifani kattalashtirmasin.
     // iOS foydalanuvchining barmoq bilan kattalashtirishini baribir saqlaydi; Android'da qo'shilmaydi (u yerda kattalashtirishni o'chirardi).
     try {

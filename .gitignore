@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Android imzolash kaliti va parollari HECH QACHON repozitoriyga tushmasin (docs/android/README.md)
+*.jks
+*.keystore
+keystore.properties
+# Yig'ilgan Android fayllari
+*.apk
+*.aab

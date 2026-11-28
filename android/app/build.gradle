@@ -1,0 +1,113 @@
+apply plugin: 'com.android.application'
+
+// ---- Versiya: android/version.properties ----
+def versiya = new Properties()
+file('../version.properties').withInputStream { versiya.load(it) }
+
+// ---- Release imzosi: kalit va parollar repozitoriydan TASHQARIDA ----
+// Standart joy: <foydalanuvchi papkasi>/.yepost-signing/keystore.properties
+// Boshqa joy: YEPOST_KEYSTORE_PROPERTIES muhit o'zgaruvchisi yoki -PyepostKeystoreProperties=<yo'l>
+// keystore.properties tarkibi: storeFile, storePassword, keyAlias, keyPassword (docs/android/README.md).
+def imzoFayli = file(
+    project.findProperty('yepostKeystoreProperties')
+        ?: System.getenv('YEPOST_KEYSTORE_PROPERTIES')
+        ?: "${System.getProperty('user.home')}/.yepost-signing/keystore.properties"
+)
+def imzo = new Properties()
+if (imzoFayli.exists()) {
+    imzoFayli.withInputStream { imzo.load(it) }
+}
+
+android {
+    namespace = "uz.yepost.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "uz.yepost.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode versiya.getProperty('VERSION_CODE').toInteger()
+        versionName versiya.getProperty('VERSION_NAME')
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (imzo.getProperty('storeFile')) {
+                storeFile file(imzo.getProperty('storeFile'))
+                storePassword imzo.getProperty('storePassword')
+                keyAlias imzo.getProperty('keyAlias')
+                keyPassword imzo.getProperty('keyPassword')
+                // v1 (eski Android) + v2/v3 imzo: fayl menejeridan o'rnatish barcha versiyalarda ishlaydi.
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (imzo.getProperty('storeFile')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+    buildFeatures {
+        buildConfig true
+    }
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "YePost-${variant.versionName}-${variant.buildType.name}.apk"
+        }
+    }
+}
+
+// Release himoyasi:
+// 1) imzo sozlanmagan bo'lsa yig'ish to'xtaydi (imzosiz APK telefonga o'rnatilmaydi);
+// 2) ilova ochadigan manzil (cap sync yozgan capacitor.config.json -> server.url) HTTPS va localhost emas bo'lishi shart —
+//    dasturchi sinovidan qolgan YEPOST_ILOVA_URL=http://localhost... bilan xodimlarga ishlamaydigan APK chiqib ketmasin.
+gradle.taskGraph.whenReady { graph ->
+    if (!graph.allTasks.any { it.name.toLowerCase().contains('release') }) return
+    if (!imzo.getProperty('storeFile')) {
+        throw new GradleException("Release imzo sozlanmagan: ${imzoFayli} topilmadi. docs/android/README.md -> 'Imzolash kaliti' bo'limiga qarang.")
+    }
+    def capConfig = file('src/main/assets/capacitor.config.json')
+    def serverUrl = capConfig.exists() ? (new groovy.json.JsonSlurper().parse(capConfig)?.server?.url ?: '') : ''
+    if (!serverUrl.startsWith('https://') || serverUrl.contains('localhost') || serverUrl.contains('10.0.2.2')) {
+        throw new GradleException("Release uchun ilova manzili noto'g'ri: '${serverUrl}'. YEPOST_ILOVA_URL ni olib tashlab `npx cap sync android` qiling (docs/android/README.md).")
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
