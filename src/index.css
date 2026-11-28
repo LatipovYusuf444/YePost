@@ -1001,7 +1001,7 @@ html[data-mavzu-otish]::view-transition-new(root) {
 /*
  * 27.11 — "Shisha" rejimi: html[data-theme="shisha"] VA html[data-shisha-sahifa] (useShishaSahifa — asosiy layout, yon paneldagi
  * barcha sahifalar). Asosiy rejim (data-theme="default") bu blokka umuman tegmaydi; chop etishda ham qog'oz oq (@media screen).
- * Dizayn ("2D liquid glass"): tiniq interyer fotosurati (public/mavzu/shisha-fon.webp, Unsplash litsenziyasi) ustida tutunli suyuq
+ * Dizayn ("2D liquid glass"): tiniq interyer fotosurati (public/mavzu/shisha-fon.webp — Unsplash photo-1600607687939, litsenziyasi bepul) ustida tutunli suyuq
  * shisha — yon panel, yuqori panel va asosiy oyna: yengil xiralik + to'yinganlik (fon ko'rinib turadi), yuqori-chapdan yaltiroq gradient,
  * ikki tomonlama yorug' qirra; kartalar shisha ustida shisha; asosiy tugma/tanlov — oq "pill" (to'q matn); matn — oq, foto ustida
  * o'qilishi uchun juda yengil soya. Semantik ranglar (yashil/qizil/sariq) o'z ma'nosida qoladi.
@@ -1011,10 +1011,11 @@ html[data-theme="shisha"][data-shisha-sahifa] {
   color-scheme: dark;
   --s-karta: rgb(255 255 255 / 0.08);
   --s-karta-2: rgb(255 255 255 / 0.11);
-  --s-ichki: rgb(0 0 0 / 0.22);
+  --s-ichki: rgb(0 0 0 / 0.14);
   /* Jadval sarlavhasi — to'q tasma (oq qatlamlar yig'ilib, yorqin foto ustida oqarib ketmasin). */
   --s-sarlavha: rgb(0 0 0 / 0.34);
-  --s-oyna: rgb(18 16 14 / 0.56);
+  /* Asosiy oyna yon panel bilan bir xil tiniqlikda (fon ko'rinib turadi). */
+  --s-oyna: rgb(18 16 14 / 0.42);
   --s-panel: rgb(18 16 14 / 0.42);
   --s-ochiluvchi: rgb(32 28 25 / 0.96);
   --s-chegara-och: rgb(255 255 255 / 0.08);
@@ -1022,12 +1023,12 @@ html[data-theme="shisha"][data-shisha-sahifa] {
   --s-chegara-toq: rgb(255 255 255 / 0.22);
   --s-matn: #FFFFFF;
   --s-matn-2: #F1EDE7;
-  --s-xira: #DAD3C9;
+  --s-xira: #E6E0D8;
   --s-pill: #F6F3EE;
   --s-pill-matn: #1A1714;
   /* Suyuq shisha: kam xiralik (fon tiniq ko'rinadi), to'yinganlik va yorqinlik — "linza" hissi. */
   --s-blur: blur(12px) saturate(175%) brightness(0.92);
-  --s-blur-oyna: blur(16px) saturate(165%) brightness(0.84);
+  --s-blur-oyna: blur(12px) saturate(175%) brightness(0.9);
   --s-yaltiroq: linear-gradient(150deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.05) 22%, transparent 48%, rgb(255 255 255 / 0.03) 100%);
   --s-qirra: inset 1px 1px 0 rgb(255 255 255 / 0.42), inset -1px -1px 0 rgb(255 255 255 / 0.1), inset 0 0 22px rgb(255 255 255 / 0.05);
 
@@ -1121,7 +1122,7 @@ html[data-theme="shisha"][data-shisha-sahifa] body {
 }
 
 /* Foto ustidagi shishada kichik/xira matn ham o'qilsin: juda yengil soya (maydonlar va oq pill ichida yo'q). */
-html[data-theme="shisha"][data-shisha-sahifa] .app-shell { text-shadow: 0 1px 2px rgb(0 0 0 / 0.28); }
+html[data-theme="shisha"][data-shisha-sahifa] .app-shell { text-shadow: 0 1px 2px rgb(0 0 0 / 0.38), 0 0 1px rgb(0 0 0 / 0.2); }
 html[data-theme="shisha"][data-shisha-sahifa] :is(input, textarea, select, [data-tolov-tanlangan], .theme-primary-gradient, .theme-logo) { text-shadow: none; }
 
 /* ---------- Fon: tiniq interyer fotosurati, ustida juda yengil iliq parda ----------

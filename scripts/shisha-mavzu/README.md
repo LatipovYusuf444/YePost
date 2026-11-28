@@ -8,8 +8,8 @@ qo'yiladi — yon paneldagi barcha sahifalar, ularning modallari va ochiladigan 
 
 ## Fon rasmi
 
-`public/mavzu/shisha-fon.webp` — Unsplash fotosurati (https://unsplash.com/photos/ — `photo-1600210492486-724fe5c67fb0`, Unsplash License:
-tijoriy foydalanish bepul, mualliflikni ko'rsatish shart emas), 1920×1440, webp q78. Almashtirish uchun shu nomdagi faylni almashtirish
+`public/mavzu/shisha-fon.webp` — Unsplash fotosurati (https://unsplash.com/photos/ — `photo-1600607687939-ce8a6c25118c` — yog'och devorli zamonaviy ochiq xona, Unsplash License:
+tijoriy foydalanish bepul, mualliflikni ko'rsatish shart emas), 1920×1306, webp. Almashtirish uchun shu nomdagi faylni almashtirish
 kifoya; hajmi 300 KB dan kichik bo'lsin (test tekshiradi).
 
 ## Fayllar
