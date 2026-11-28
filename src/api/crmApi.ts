@@ -24,6 +24,13 @@ import type {
   RoyxatJavobi,
   TimelineFilter,
   TimelineItem,
+  Contact,
+  ContactJavobi,
+  ContactRoyxati,
+  ContactYaratish,
+  ActivityYakunlash,
+  ActivityYakunlashJavobi,
+  KunTartibi,
 } from "@/types/crm";
 
 function tozaParams(params?: Record<string, unknown>) {
@@ -109,6 +116,43 @@ export const crmApi = {
     apiData((await apiClient.delete<Activity | ApiEnvelope<Activity>>(`/crm/activities/${id}`)).data),
   activityYakunlash: async (id: string, result?: string) =>
     apiData((await apiClient.post<Activity | ApiEnvelope<Activity>>(`/crm/activities/${id}/complete`, { result })).data),
+
+  // ---- CRM 1-bosqich ----
+  // Faoliyat (qo'ng'iroq/uchrashuv/xabar) natijasi bilan + kerak bo'lsa keyingi vazifa — bitta tranzaksiyada.
+  contactYozish: async (data: ContactYaratish): Promise<ContactJavobi> => {
+    const javob = apiData((await apiClient.post<ContactJavobi | ApiEnvelope<ContactJavobi>>("/crm/contacts", data, { muvaffaqiyatniYashirish: true })).data) as Partial<ContactJavobi> & Contact;
+    return javob && "contact" in javob ? { contact: javob.contact as Contact, nextTask: javob.nextTask ?? null } : { contact: javob as Contact, nextTask: null };
+  },
+  // Eng yangisi birinchi; nextCursor null — oxiri.
+  contactlar: async (partnerId: string, params?: { cursor?: string | null; limit?: number }): Promise<ContactRoyxati> => {
+    const javob = apiData(
+      (await apiClient.get<ContactRoyxati | ApiEnvelope<ContactRoyxati>>("/crm/contacts", { params: tozaParams({ partnerId, cursor: params?.cursor ?? undefined, limit: params?.limit }), xatoniYashirish: true })).data
+    ) as Partial<ContactRoyxati> | Contact[] | null;
+    if (Array.isArray(javob)) return { items: javob, nextCursor: null };
+    return { items: Array.isArray(javob?.items) ? javob.items : [], nextCursor: javob?.nextCursor ?? null };
+  },
+  // "Zakaz olindi" faoliyatiga sotuvni bog'lash (bir marta, shu mijozning sotuvi).
+  contactSotuviniBoglash: async (contactId: string, saleId: string) =>
+    apiData((await apiClient.patch<Contact | ApiEnvelope<Contact>>(`/crm/contacts/${contactId}/sale`, { saleId })).data) as Contact,
+  // Vazifani natija bilan yopish: vazifa yopiladi, faoliyat yoziladi, kerak bo'lsa keyingi vazifa — bitta so'rovda.
+  activityNatijaBilanYakunlash: async (id: string, data: ActivityYakunlash): Promise<ActivityYakunlashJavobi> => {
+    const javob = apiData(
+      (await apiClient.post<ActivityYakunlashJavobi | Activity | ApiEnvelope<ActivityYakunlashJavobi | Activity>>(`/crm/activities/${id}/complete`, data, { muvaffaqiyatniYashirish: true })).data
+    ) as Record<string, unknown>;
+    const vazifa = (javob?.activity ?? javob) as Activity;
+    return { activity: vazifa, contact: (javob?.contact as Contact | undefined) ?? null, nextTask: (javob?.nextTask as Activity | undefined) ?? null };
+  },
+  // Sabab majburiy; faqat ochiq vazifa.
+  activityBekorQilish: async (id: string, reason: string) =>
+    apiData((await apiClient.post<Activity | ApiEnvelope<Activity>>(`/crm/activities/${id}/cancel`, { reason }, { muvaffaqiyatniYashirish: true })).data) as Activity,
+  // "Bugungi ishlar": oddiy xodimga doim o'z vazifalari (assigneeId e'tiborsiz); admin/direktor boshqa xodimni tanlaydi. days 1–90.
+  kunTartibi: async (params?: { assigneeId?: string; days?: number }, signal?: AbortSignal): Promise<KunTartibi> => {
+    const javob = apiData(
+      (await apiClient.get<KunTartibi | ApiEnvelope<KunTartibi>>("/crm/activities/agenda", { params: tozaParams({ assigneeId: params?.assigneeId, days: params?.days }), signal, xatoniYashirish: true })).data
+    ) as Partial<KunTartibi> | null;
+    const r = (v: unknown) => (Array.isArray(v) ? (v as Activity[]) : []);
+    return { overdue: r(javob?.overdue), today: r(javob?.today), tomorrow: r(javob?.tomorrow), later: r(javob?.later) };
+  },
 
   partnerComments: async (partnerId: string, params?: { cursor?: string; limit?: number }) =>
     apiData(

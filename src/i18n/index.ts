@@ -61,6 +61,8 @@ import adminUz from "./locales/uz/admin.json";
 import ishlabChiqarishUz from "./locales/uz/ishlab_chiqarish.json";
 import ishlabChiqarishRu from "./locales/ru/ishlab_chiqarish.json";
 import adminRu from "./locales/ru/admin.json";
+import crmUz from "./locales/uz/crm.json";
+import crmRu from "./locales/ru/crm.json";
 
 export const LANG_STORAGE_KEY = "yepost-lang";
 export const SUPPORTED_LANGUAGES = ["uz", "ru"] as const;
@@ -105,6 +107,7 @@ void i18n.use(initReactI18next).init({
       support: supportUz,
       admin: adminUz,
       ishlab_chiqarish: ishlabChiqarishUz,
+      crm: crmUz,
     },
     ru: {
       common: commonRu,
@@ -137,6 +140,7 @@ void i18n.use(initReactI18next).init({
       support: supportRu,
       admin: adminRu,
       ishlab_chiqarish: ishlabChiqarishRu,
+      crm: crmRu,
     },
   },
   lng: getStoredLanguage(),
@@ -172,6 +176,7 @@ void i18n.use(initReactI18next).init({
     "savdo_agenti",
     "support",
     "admin",
+    "crm",
   ],
   defaultNS: "common",
   interpolation: { escapeValue: false },

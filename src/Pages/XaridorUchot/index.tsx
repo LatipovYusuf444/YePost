@@ -5,6 +5,7 @@ import { mijozKompaniyalariApi, mijozlarApi, yetkazibBeruvchilarApi } from "@/ap
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import { tahrirValyutasi, yaratishValyutasi } from "@/lib/mijozValyutasi";
+import { tahrirMasuli, yaratishMasuli } from "@/lib/mijozMasuli";
 import { kirimApi, omborlarApi, omborMasullari } from "@/api/omborApi";
 import Kompaniyalar from "./Kompaniyalar";
 import Xaridorlar from "./Xaridorlar";
@@ -100,6 +101,8 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
         companyId: xaridor.kompaniyaId || undefined,
         // Hisob valyutasi: yangi mijozda faqat tanlangan bo'lsa, mavjudda faqat o'zgargan bo'lsa yuboriladi (valyuta rejimi o'chiq bo'lsa o'zgarmaydi).
         ...(eskisi ? tahrirValyutasi(eskisi.valyuta, xaridor.valyuta) : yaratishValyutasi(xaridor.valyuta)),
+        // Mas'ul xodim: yangida faqat tanlangan bo'lsa, mavjudda faqat o'zgargan bo'lsa (tozalansa null).
+        ...(eskisi ? tahrirMasuli(eskisi.masulId, xaridor.masulId) : yaratishMasuli(xaridor.masulId)),
         customFields,
       };
       const saved = mavjud ? await mijozlarApi.yangilash(xaridor.id, payload) : await mijozlarApi.yaratish(payload);

@@ -7,6 +7,7 @@ import {
   Phone,
   Plus,
   Trash2,
+  UserCheck,
   UserRound,
   Wallet,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import FaoliyatPaneli from "./FaoliyatPaneli";
 import IjtimoiyTanlov from "./IjtimoiyTanlov";
 import Tanlov from "./Tanlov";
 import TezkorPanel from "./TezkorPanel";
+import { useMasulXodimlar } from "./useMasulXodimlar";
 import { SavdolarTab, TarixTab, TolovlarTab } from "./XaridorTablari";
 import { useQatorKalitlari } from "@/hooks/useQatorKalitlari";
 import type {
@@ -52,6 +54,7 @@ const XARIDOR_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
   lastName: { maydonlar: ["lastName"], kodlar: ["last_name", "lastname"], sozlar: ["familiya", "фамили"] },
   address: { maydonlar: ["address"], kodlar: ["address"], sozlar: ["manzil", "адрес"] },
   position: { maydonlar: ["customFields.position"] },
+  responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"], sozlar: ["mas'ul", "ответствен"] },
 };
 
 // Tanlov tugmasida aria-haspopup yo'q: xato bo'lsa uning ramkasi shu klass bilan qizil bo'ladi.
@@ -71,6 +74,8 @@ type Props = {
    * Berilsa, kursor birinchi bo'sh majburiy maydonga (ism yoki telefon) qo'yiladi.
    */
   boshlangichMatn?: string;
+  /** "Mas'ul xodim" tanlovi (CRM). Faqat saqlashda `masulId`ni yuboradigan joylar yoqadi; xodimlar ro'yxati bo'sh (403) bo'lsa yashirin. */
+  masulTanlash?: boolean;
 };
 
 export default function XaridorModal({
@@ -82,6 +87,7 @@ export default function XaridorModal({
   onYopish,
   onSaqlash,
   boshlangichMatn,
+  masulTanlash = false,
 }: Props) {
   const { t } = useTranslation(["xaridor_uchot", "common"]);
   const malumotTablari = malumotTabKalitlari.map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) }));
@@ -102,6 +108,19 @@ export default function XaridorModal({
   const [lavozim, setLavozim] = useState(boshlangich?.lavozim ?? "");
   const [yaratilganSana, setYaratilganSana] = useState(boshlangich?.yaratilganSana ?? bugun());
   const [valyuta, setValyuta] = useState<MijozValyutasi>(boshlangich?.valyuta ?? null);
+  const [masulId, setMasulId] = useState(boshlangich?.masulId ?? "");
+  const masul = useMasulXodimlar(masulTanlash);
+  // Ro'yxat bo'sh (kassir — 403) bo'lsa maydon ko'rinmaydi va mas'ul o'zgarmaydi.
+  const masulKorinadi = masulTanlash && masul.xodimlar.length > 0;
+  const masulVariantlari = useMemo(() => {
+    const royxat = masul.xodimlar.map((xodim) => ({ value: xodim.id, label: xodim.nom }));
+    // Joriy mas'ul ro'yxatda bo'lmasa (masalan, o'chirilgan xodim) ham ko'rinsin.
+    const joriyId = boshlangich?.masulId;
+    if (joriyId && !royxat.some((variant) => variant.value === joriyId)) {
+      royxat.unshift({ value: joriyId, label: boshlangich?.masulNomi || joriyId });
+    }
+    return [{ value: "", label: t("masul.none") }, ...royxat];
+  }, [masul.xodimlar, boshlangich?.masulId, boshlangich?.masulNomi, t]);
   const [xato, setXato] = useState("");
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [faolTab, setFaolTab] = useState<MalumotTab>("malumotlar");
@@ -134,7 +153,7 @@ export default function XaridorModal({
     // Faqat oyna ochilganda bir marta.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const chiziladiganMaydonlar = ["firstName", "lastName", "phone", "address", "telegramId", "companyId", "position", ...(rejimYoniq ? ["currency"] : [])];
+  const chiziladiganMaydonlar = ["firstName", "lastName", "phone", "address", "telegramId", "companyId", "position", ...(rejimYoniq ? ["currency"] : []), ...(masulKorinadi ? ["responsibleId"] : [])];
   const ichidagiXato = chiziladiganMaydonlar.some((yol) => Boolean(fx.xato(yol)));
   useEffect(() => {
     if (!ichidagiXato) return;
@@ -219,6 +238,11 @@ export default function XaridorModal({
       yaratilganSana,
       ozgartirilganSana: bugun(),
       customFields: boshlangich?.customFields ?? {},
+      // Maydon yashirin bo'lsa kartadagi mas'ul o'zgarmaydi.
+      masulId: masulKorinadi ? masulId : (boshlangich?.masulId ?? ""),
+      masulNomi: masulKorinadi
+        ? masul.xodimlar.find((xodim) => xodim.id === masulId)?.nom ?? (masulId === boshlangich?.masulId ? boshlangich?.masulNomi : "")
+        : boshlangich?.masulNomi,
       }));
     } catch (error) {
       setXato(getApiErrorMessage(error));
@@ -397,6 +421,25 @@ export default function XaridorModal({
                       />
                     </label>
                     </XatoliMaydon>
+
+                    {masulKorinadi && (
+                      <XatoliMaydon xato={fx.xato("responsibleId")} className={fx.xato("responsibleId") ? TANLOV_XATOSI : ""}>
+                      <label className="grid gap-2">
+                        <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
+                          <UserCheck size={14} className="text-[#2563EB]" />
+                          {t("masul.label")}
+                        </span>
+                        <Tanlov
+                          qiymat={masulId}
+                          onChange={(qiymat) => { fx.tozala("responsibleId"); setMasulId(qiymat); }}
+                          placeholder={t("masul.none")}
+                          variantlar={masulVariantlari}
+                          qidiruv={masulVariantlari.length > 8}
+                        />
+                        <span className="text-xs font-semibold text-slate-400">{t("masul.hint")}</span>
+                      </label>
+                      </XatoliMaydon>
+                    )}
 
                     <XatoliMaydon xato={fx.xato("position")}>
                     <label className="grid gap-2">

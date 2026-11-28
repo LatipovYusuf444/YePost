@@ -7,7 +7,7 @@ import { mijozQarzXulosasi } from "@/lib/boshlangichQarz";
 import { mijozHisobi } from "@/lib/mijozHisobi";
 import { valyutaKutmoqda } from "@/lib/mijozValyutasi";
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Briefcase, Building2, Phone, Trash2 } from "lucide-react";
+import { BookOpen, Briefcase, Building2, Phone, Trash2, UserCheck } from "lucide-react";
 import BoshlangichQarzModal from "./BoshlangichQarzModal";
 import { pulniFormatlash } from "@/Pages/Savdo/savdoYordamchilari";
 import { useTranslation } from "react-i18next";
@@ -20,6 +20,7 @@ import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonk
 import TezkorPanel from "./TezkorPanel";
 import { SavdolarTab, TarixTab } from "./XaridorTablari";
 import XaridorTolovlariTab from "./XaridorTolovlariTab";
+import { useMasulXodimlar } from "./useMasulXodimlar";
 import MijozQarzlariTab from "./MijozQarzlariTab";
 import { timelineniTarixga } from "./backendAdapters";
 import type { TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi } from "./types";
@@ -174,8 +175,20 @@ function MalumotlarTab({
 }) {
   const { t } = useTranslation("xaridor_uchot");
   const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
+  // Mas'ul xodim nomi: javobda kelmasa xodimlar ro'yxatidan (keshlangan) topiladi.
+  const masulRoyxati = useMasulXodimlar(Boolean(xaridor.masulId && !xaridor.masulNomi));
+  const masulNomi = xaridor.masulId
+    ? xaridor.masulNomi || masulRoyxati.xodimlar.find((xodim) => xodim.id === xaridor.masulId)?.nom || "—"
+    : t("masul.none");
   const hisob = mijozHisobi({ balance: xaridor.balans, balanceCurrency: xaridor.balansValyutasi });
   const xulosa = mijozQarzXulosasi(savdolar);
+  // Faoliyat paneli: "Zakaz olindi" ga bog'lanadigan haqiqiy sotuvlar (boshlang'ich qarz va bekor qilinganlarsiz).
+  const faoliyatSotuvlari = useMemo(
+    () => savdolar
+      .filter((savdo) => !savdo.isOpeningDebt && savdo.holat !== "bekor")
+      .map((savdo) => ({ id: savdo.id, docNumber: savdo.raqam, date: savdo.sana, jamiMatni: pulniFormatlash(savdo.summa, savdo.currency === "USD" ? "USD" : "UZS") })),
+    [savdolar]
+  );
   // Faqat dollar rejimida asosiy summa dollarda; rejimdan oldingi so'mdagi hujjatlar so'mda, o'girilmasdan ko'rsatiladi.
   const yagona = useYagonaValyuta();
   const summaMatni = (summa: { UZS: number; USD: number }) => (yagona === "USD"
@@ -245,6 +258,7 @@ function MalumotlarTab({
               nom={t("xaridorDetails.companyLabel")}
               qiymat={kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId) || t("xaridorDetails.companyUnassigned")}
             />
+            <Qator icon={<UserCheck size={14} />} nom={t("masul.label")} qiymat={masulNomi} />
             <Qator
               icon={<Briefcase size={14} />}
               nom={t("shared.detailFields.position")}
@@ -273,7 +287,7 @@ function MalumotlarTab({
         <MijozTelegramKarti xaridor={xaridor} />
       </div>
 
-      <FaoliyatPaneli partnerId={xaridor.partnerId} customerId={xaridor.id} />
+      <FaoliyatPaneli partnerId={xaridor.partnerId} customerId={xaridor.id} sotuvlar={faoliyatSotuvlari} />
     </div>
   );
 }

@@ -27,6 +27,7 @@ import {
   Boxes,
   Building2,
   Calculator,
+  CalendarCheck,
   Check,
   CheckCircle2,
   ClipboardCheck,
@@ -68,6 +69,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { tokenEgasi } from "@/lib/sessiyaIzolyatsiyasi";
 import { useSupportStore } from "@/store/supportStore";
+import { useJonliYangilash } from "@/hooks/useJonliYangilash";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 import { sahifagaRuxsatBormi } from "@/lib/roles";
 import MobilNavigatsiya from "./MobilNavigatsiya";
@@ -78,6 +80,8 @@ import { keyingiBolim, kochirish, korinadiganTartibniBirlashtirish, tartibniQoll
 import { useAvatarUrl } from "@/store/avatarStore";
 import type { YonPanelRejimi } from "./yonPanelHolati";
 import "./yonPanel.css";
+// O'qilmagan support xabarlari badge'ini yangilaydigan SSE hodisalari.
+const OQILMAGAN_HODISALARI = ["support.message", "support.read"] as const;
 type MenyuBolasi = { key: string; path: string; icon: LucideIcon };
 type Menyu = { key: string; path: string; icon: LucideIcon; bolalar?: MenyuBolasi[] };
 
@@ -137,6 +141,8 @@ const menyular: Menyu[] = [
     icon: Users,
     bolalar: [
       { key: "xaridorlar", path: "/mijozlar", icon: Users },
+      // Birinchi bola bo'lim bosilganda ochiladi — shuning uchun Xaridorlardan keyin.
+      { key: "bugungiIshlar", path: "/mijozlar/bugungi-ishlar", icon: CalendarCheck },
       { key: "kompaniya", path: "/mijozlar/kompaniya", icon: Building2 },
       { key: "yetkazibBeruvchilar", path: "/mijozlar/yetkazib-beruvchilar", icon: Truck },
     ],
@@ -348,20 +354,21 @@ export default function YonPanel({
   const ustida = rejim === "orta" && acik;
 
   // Qo'llab-quvvatlash bo'limidagi o'qilmagan xabarlar soni sidebar
-  // ikonkasida badge sifatida ko'rsatiladi — har 60 soniyada, faqat sahifa ko'rinib turganda
-  // yangilanadi; yashirin vkladka so'rov yubormaydi, foydalanuvchi qaytganda darrov yangilanadi.
+  // ikonkasida badge sifatida ko'rsatiladi — support.message/support.read hodisasida (SSE) yangilanadi;
+  // oqim yo'q bo'lsa har 60 soniyada polling (faqat sahifa ko'rinib turganda), foydalanuvchi qaytganda darrov yangilanadi.
   useEffect(() => {
     const yangilash = () => {
       if (document.visibilityState === "visible") void oqilmaganSoniniYangilash();
     };
     yangilash();
-    const oraliq = setInterval(yangilash, 60000);
     document.addEventListener("visibilitychange", yangilash);
-    return () => {
-      clearInterval(oraliq);
-      document.removeEventListener("visibilitychange", yangilash);
-    };
+    return () => document.removeEventListener("visibilitychange", yangilash);
   }, [oqilmaganSoniniYangilash]);
+  useJonliYangilash({
+    hodisalar: OQILMAGAN_HODISALARI,
+    yangilash: () => oqilmaganSoniniYangilash(),
+    zaxiraMs: 60000,
+  });
 
   // Foydalanuvchi tanlagan tartib (shu brauzerda, foydalanuvchi bo'yicha): yuqori bandlar va bo'lim ichidagi bandlar. Yangi qo'shilgan
   // menyu bandlari standart joyiga yaqin chiqadi; marshrut va ruxsatlar tartibga bog'liq emas.

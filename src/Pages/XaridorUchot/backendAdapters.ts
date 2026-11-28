@@ -1,4 +1,5 @@
 import { mijozValyutasi } from "@/lib/mijozValyutasi";
+import { mijozMasuli } from "@/lib/mijozMasuli";
 import { mijozTelegramHolati } from "@/lib/telegramXabarnoma";
 import type { TimelineItem } from "@/types/crm";
 import type { Mijoz, MijozKompaniyasi, YetkazibBeruvchi } from "@/types/partner";
@@ -34,6 +35,7 @@ export function mijozniUiGa(item: Mijoz): Xaridor {
   const extraPhones = Array.isArray(custom.extraPhones)
     ? custom.extraPhones.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     : [];
+  const masul = mijozMasuli(item);
   return {
     id: item.id,
     partnerId: item.partner?.id,
@@ -56,6 +58,8 @@ export function mijozniUiGa(item: Mijoz): Xaridor {
     yaratilganSana: item.partner?.createdAt ?? item.createdAt ?? "",
     ozgartirilganSana: item.partner?.updatedAt ?? item.updatedAt ?? item.createdAt ?? "",
     customFields: custom,
+    masulId: masul.id,
+    masulNomi: masul.nom,
   };
 }
 

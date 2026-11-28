@@ -31,6 +31,7 @@ const Inventarizatsiya = lazy(() => import("@/Pages/Ombor/Inventarizatsiya"))
 const Xaridlar = lazy(() => import("@/Pages/Ombor/Xaridlar"))
 const Ombor = lazy(() => import("@/Pages/Ombor"))
 const XaridorUchot = lazy(() => import("@/Pages/XaridorUchot"))
+const BugungiIshlar = lazy(() => import("@/Pages/BugungiIshlar"))
 const SavdoAgenti = lazy(() => import("@/Pages/SavdoAgenti"))
 const Savdo = lazy(() => import("@/Pages/Savdo"))
 const SozlamalarUchot = lazy(() => import("@/Pages/SozlamalarUchot"))
@@ -101,6 +102,8 @@ export default function AppRouter() {
         <Route path="/mahsulotlar" element={<Mahsulotlar />} />
         {/* Xaridorlar, kompaniyalar va yetkazib beruvchilar real partner/CRM API'lariga ulangan. */}
         <Route path="/mijozlar" element={<XaridorUchot faolTab="xaridorlar" />} />
+        {/* CRM: sotuvchining kunlik vazifalari (GET /crm/activities/agenda). */}
+        <Route path="/mijozlar/bugungi-ishlar" element={<BugungiIshlar />} />
         <Route path="/mijozlar/kompaniya" element={<XaridorUchot faolTab="kompaniyalar" />} />
         <Route path="/mijozlar/yetkazib-beruvchilar" element={<XaridorUchot faolTab="yetkazib-beruvchilar" />} />
         {/* Ombor yo'nalishlari (hamkasb strukturasi saqlandi) */}

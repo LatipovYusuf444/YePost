@@ -448,6 +448,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
       {modalOchiq && (
         <XaridorModal
           boshlangich={tahrirXaridor}
+          masulTanlash
           kompaniyalar={kompaniyalar}
           savdolar={savdolar}
           tolovlar={[]}

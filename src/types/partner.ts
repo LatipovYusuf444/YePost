@@ -73,8 +73,20 @@ export type Mijoz = {
   customFields?: Record<string, unknown> | null;
   socials?: PartnerSocials | null;
   partner?: Partner | null;
+  // Mas'ul xodim (CRM): yangi vazifalar shunga tushadi; null — biriktirilmagan.
+  responsibleId?: string | null;
+  responsible?: MijozMasulXodimi | null;
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type MijozMasulXodimi = {
+  id: string;
+  fullName?: string | null;
+  name?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
 };
 
 export type MijozMalumoti = {
@@ -87,6 +99,8 @@ export type MijozMalumoti = {
   companyId?: string;
   // PATCH'da null — tanlovni olib tashlash; POST'da belgilanmagan valyuta yuborilmaydi.
   currency?: "UZS" | "USD" | null;
+  // Mas'ul xodim id'si; PATCH'da null — olib tashlash, POST'da tanlanmagan bo'lsa yuborilmaydi.
+  responsibleId?: string | null;
   customFields?: Record<string, unknown>;
 };
 

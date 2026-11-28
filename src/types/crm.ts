@@ -95,7 +95,8 @@ export type MijozKartasi = {
   [key: string]: unknown;
 };
 
-export type ActivityTuri = "CALL" | "MEETING" | "TASK";
+// MESSAGE va DEBT — CRM 1-bosqich; TASK "boshqa" sifatida qoladi.
+export type ActivityTuri = "CALL" | "MEETING" | "MESSAGE" | "DEBT" | "TASK";
 export type ActivityHolati = "PENDING" | "DONE" | "CANCELLED";
 
 export type Activity = {
@@ -110,6 +111,13 @@ export type Activity = {
   assignee?: CrmUser;
   status?: ActivityHolati | string;
   result?: string;
+  // Ochiq va muddati o'tgan (qizil ko'rsatish uchun).
+  overdue?: boolean;
+  partnerId?: string;
+  partner?: { id: string; name?: string | null } | null;
+  saleId?: string | null;
+  sale?: { id: string; docNumber?: string | null } | null;
+  cancelReason?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -131,7 +139,9 @@ export type ActivitySaqlash = {
   description?: string;
   dueAt: string;
   remindAt?: string;
+  // Ixtiyoriy: berilmasa mijozning mas'uli, u bo'lmasa joriy xodim.
   assigneeId?: string;
+  saleId?: string;
 };
 
 export type ActivityYangilash = Partial<ActivitySaqlash>;
@@ -252,3 +262,55 @@ export type LidKartochkasi = Lid & { notes?: LidIzohi[]; events?: LidHodisasi[] 
 
 export type LidVoronkasi = { total: number; interested: number; ordered: number; sold: number; lost: number };
 export type LidStatistikasi = { total: LidVoronkasi; bySource: Array<LidVoronkasi & { source: string }> };
+
+// ---- CRM 1-bosqich: faoliyat natijasi (POST /crm/contacts), keyingi qadam, "Bugungi ishlar" ----
+export type ContactTuri = "CALL" | "MEETING" | "MESSAGE";
+export type ContactNatijasi = "ORDER" | "LATER" | "THINKING" | "NO_ANSWER" | "REJECTED";
+export type RadSababi = "PRICE" | "COMPETITOR" | "NOT_NEEDED" | "OTHER";
+
+/** Keyingi vazifa: LATER/THINKING da majburiy, NO_ANSWER/ORDER/REJECTED da ixtiyoriy. */
+export type KeyingiVazifa = {
+  type: ActivityTuri;
+  subject: string;
+  dueAt: string;
+  remindAt?: string;
+  assigneeId?: string;
+  description?: string;
+  saleId?: string;
+};
+
+export type ContactMalumoti = {
+  type: ContactTuri;
+  result: ContactNatijasi;
+  text?: string;
+  rejectReason?: RadSababi;
+  saleId?: string;
+};
+
+export type ContactYaratish = ContactMalumoti & { partnerId: string; nextTask?: KeyingiVazifa };
+
+export type Contact = {
+  id: string;
+  partnerId?: string;
+  type?: ContactTuri | string;
+  result?: ContactNatijasi | string;
+  rejectReason?: RadSababi | string | null;
+  text?: string | null;
+  saleId?: string | null;
+  sale?: { id: string; docNumber?: string | null } | null;
+  activityId?: string | null;
+  author?: CrmUser | null;
+  createdBy?: CrmUser | null;
+  createdById?: string | null;
+  createdAt?: string;
+  [key: string]: unknown;
+};
+
+export type ContactJavobi = { contact: Contact; nextTask: Activity | null };
+export type ContactRoyxati = { items: Contact[]; nextCursor: string | null };
+
+/** POST /crm/activities/:id/complete — yangi tana (eski { result } ham ishlaydi). */
+export type ActivityYakunlash = { contact: ContactMalumoti; nextTask?: KeyingiVazifa };
+export type ActivityYakunlashJavobi = { activity: Activity; contact?: Contact | null; nextTask?: Activity | null };
+
+export type KunTartibi = { overdue: Activity[]; today: Activity[]; tomorrow: Activity[]; later: Activity[] };

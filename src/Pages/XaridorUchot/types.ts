@@ -30,6 +30,9 @@ export type Xaridor = {
   yaratilganSana: string;
   ozgartirilganSana: string; // oxirgi o'zgartirilgan sana
   customFields?: Record<string, unknown>;
+  // CRM mas'ul xodimi: id ("" — biriktirilmagan) va javobdagi nomi.
+  masulId?: string;
+  masulNomi?: string;
 };
 
 export type XaridorKompaniyasi = {

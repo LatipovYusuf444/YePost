@@ -25,6 +25,47 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Telegram xabarni qabul qilmadi: Telegram akkaunt chatida mijoz oxirgi marta yozganidan keyin faqat 24 soat ichida javob berish mumkin. Xabar saqlanmadi.",
     ru: "Telegram не принял сообщение: в чате Telegram-аккаунта отвечать можно только в течение 24 часов после последнего сообщения клиента. Сообщение не сохранено.",
   },
+  // CRM 1-bosqich: faoliyat natijasi, keyingi qadam, vazifalar.
+  "errors.crm.contact_next_task_required": {
+    uz: "\"Keyinroq\" va \"O'ylab ko'radi\" natijasida keyingi qadam (vazifa va muddat) majburiy.",
+    ru: "Для результата «Позже» и «Подумает» следующий шаг (задача и срок) обязателен.",
+  },
+  "errors.crm.contact_reject_reason_required": {
+    uz: "Rad etish sababini tanlang.",
+    ru: "Выберите причину отказа.",
+  },
+  "errors.crm.contact_reject_reason_not_allowed": {
+    uz: "Rad etish sababi faqat \"Rad etdi\" natijasida tanlanadi.",
+    ru: "Причина отказа указывается только для результата «Отказ».",
+  },
+  "errors.crm.contact_sale_not_order": {
+    uz: "Sotuvni faqat \"Zakaz olindi\" natijali faoliyatga bog'lash mumkin.",
+    ru: "Продажу можно привязать только к контакту с результатом «Заказ получен».",
+  },
+  "errors.crm.contact_sale_already_linked": {
+    uz: "Bu faoliyatga sotuv allaqachon bog'langan.",
+    ru: "К этому контакту продажа уже привязана.",
+  },
+  "errors.crm.sale_partner_mismatch": {
+    uz: "Tanlangan sotuv boshqa mijozniki — faqat shu mijozning sotuvini bog'lash mumkin.",
+    ru: "Выбранная продажа принадлежит другому клиенту — можно привязать только продажу этого клиента.",
+  },
+  "errors.crm.contact_not_yours": {
+    uz: "Boshqa xodim yozgan faoliyatga sotuvni faqat admin yoki direktor bog'lay oladi.",
+    ru: "Привязать продажу к контакту другого сотрудника может только админ или директор.",
+  },
+  "errors.crm.activity_not_pending": {
+    uz: "Vazifa allaqachon bajarilgan yoki bekor qilingan — ro'yxatni yangilang.",
+    ru: "Задача уже выполнена или отменена — обновите список.",
+  },
+  "errors.crm.activity_cancel_reason_required": {
+    uz: "Vazifani bekor qilish sababini yozing.",
+    ru: "Укажите причину отмены задачи.",
+  },
+  "errors.crm.activity_next_task_needs_contact": {
+    uz: "Keyingi vazifa uchun avval faoliyat natijasini tanlang.",
+    ru: "Для следующей задачи сначала выберите результат контакта.",
+  },
   // Ishlab chiqarish moduli va seriyali tovarlar (rulon).
   "errors.production.disabled": {
     uz: "Ishlab chiqarish moduli yoqilmagan. Direktor uni Sozlamalar → Ishlab chiqarish bo'limida yoqadi.",

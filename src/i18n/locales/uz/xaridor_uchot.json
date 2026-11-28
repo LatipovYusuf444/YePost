@@ -619,5 +619,11 @@
   },
   "bulkDelete": {
     "confirm": "{{count}} ta xaridor o'chiriladi. Davom etasizmi?"
+  },
+  "masul": {
+    "label": "Mas'ul xodim",
+    "none": "Biriktirilmagan",
+    "hint": "Yangi vazifalar shu xodimga tushadi.",
+    "search": "Xodimni qidirish"
   }
 }
