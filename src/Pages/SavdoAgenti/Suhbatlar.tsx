@@ -27,6 +27,7 @@ import { savdoAgentiApi } from "@/api/savdoAgentiApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { kunMatni, vaqtMatni } from "@/lib/hujjatSanasi";
 import { muvaffaqiyatXabari, xatolikXabari } from "@/lib/toast";
+import { useJonliYangilash } from "@/hooks/useJonliYangilash";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import {
   agentJimTurishi,
@@ -198,39 +199,40 @@ export default function Suhbatlar() {
       .catch(() => setXodimlar([]));
   }, [lidOchiq, xodimlar]);
 
-  // Davriy yangilash: ro'yxat va ochiq suhbatning eng yangi sahifasi (fon so'rovlari — xato toastsiz).
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      void royxatniYuklash(true);
-      const suhbatId = joriyId.current;
-      if (!suhbatId) return;
-      void lidniYuklash(suhbatId, true);
-      buyurtmalarniYuklash(suhbatId);
-      const boshlanganda = yozuvRaqami.current;
-      crmApi
-        .chatThreadXabarlari(suhbatId, { limit: XABAR_LIMIT }, true)
-        .then((javob) => {
-          if (joriyId.current !== suhbatId) return;
-          // So'rov ketgandan keyin xabar yuborilgan/qo'shilgan bo'lsa — javob uni ko'rmagan: faqat qo'shiladi, hech narsa o'chirilmaydi.
-          const eskirgan = yozuvRaqami.current !== boshlanganda;
-          const oyna = oynaRef.current;
-          const pastda = !oyna || oyna.scrollHeight - oyna.scrollTop - oyna.clientHeight < 120;
-          const sahifa = sahifaniOqish(javob);
-          setXabarlar((joriy) => {
-            // Telegram'da o'chirilgan xabar ekrandan ham ketadi, tahrirlangani yangilanadi.
-            const yangi = eskirgan ? xabarlarniBirlashtirish(joriy, sahifa.items) : oynaniYangilash(joriy, sahifa.items, !sahifa.nextCursor);
-            const oxirgiEski = joriy[joriy.length - 1]?.id;
-            const oxirgiYangi = yangi[yangi.length - 1]?.id;
-            if (oxirgiEski !== oxirgiYangi && pastda) scrollAmali.current = { tur: "past" };
-            return yangi;
-          });
-          if (!sahifa.nextCursor && !eskirgan) setNextCursor(null);
-        })
-        .catch(() => {});
-    }, YANGILASH_MS);
-    return () => window.clearInterval(id);
+  // Fon yangilash: ro'yxat va ochiq suhbatning eng yangi sahifasi (fon so'rovlari — xato toastsiz).
+  // Promise qaytaradi: hook keyingi yangilashni shu tugaguncha kutadi — ustma-ust so'rovlarda eski javob yangi xabarni o'chirmaydi.
+  const fondaYangilash = useCallback(() => {
+    const royxat = royxatniYuklash(true);
+    const suhbatId = joriyId.current;
+    if (!suhbatId) return royxat;
+    const lid = lidniYuklash(suhbatId, true);
+    buyurtmalarniYuklash(suhbatId);
+    const boshlanganda = yozuvRaqami.current;
+    const xabarlar = crmApi
+      .chatThreadXabarlari(suhbatId, { limit: XABAR_LIMIT }, true)
+      .then((javob) => {
+        if (joriyId.current !== suhbatId) return;
+        // So'rov ketgandan keyin xabar yuborilgan/qo'shilgan bo'lsa — javob uni ko'rmagan: faqat qo'shiladi, hech narsa o'chirilmaydi.
+        const eskirgan = yozuvRaqami.current !== boshlanganda;
+        const oyna = oynaRef.current;
+        const pastda = !oyna || oyna.scrollHeight - oyna.scrollTop - oyna.clientHeight < 120;
+        const sahifa = sahifaniOqish(javob);
+        setXabarlar((joriy) => {
+          // Telegram'da o'chirilgan xabar ekrandan ham ketadi, tahrirlangani yangilanadi.
+          const yangi = eskirgan ? xabarlarniBirlashtirish(joriy, sahifa.items) : oynaniYangilash(joriy, sahifa.items, !sahifa.nextCursor);
+          const oxirgiEski = joriy[joriy.length - 1]?.id;
+          const oxirgiYangi = yangi[yangi.length - 1]?.id;
+          if (oxirgiEski !== oxirgiYangi && pastda) scrollAmali.current = { tur: "past" };
+          return yangi;
+        });
+        if (!sahifa.nextCursor && !eskirgan) setNextCursor(null);
+      })
+      .catch(() => {});
+    return Promise.allSettled([royxat, lid, xabarlar]);
   }, [buyurtmalarniYuklash, lidniYuklash, royxatniYuklash]);
+
+  // Jonli hodisalar (SSE) + zaxira polling; yashirin tabda polling hookning o'zida o'tkazib yuboriladi.
+  useJonliYangilash({ hodisalar: ["chat.message", "chat.thread"], yangilash: fondaYangilash, zaxiraMs: YANGILASH_MS });
 
   useLayoutEffect(() => {
     const oyna = oynaRef.current;

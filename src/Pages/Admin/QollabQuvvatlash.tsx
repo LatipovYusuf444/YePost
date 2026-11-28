@@ -5,6 +5,7 @@ import { ArrowLeft, Building2, CheckCircle2, Headset, LoaderCircle, MessageSquar
 import { platformSupportApi } from "@/api/supportApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useJonliYangilash } from "@/hooks/useJonliYangilash";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -17,6 +18,9 @@ type HolatFiltri = "ALL" | SupportTicketHolati;
 
 // Javob xatosi → javob maydoni (so'rov tanasi: { text }). Xabar so'zi bo'yicha emas — murojaat holati xatolari tepada qoladi.
 const JAVOB_QOIDALARI: Record<string, XatoMaydonQoidasi> = { text: { maydonlar: ["text"], kodlar: ["text"] } };
+
+// Staff oqimi: ro'yxatni yangilaydigan hodisalar (GET /platform/support/tickets).
+const ROYXAT_HODISALARI = ["support.message", "support.read", "support.ticket"] as const;
 
 const FILTRLAR: HolatFiltri[] = ["ACTIVE", "IN_PROGRESS", "COMPLETED", "ALL"];
 const HOLAT_RANGI: Record<SupportTicketHolati, string> = {
@@ -75,7 +79,22 @@ export default function AdminQollabQuvvatlash() {
     [filtr, qidiruvKechiktirilgan]
   );
 
-  // Ro'yxat: filtr o'zgarganda yuklanadi, keyin har 5 soniyada jimgina yangilanadi.
+  // Jimgina yangilashlar uchun: joriy so'rov funksiyasi va tanlangan murojaat (eski javob yangisiga qo'shilmasin).
+  const royxatniOlishRef = useRef(royxatniOlish);
+  const tanlanganIdRef = useRef(tanlanganId);
+  const ornatilganRef = useRef(true);
+  useEffect(() => {
+    royxatniOlishRef.current = royxatniOlish;
+    tanlanganIdRef.current = tanlanganId;
+  });
+  useEffect(() => {
+    ornatilganRef.current = true;
+    return () => {
+      ornatilganRef.current = false;
+    };
+  }, []);
+
+  // Ro'yxat: filtr o'zgarganda yuklanadi; keyin jonli hodisalar (zaxira: 5 s polling) bilan jimgina yangilanadi.
   useEffect(() => {
     let faol = true;
     setRoyxatYuklanmoqda(true);
@@ -83,17 +102,26 @@ export default function AdminQollabQuvvatlash() {
       .then((royxat) => faol && setTickets(royxat))
       .catch((error) => faol && setXato(getApiErrorMessage(error)))
       .finally(() => faol && setRoyxatYuklanmoqda(false));
-    const interval = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      royxatniOlish()
-        .then((royxat) => faol && setTickets(royxat))
-        .catch(() => undefined);
-    }, 5000);
     return () => {
       faol = false;
-      window.clearInterval(interval);
     };
   }, [royxatniOlish]);
+
+  const royxatniJimYangilash = useCallback(() => {
+    const olish = royxatniOlish;
+    return olish()
+      .then((royxat) => {
+        if (ornatilganRef.current && royxatniOlishRef.current === olish) setTickets(royxat);
+      })
+      .catch(() => undefined);
+  }, [royxatniOlish]);
+
+  useJonliYangilash({
+    kanal: "platform",
+    hodisalar: ROYXAT_HODISALARI,
+    yangilash: royxatniJimYangilash,
+    zaxiraMs: 5000,
+  });
 
   const oqilganBelgilash = useCallback((id: string) => {
     void platformSupportApi
@@ -102,7 +130,7 @@ export default function AdminQollabQuvvatlash() {
       .catch(() => undefined);
   }, []);
 
-  // Tanlangan murojaat xabarlari: ochilganda yuklanadi, keyin har 5 soniyada yangilari qo'shiladi.
+  // Tanlangan murojaat xabarlari: ochilganda yuklanadi; yangilari jonli hodisalar (zaxira: 5 s polling) bilan qo'shiladi.
   useEffect(() => {
     if (!tanlanganId) return;
     let faol = true;
@@ -119,25 +147,36 @@ export default function AdminQollabQuvvatlash() {
       })
       .catch((error) => faol && setXato(getApiErrorMessage(error)))
       .finally(() => faol && setXabarlarYuklanmoqda(false));
-    const interval = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      platformSupportApi
-        .xabarlar(tanlanganId, { limit: 30 })
-        .then(({ items }) => {
-          if (!faol) return;
-          setXabarlar((joriy) => {
-            const yangilari = items.filter((xabar) => !joriy.some((element) => element.id === xabar.id));
-            if (yangilari.length > 0 && yangilari.some((xabar) => xabar.direction === "OUT")) oqilganBelgilash(tanlanganId);
-            return yangilari.length > 0 ? xabarlarniBirlashtirish(joriy, items) : joriy;
-          });
-        })
-        .catch(() => undefined);
-    }, 5000);
     return () => {
       faol = false;
-      window.clearInterval(interval);
     };
   }, [tanlanganId, oqilganBelgilash]);
+
+  const xabarlarniJimYangilash = useCallback(() => {
+    const id = tanlanganIdRef.current;
+    if (!id) return;
+    return platformSupportApi
+      .xabarlar(id, { limit: 30 })
+      .then(({ items }) => {
+        // Boshqa murojaat tanlangan bo'lsa (yoki sahifa yopilgan) — javob tashlanadi.
+        if (!ornatilganRef.current || tanlanganIdRef.current !== id) return;
+        setXabarlar((joriy) => {
+          const yangilari = items.filter((xabar) => !joriy.some((element) => element.id === xabar.id));
+          if (yangilari.length > 0 && yangilari.some((xabar) => xabar.direction === "OUT")) oqilganBelgilash(id);
+          return yangilari.length > 0 ? xabarlarniBirlashtirish(joriy, items) : joriy;
+        });
+      })
+      .catch(() => undefined);
+  }, [oqilganBelgilash]);
+
+  useJonliYangilash({
+    kanal: "platform",
+    faol: Boolean(tanlanganId),
+    hodisalar: (nom, data) =>
+      (nom === "support.message" || nom === "support.read") && (!data.ticketId || data.ticketId === tanlanganIdRef.current),
+    yangilash: xabarlarniJimYangilash,
+    zaxiraMs: 5000,
+  });
 
   useEffect(() => {
     oxirigaRef.current?.scrollIntoView({ block: "end" });

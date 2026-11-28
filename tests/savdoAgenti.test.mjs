@@ -174,7 +174,8 @@ test('audit tuzatishlari: partner route matni, faol xodimlar, karta xatosida qay
   assert.doesNotMatch(lidlar, /value="TELEGRAM_BOT"/);
   assert.match(lidlar, /faolXodimlar\(royxat\)/);
   const suhbat = manba('src/Pages/SavdoAgenti/Suhbatlar.tsx');
-  assert.match(suhbat, /void lidniYuklash\(suhbatId, true\);/);
+  // Fon yangilash lidni jim (fon=true) qayta oladi; SSE dan keyin Promise sifatida kutiladi (const lid = ...).
+  assert.match(suhbat, /(?:void |const lid = )lidniYuklash\(suhbatId, true\);/);
   assert.match(suhbat, /oynaniYangilash\(joriy, sahifa\.items, !sahifa\.nextCursor\)/);
 });
 

@@ -26,6 +26,7 @@ import { Textarea } from "@/Components/ui/textarea";
 import { crmIlovalarApi } from "@/api/crmAttachmentsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { supportApi } from "@/api/supportApi";
+import { useJonliYangilash } from "@/hooks/useJonliYangilash";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { xatoRamkasi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -52,6 +53,8 @@ const HOLAT_NUQTASI: Record<SupportTicketHolati, string> = {
 };
 
 type Rejim = "yuklanmoqda" | "tickets" | "yagona";
+// Ro'yxat va ochiq suhbatni yangilaydigan SSE hodisalari.
+const SUPPORT_HODISALARI = ["support.message", "support.read", "support.ticket"] as const;
 
 // Server xatosi → maydon (so'rov tanalari: xabar { text, attachmentIds }, murojaat { subject, text }, fayl yuklash { file }).
 // Xabar so'zi bo'yicha "xabar"ga bog'lanmaydi: "murojaat yopilgan" kabi xatolar ham shu so'zni o'z ichiga oladi.
@@ -232,33 +235,43 @@ export default function SupportInbox() {
     return () => { faol = false; };
   }, [tanlanganId, rejim, xabarlarniOlish, oqilganBelgilash]);
 
-  // ---- Har 5 soniyada yangilanish ----
+  // ---- Fon yangilanishi: ro'yxat + ochiq suhbat xabarlari (jim, xatoda eski ma'lumot qoladi) ----
+  const tanlanganIdRef = useRef(tanlanganId);
   useEffect(() => {
-    if (rejim === "yuklanmoqda") return;
-    const interval = window.setInterval(async () => {
-      if (document.visibilityState !== "visible") return;
-      try {
-        if (rejim === "tickets") {
-          const royxat = await supportApi.tickets({ limit: 100 });
-          setTickets(royxat);
-        }
-        if (tanlanganId) {
-          const { items } = await xabarlarniOlish(tanlanganId);
-          const oxirgilar = [...items].reverse();
-          let yangiKirish = false;
-          setXabarlar((joriy) => {
-            const mavjud = new Set(joriy.map((x) => x.id));
-            yangiKirish = oxirgilar.some((x) => !mavjud.has(x.id) && x.direction === "IN");
-            return xabarlarniBirlashtirish(joriy, oxirgilar);
-          });
-          if (yangiKirish) void oqilganBelgilash(tanlanganId);
-        }
-      } catch {
-        // keyingi urinishda qayta tekshiriladi
+    tanlanganIdRef.current = tanlanganId;
+  });
+  const fondaYangilash = useCallback(async () => {
+    const id = tanlanganId;
+    try {
+      if (rejim === "tickets") {
+        const royxat = await supportApi.tickets({ limit: 100 });
+        setTickets(royxat);
       }
-    }, 5000);
-    return () => window.clearInterval(interval);
+      if (id) {
+        const { items } = await xabarlarniOlish(id);
+        // Javob kelguncha boshqa murojaat tanlangan bo'lsa — eski murojaat xabarlari yangisiga qo'shilmaydi.
+        if (tanlanganIdRef.current !== id) return;
+        const oxirgilar = [...items].reverse();
+        let yangiKirish = false;
+        setXabarlar((joriy) => {
+          const mavjud = new Set(joriy.map((x) => x.id));
+          yangiKirish = oxirgilar.some((x) => !mavjud.has(x.id) && x.direction === "IN");
+          return xabarlarniBirlashtirish(joriy, oxirgilar);
+        });
+        if (yangiKirish) void oqilganBelgilash(id);
+      }
+    } catch {
+      // keyingi urinishda qayta tekshiriladi
+    }
   }, [rejim, tanlanganId, xabarlarniOlish, oqilganBelgilash]);
+
+  // SSE hodisalarida yangilanadi; oqim yo'q bo'lsa avvalgidek har 5 s (yashirin tabda polling o'tkaziladi).
+  useJonliYangilash({
+    hodisalar: SUPPORT_HODISALARI,
+    yangilash: fondaYangilash,
+    zaxiraMs: 5000,
+    faol: rejim !== "yuklanmoqda",
+  });
 
   // Yangi xabar kelganda pastga aylantirish
   useEffect(() => {

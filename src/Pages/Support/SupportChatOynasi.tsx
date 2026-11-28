@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { useSupportStore } from "@/store/supportStore";
+import { useJonliYangilash } from "@/hooks/useJonliYangilash";
 import { ScrollArea } from "@/Components/ui/scroll-area";
 import { Textarea } from "@/Components/ui/textarea";
 import { Button } from "@/Components/ui/button";
@@ -49,12 +50,22 @@ export default function SupportChatOynasi({ compact = false, onClose }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      if (document.visibilityState === "visible") void yangiXabarlarniTekshirish();
-    }, 5000);
-    return () => window.clearInterval(interval);
-  }, [yangiXabarlarniTekshirish]);
+  // Store yuklanayotgan/tekshirayotgan paytda yangiXabarlarniTekshirish jim qaytadi — hodisa yo'qolmasligi uchun bo'shashini kutamiz.
+  async function yangilashBandBolmasa() {
+    for (let i = 0; i < 40; i++) {
+      const { yuklanmoqda: yukl, yangilanmoqda } = useSupportStore.getState();
+      if (!yukl && !yangilanmoqda) break;
+      await new Promise((r) => window.setTimeout(r, 250));
+    }
+    await yangiXabarlarniTekshirish();
+  }
+
+  // Yangi xabarlar: SSE hodisasi kelganda; oqim yo'q bo'lsa avvalgidek 5 s polling (yashirin tabda emas).
+  useJonliYangilash({
+    hodisalar: ["support.message", "support.read", "support.ticket"],
+    yangilash: yangilashBandBolmasa,
+    zaxiraMs: 5000,
+  });
 
   useEffect(() => {
     const oxirgiId = xabarlar.at(-1)?.id;

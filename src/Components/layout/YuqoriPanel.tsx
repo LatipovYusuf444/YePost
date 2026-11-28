@@ -22,6 +22,7 @@ import HeaderMahsulotQidiruvi from "./HeaderMahsulotQidiruvi";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import { useJonliYangilash, XAVFSIZLIK_POLLING_MS } from "@/hooks/useJonliYangilash";
 import type { Bildirishnoma } from "@/types/crm";
 import type { JoriyFoydalanuvchi } from "@/types/tenant";
 
@@ -166,7 +167,11 @@ export default function YuqoriPanel({
     }
   }
 
+  // Foydalanuvchi o'qildi deb belgilagan payt: undan oldin boshlangan fon so'rovi javobi bu belgini bosib ketmasin.
+  const mahalliyOzgarish = useRef(0);
+
   async function bildirishnomaniOqish(id: string) {
+    mahalliyOzgarish.current++;
     try {
       const yangilangan = await crmApi.bildirishnomaOqildi(id);
       setBildirishnomalar((items) =>
@@ -180,6 +185,7 @@ export default function YuqoriPanel({
   }
 
   async function hammasiniOqish() {
+    mahalliyOzgarish.current++;
     try {
       await crmApi.barchaBildirishnomalarOqildi();
       setBildirishnomalar((items) => items.map((item) => ({ ...item, isRead: true })));
@@ -191,6 +197,23 @@ export default function YuqoriPanel({
   useEffect(() => {
     void bildirishnomalarniYuklash();
   }, []);
+
+  // Fonda jim yangilash: spinner yo'q, xatoda eski ro'yxat qoladi.
+  async function bildirishnomalarniJimYangilash() {
+    const boshlanganda = mahalliyOzgarish.current;
+    try {
+      const royxat = await crmApi.bildirishnomalar();
+      if (mahalliyOzgarish.current === boshlanganda) setBildirishnomalar(royxat);
+    } catch {
+      // eski bildirishnomalar saqlanadi
+    }
+  }
+
+  useJonliYangilash({
+    hodisalar: ["notification"],
+    yangilash: bildirishnomalarniJimYangilash,
+    zaxiraMs: XAVFSIZLIK_POLLING_MS,
+  });
 
   const [mobil, setMobil] = useState(() => window.matchMedia("(max-width: 767px)").matches);
   useEffect(() => {

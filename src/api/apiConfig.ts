@@ -2,7 +2,7 @@
 // (https://ye-post.vercel.app: GET, POST, PUT, PATCH, DELETE), shuning uchun shu domendan API to'g'ridan-to'g'ri chaqiriladi.
 // Preview domenlar va lokal dev (Vite proxy) eski yo'lda qoladi. VITE_API_BASE_URL da to'liq manzil yozilsa — doim o'sha.
 const PROXY_MANZILI = "/backend-api/api/v1";
-const TOGRIDAN_MANZIL = "https://pos.169-58-167-219.sslip.io/api/v1";
+export const TOGRIDAN_MANZIL = "https://pos.169-58-167-219.sslip.io/api/v1";
 const TOGRIDAN_DOMENLAR = new Set(["ye-post.vercel.app"]);
 
 function apiManzili() {

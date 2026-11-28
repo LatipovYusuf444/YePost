@@ -85,6 +85,23 @@ type QaytaUriniladiganSorov = InternalAxiosRequestConfig & {
 
 let tokenYangilashSorovi: Promise<string> | null = null;
 
+/**
+ * Access tokenni refresh token bilan yangilaydi. Bir vaqtda bir nechta chaqiruv (401 olgan so'rovlar, jonli oqim) bitta
+ * refresh so'rovini bo'lishadi — refresh token ikki marta ishlatilmaydi. Muvaffaqiyatsiz bo'lsa xato tashlaydi (chaqiruvchi hal qiladi).
+ */
+export function accessTokenniQaytaOlish(refreshToken: string): Promise<string> {
+  tokenYangilashSorovi ??= accessTokenniYangilash(refreshToken)
+    .then((response) => {
+      const accessToken = accessTokenniAjratish(response);
+      if (!accessToken) throw new Error("Backend refresh token javobida access token qaytmadi.");
+      return accessToken;
+    })
+    .finally(() => {
+      tokenYangilashSorovi = null;
+    });
+  return tokenYangilashSorovi;
+}
+
 apiClient.interceptors.request.use((config) => {
   const authHolati = authTokenlarniOlish();
   const accessToken = authHolati.accessToken;
@@ -150,17 +167,7 @@ apiClient.interceptors.response.use(
     aslSorov._qaytaUrinildi = true;
 
     try {
-      tokenYangilashSorovi ??= accessTokenniYangilash(authHolati.refreshToken)
-        .then((response) => {
-          const accessToken = accessTokenniAjratish(response);
-          if (!accessToken) throw new Error("Backend refresh token javobida access token qaytmadi.");
-          return accessToken;
-        })
-        .finally(() => {
-          tokenYangilashSorovi = null;
-        });
-
-      const yangiAccessToken = await tokenYangilashSorovi;
+      const yangiAccessToken = await accessTokenniQaytaOlish(authHolati.refreshToken);
       accessTokenniSaqlash(yangiAccessToken);
       aslSorov.headers.Authorization = `Bearer ${yangiAccessToken}`;
       aslSorov.headers["x-lang"] = apiTiliniOlish();
